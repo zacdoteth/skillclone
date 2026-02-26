@@ -209,6 +209,12 @@ export default function SkillClone() {
   const [customDraft, setCustomDraft] = useState({ name: '', specs: '', prompt: '' });
   const [isGeneratingLore, setIsGeneratingLore] = useState(false);
   const [loreError, setLoreError] = useState('');
+  const [savedSquads, setSavedSquads] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('skillclone_squads') || '[]'); } catch { return []; }
+  });
+  const [squadSidebarOpen, setSquadSidebarOpen] = useState(() => window.innerWidth >= 1200);
+  const [squadNameDraft, setSquadNameDraft] = useState('');
+  const [savingSquad, setSavingSquad] = useState(false);
 
   const sounds = useSound();
 
@@ -229,6 +235,11 @@ export default function SkillClone() {
   React.useEffect(() => {
     localStorage.setItem('skillclone_custom', JSON.stringify(customModules));
   }, [customModules]);
+
+  // Persist saved squads
+  React.useEffect(() => {
+    localStorage.setItem('skillclone_squads', JSON.stringify(savedSquads));
+  }, [savedSquads]);
 
   const addCustomModule = () => {
     if (!customDraft.name.trim()) return;
@@ -288,6 +299,34 @@ export default function SkillClone() {
       if (!filtered.length) { const { custom: _, ...rest } = prev; return rest; }
       return { ...prev, custom: filtered };
     });
+  };
+
+  // Squad management
+  const saveSquad = (name) => {
+    if (!name.trim() || moduleCount === 0) return;
+    const squad = {
+      id: 'squad_' + Date.now(),
+      name: name.trim(),
+      intent: userIntent,
+      modules: JSON.parse(JSON.stringify(selectedModules)),
+      moduleCount,
+      totalPower,
+      createdAt: Date.now(),
+    };
+    setSavedSquads(prev => [squad, ...prev]);
+    setSquadNameDraft('');
+    setSavingSquad(false);
+    sounds.select();
+  };
+
+  const loadSquad = (squad) => {
+    setSelectedModules(squad.modules);
+    if (squad.intent) setUserIntent(squad.intent);
+    sounds.click();
+  };
+
+  const deleteSquad = (id) => {
+    setSavedSquads(prev => prev.filter(s => s.id !== id));
   };
 
   // Responsive listener
@@ -574,8 +613,155 @@ Begin.`;
       {/* BUILDING */}
       {stage === 'building' && (
         <div style={{ display: 'flex', minHeight: '100vh' }}>
+
+          {/* LEFT SIDEBAR — SQUAD LIBRARY */}
+          {!isMobile && (
+            <div style={{
+              position: 'fixed', left: 0, top: 0, bottom: 0,
+              width: squadSidebarOpen ? '220px' : '44px',
+              background: '#0a0a0e',
+              borderRight: '1px solid rgba(255,255,255,0.06)',
+              display: 'flex', flexDirection: 'column',
+              zIndex: 100,
+              transition: 'width 0.2s ease',
+              overflow: 'hidden',
+              fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace',
+            }}>
+              {/* Sidebar header */}
+              <div style={{ padding: squadSidebarOpen ? '14px 14px 10px' : '14px 10px 10px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                <button onClick={() => setSquadSidebarOpen(p => !p)}
+                  style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '16px', padding: '2px', lineHeight: 1, flexShrink: 0 }}
+                  title={squadSidebarOpen ? 'Collapse' : 'Expand'}>
+                  {squadSidebarOpen ? '◁' : '▷'}
+                </button>
+                {squadSidebarOpen && <span style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.5)', letterSpacing: '1.5px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Squads</span>}
+                {squadSidebarOpen && <span style={{ fontSize: '9px', padding: '1px 5px', background: 'rgba(139,92,246,0.15)', borderRadius: '6px', color: '#8b5cf6', marginLeft: 'auto', flexShrink: 0 }}>{savedSquads.length}</span>}
+              </div>
+
+              {/* Save current squad */}
+              {squadSidebarOpen && moduleCount > 0 && (
+                <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)', flexShrink: 0 }}>
+                  {!savingSquad ? (
+                    <button onClick={() => setSavingSquad(true)}
+                      style={{ width: '100%', padding: '7px 10px', fontSize: '11px', fontWeight: 600, background: 'linear-gradient(135deg, rgba(139,92,246,0.12), rgba(236,72,153,0.08))', border: '1px dashed rgba(139,92,246,0.3)', borderRadius: '6px', color: '#a78bfa', cursor: 'pointer', letterSpacing: '0.3px' }}>
+                      + Save Squad
+                    </button>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <input type="text" value={squadNameDraft} onChange={(e) => setSquadNameDraft(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') saveSquad(squadNameDraft); if (e.key === 'Escape') { setSavingSquad(false); setSquadNameDraft(''); } }}
+                        placeholder="Squad name..."
+                        autoFocus
+                        style={{ flex: 1, minWidth: 0, padding: '5px 8px', fontSize: '11px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '4px', color: 'white', outline: 'none', fontFamily: 'inherit' }} />
+                      <button onClick={() => saveSquad(squadNameDraft)}
+                        disabled={!squadNameDraft.trim()}
+                        style={{ padding: '5px 8px', fontSize: '10px', fontWeight: 700, background: squadNameDraft.trim() ? '#8b5cf6' : 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '4px', color: squadNameDraft.trim() ? 'white' : 'rgba(255,255,255,0.2)', cursor: squadNameDraft.trim() ? 'pointer' : 'default', flexShrink: 0 }}>
+                        ✓
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Collapsed state: just icons for saved squads */}
+              {!squadSidebarOpen && (
+                <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+                  {savedSquads.map((squad, i) => (
+                    <button key={squad.id} onClick={() => loadSquad(squad)}
+                      title={`${squad.name} — ${squad.moduleCount} geniuses`}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', margin: '2px auto', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '6px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '11px', fontFamily: 'inherit' }}>
+                      {squad.name.charAt(0).toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Expanded: full squad list */}
+              {squadSidebarOpen && (
+                <div style={{ flex: 1, overflowY: 'auto', padding: '6px 0' }}>
+                  {savedSquads.length === 0 && (
+                    <div style={{ padding: '20px 14px', textAlign: 'center' }}>
+                      <p style={{ margin: 0, fontSize: '10px', color: 'rgba(255,255,255,0.2)', lineHeight: 1.4 }}>No saved squads yet.<br />Select geniuses and save a combo.</p>
+                    </div>
+                  )}
+                  {savedSquads.map(squad => (
+                    <div key={squad.id} className="genius-item"
+                      style={{ padding: '8px 14px', cursor: 'pointer', borderLeft: '2px solid transparent', transition: 'background 0.1s, border-color 0.1s' }}
+                      onClick={() => loadSquad(squad)}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(255,255,255,0.85)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{squad.name}</span>
+                        <button onClick={(e) => { e.stopPropagation(); deleteSquad(squad.id); }}
+                          style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.15)', cursor: 'pointer', fontSize: '12px', padding: '0 2px', lineHeight: 1, flexShrink: 0 }}
+                          title="Delete">×</button>
+                      </div>
+                      <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>
+                        {squad.moduleCount} geniuses • ⚡{squad.totalPower}
+                      </div>
+                      {squad.intent && (
+                        <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.18)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {squad.intent}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Mobile squad toggle */}
+          {isMobile && savedSquads.length > 0 && (
+            <button onClick={() => setSquadSidebarOpen(p => !p)}
+              style={{ position: 'fixed', top: '10px', left: '10px', zIndex: 120, padding: '6px 10px', fontSize: '11px', fontWeight: 600, background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.25)', borderRadius: '6px', color: '#a78bfa', cursor: 'pointer', fontFamily: 'ui-monospace, monospace' }}>
+              ◆ {savedSquads.length}
+            </button>
+          )}
+
+          {/* Mobile squad drawer */}
+          {isMobile && squadSidebarOpen && savedSquads.length > 0 && (
+            <div style={{ position: 'fixed', inset: 0, zIndex: 190, background: 'rgba(0,0,0,0.7)' }} onClick={() => setSquadSidebarOpen(false)}>
+              <div onClick={(e) => e.stopPropagation()}
+                style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '260px', background: '#0a0a0e', borderRight: '1px solid rgba(255,255,255,0.08)', padding: '16px', overflowY: 'auto', fontFamily: 'ui-monospace, monospace' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'rgba(255,255,255,0.5)', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Squads</span>
+                  <button onClick={() => setSquadSidebarOpen(false)}
+                    style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '16px' }}>×</button>
+                </div>
+                {moduleCount > 0 && !savingSquad && (
+                  <button onClick={() => setSavingSquad(true)}
+                    style={{ width: '100%', padding: '8px', marginBottom: '12px', fontSize: '11px', fontWeight: 600, background: 'rgba(139,92,246,0.12)', border: '1px dashed rgba(139,92,246,0.3)', borderRadius: '6px', color: '#a78bfa', cursor: 'pointer' }}>
+                    + Save Current Squad
+                  </button>
+                )}
+                {savingSquad && (
+                  <div style={{ display: 'flex', gap: '4px', marginBottom: '12px' }}>
+                    <input type="text" value={squadNameDraft} onChange={(e) => setSquadNameDraft(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') saveSquad(squadNameDraft); if (e.key === 'Escape') { setSavingSquad(false); setSquadNameDraft(''); } }}
+                      placeholder="Squad name..." autoFocus
+                      style={{ flex: 1, minWidth: 0, padding: '6px 8px', fontSize: '11px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '4px', color: 'white', outline: 'none', fontFamily: 'inherit' }} />
+                    <button onClick={() => saveSquad(squadNameDraft)}
+                      style={{ padding: '6px 10px', fontSize: '11px', fontWeight: 700, background: '#8b5cf6', border: 'none', borderRadius: '4px', color: 'white', cursor: 'pointer' }}>✓</button>
+                  </div>
+                )}
+                {savedSquads.map(squad => (
+                  <div key={squad.id} className="genius-item"
+                    style={{ padding: '10px', marginBottom: '6px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', cursor: 'pointer', borderLeft: '2px solid rgba(139,92,246,0.3)' }}
+                    onClick={() => { loadSquad(squad); setSquadSidebarOpen(false); }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: 'white' }}>{squad.name}</span>
+                      <button onClick={(e) => { e.stopPropagation(); deleteSquad(squad.id); }}
+                        style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.2)', cursor: 'pointer', fontSize: '12px', padding: '0 2px' }}>×</button>
+                    </div>
+                    <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', marginTop: '3px' }}>{squad.moduleCount} geniuses • ⚡{squad.totalPower}</div>
+                    {squad.intent && <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.2)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{squad.intent}</div>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* MAIN */}
-          <div style={{ flex: 1, padding: isMobile ? '12px' : '18px 22px', paddingRight: (!isMobile && moduleCount > 0) ? '300px' : (isMobile ? '12px' : '22px'), paddingBottom: (isMobile && moduleCount > 0) ? '80px' : '18px', transition: 'padding 0.2s' }}>
+          <div style={{ flex: 1, padding: isMobile ? '12px' : '18px 22px', paddingLeft: !isMobile ? (squadSidebarOpen ? '240px' : '62px') : '12px', paddingRight: (!isMobile && moduleCount > 0) ? '300px' : (isMobile ? '12px' : '22px'), paddingBottom: (isMobile && moduleCount > 0) ? '80px' : '18px', transition: 'padding 0.2s' }}>
             {/* Header: Mission + Search */}
             <div style={{ marginBottom: isMobile ? '14px' : '18px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
@@ -815,8 +1001,12 @@ Begin.`;
                 </button>
               )}
 
+              <button onClick={() => { setSavingSquad(true); if (!squadSidebarOpen) setSquadSidebarOpen(true); }}
+                style={{ marginTop: 'auto', padding: '8px', fontSize: '11px', fontWeight: 500, background: 'none', border: '1px dashed rgba(139,92,246,0.25)', borderRadius: '6px', color: 'rgba(139,92,246,0.6)', cursor: 'pointer', width: '100%', fontFamily: 'ui-monospace, monospace', letterSpacing: '0.3px' }}>
+                💾 Save Squad
+              </button>
               <button onClick={generatePrompt}
-                style={{ marginTop: 'auto', padding: '14px', fontSize: '14px', fontWeight: 600, background: 'linear-gradient(135deg, #8b5cf6, #ec4899)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', width: '100%' }}>
+                style={{ marginTop: '6px', padding: '14px', fontSize: '14px', fontWeight: 600, background: 'linear-gradient(135deg, #8b5cf6, #ec4899)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', width: '100%' }}>
                 🧬 Fuse {moduleCount} Geniuses
               </button>
               <button onClick={() => setStage('landing')} style={{ marginTop: '6px', padding: '8px', background: 'none', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '12px' }}>
