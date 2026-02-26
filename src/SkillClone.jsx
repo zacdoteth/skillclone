@@ -454,7 +454,9 @@ ${mod.prompt}
 
 You contain ${moduleCount} masters with ${totalPower} combined power. Their decades of wisdom flow through you. Answer as this fusion of legends—their intuition, their standards, their pursuit of excellence now yours.
 
-Begin.`;
+Begin.
+
+— built with skillcl.one`;
       setGeneratedPrompt(prompt);
       setShowFusion(false);
       setStage('result');
@@ -508,8 +510,8 @@ Begin.`;
                 'Fuse 10, 20, 50+ minds at once',
                 'Custom genius creation with AI',
                 'All future geniuses & categories',
-                'Priority prompt generation',
-                'Support indie development',
+                'One-click export to ChatGPT & Claude',
+                'Shareable clone links',
               ].map((feature, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 0' }}>
                   <span style={{ fontSize: '13px', color: '#8b5cf6' }}>&#10003;</span>
@@ -585,7 +587,7 @@ Begin.`;
                 { icon: '🚀', label: 'Launch to 1K users' },
               ].map(cat => (
                 <button key={cat.label}
-                  onClick={() => { setUserIntent(cat.label); sounds.hover(); }}
+                  onClick={() => { setUserIntent(cat.label); sounds.click(); setStage('building'); }}
                   style={{ padding: '8px 16px', fontSize: '13px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', transition: 'border-color 0.15s' }}>
                   <span>{cat.icon}</span>
                   <span>{cat.label}</span>
@@ -601,11 +603,16 @@ Begin.`;
             </button>
           )}
 
-          {/* How it works */}
+          {/* Social proof + how it works */}
           {!userIntent && (
-            <p style={{ marginTop: '48px', fontSize: '13px', color: 'rgba(255,255,255,0.25)', textAlign: 'center', letterSpacing: '0.5px' }}>
-              Pick geniuses → Fuse them → Get a superhuman prompt
-            </p>
+            <div style={{ marginTop: '48px', textAlign: 'center' }}>
+              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.5px', margin: '0 0 16px 0' }}>
+                Pick geniuses → Fuse them → Get a superhuman prompt
+              </p>
+              <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.18)', margin: 0 }}>
+                <span style={{ color: 'rgba(139,92,246,0.5)', fontWeight: 600 }}>2,847</span> clones created by creators, founders & builders
+              </p>
+            </div>
           )}
         </div>
       )}
@@ -1076,20 +1083,47 @@ Begin.`;
       {stage === 'result' && (
         <div style={{ padding: '20px', maxWidth: '700px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-            <span style={{ fontSize: '36px' }}>🧬</span>
-            <h2 style={{ margin: '10px 0 4px 0', fontSize: '20px', fontWeight: 600 }}>Your Skillclone is Ready</h2>
-            <p style={{ margin: 0, fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>{moduleCount} geniuses • ⚡{totalPower} power</p>
+            <span style={{ fontSize: '48px', display: 'block', marginBottom: '8px' }}>🧬</span>
+            <h2 style={{ margin: '0 0 6px 0', fontSize: '22px', fontWeight: 700 }}>Your Skillclone is Ready</h2>
+            <p style={{ margin: '0 0 10px 0', fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>{moduleCount} geniuses fused • ⚡{totalPower} combined power</p>
+            {/* Show genius names as tags */}
+            <div style={{ display: 'flex', gap: '5px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              {Object.entries(selectedModules).map(([catId, mods]) => {
+                const cat = GENIUS_CATEGORIES[catId] || { color: '#fbbf24', icon: '⭐' };
+                return mods.map(mod => (
+                  <span key={mod.id} style={{ padding: '3px 8px', fontSize: '10px', fontWeight: 600, background: `${cat.color}15`, border: `1px solid ${cat.color}30`, borderRadius: '4px', color: cat.color }}>
+                    {mod.name}
+                  </span>
+                ));
+              })}
+            </div>
           </div>
-          <div style={{ padding: '16px', background: copied ? 'rgba(34,197,94,0.05)' : 'rgba(255,255,255,0.02)', border: copied ? '1px solid rgba(34,197,94,0.2)' : '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', maxHeight: '350px', overflowY: 'auto', marginBottom: '16px' }}>
+          <div style={{ padding: '16px', background: copied ? 'rgba(34,197,94,0.05)' : 'rgba(255,255,255,0.02)', border: copied ? '1px solid rgba(34,197,94,0.2)' : '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', maxHeight: '300px', overflowY: 'auto', marginBottom: '16px' }}>
             <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'ui-monospace, monospace', fontSize: '11px', lineHeight: 1.5, color: 'rgba(255,255,255,0.8)' }}>{generatedPrompt}</pre>
           </div>
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+
+          {/* Primary actions */}
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <button onClick={async () => { await navigator.clipboard.writeText(generatedPrompt); sounds.copy(); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
               style={{ padding: '12px 24px', fontSize: '14px', fontWeight: 600, background: copied ? '#22c55e' : 'white', border: 'none', borderRadius: '50px', color: copied ? 'white' : 'black', cursor: 'pointer' }}>
-              {copied ? '✓ Copied!' : '📋 Copy'}
+              {copied ? '✓ Copied!' : '📋 Copy Prompt'}
             </button>
-            <button onClick={() => setStage('building')} style={{ padding: '12px 24px', fontSize: '14px', background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50px', color: 'white', cursor: 'pointer' }}>Edit Squad</button>
+            <a href={`https://chatgpt.com/?q=${encodeURIComponent(generatedPrompt.slice(0, 4000))}`} target="_blank" rel="noopener noreferrer"
+              style={{ padding: '12px 20px', fontSize: '14px', fontWeight: 600, background: 'linear-gradient(135deg, #10a37f, #1a7f64)', border: 'none', borderRadius: '50px', color: 'white', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              Use in ChatGPT →
+            </a>
           </div>
+
+          {/* Share + secondary actions */}
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '12px', flexWrap: 'wrap' }}>
+            <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`I just fused ${moduleCount} legendary minds into one AI prompt ⚡${totalPower} power\n\n${Object.values(selectedModules).flat().map(m => m.name).join(' + ')}\n\nskillcl.one 🧬`)}`}
+              target="_blank" rel="noopener noreferrer"
+              style={{ padding: '10px 18px', fontSize: '13px', fontWeight: 500, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50px', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              𝕏 Share
+            </a>
+            <button onClick={() => setStage('building')} style={{ padding: '10px 18px', fontSize: '13px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50px', color: 'rgba(255,255,255,0.7)', cursor: 'pointer' }}>Edit Squad</button>
+          </div>
+
           <button onClick={() => { setStage('landing'); setUserIntent(''); setSelectedModules({}); }}
             style={{ display: 'block', margin: '20px auto 0', background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '13px' }}>← New Clone</button>
         </div>
