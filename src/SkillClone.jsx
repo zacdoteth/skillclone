@@ -183,6 +183,12 @@ const useSound = () => {
   };
 };
 
+// Stripe Payment Links — replace with your real links from Stripe Dashboard
+const STRIPE_LINKS = {
+  monthly: 'https://buy.stripe.com/YOUR_MONTHLY_LINK',
+  lifetime: 'https://buy.stripe.com/YOUR_LIFETIME_LINK',
+};
+
 export default function SkillClone() {
   const [stage, setStage] = useState('landing');
   const [userIntent, setUserIntent] = useState('');
@@ -190,13 +196,110 @@ export default function SkillClone() {
   const [generatedPrompt, setGeneratedPrompt] = useState('');
   const [copied, setCopied] = useState(false);
   const [showFusion, setShowFusion] = useState(false);
-  const [isPro, setIsPro] = useState(true); // Set to true for testing
+  const [isPro, setIsPro] = useState(() => localStorage.getItem('skillclone_pro') === 'true');
   const [showUpgrade, setShowUpgrade] = useState(false);
-  
+  const [mobileCartOpen, setMobileCartOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [screenSize, setScreenSize] = useState(() => window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1200 ? 'tablet' : 'desktop');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [customModules, setCustomModules] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('skillclone_custom') || '[]'); } catch { return []; }
+  });
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [customDraft, setCustomDraft] = useState({ name: '', specs: '', prompt: '' });
+  const [isGeneratingLore, setIsGeneratingLore] = useState(false);
+  const [loreError, setLoreError] = useState('');
+
   const sounds = useSound();
-  
+
   const FREE_LIMIT = 3;
   const PRO_LIMIT = Infinity;
+
+  // Check for Stripe success redirect
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('pro') === 'true') {
+      setIsPro(true);
+      localStorage.setItem('skillclone_pro', 'true');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
+  // Persist custom modules
+  React.useEffect(() => {
+    localStorage.setItem('skillclone_custom', JSON.stringify(customModules));
+  }, [customModules]);
+
+  const addCustomModule = () => {
+    if (!customDraft.name.trim()) return;
+    const mod = {
+      id: 'custom_' + Date.now(),
+      name: customDraft.name.trim(),
+      power: customDraft._power || 95,
+      specs: customDraft.specs.trim() || 'Custom genius',
+      prompt: customDraft.prompt.trim() || `You channel the expertise and mindset of ${customDraft.name.trim()}. Apply their knowledge, principles, and unique perspective to every challenge.`,
+    };
+    setCustomModules(prev => [...prev, mod]);
+    setCustomDraft({ name: '', specs: '', prompt: '' });
+    setShowCustomForm(false);
+    sounds.select();
+  };
+
+  const generateLore = async () => {
+    const name = customDraft.name.trim();
+    if (!name) return;
+    setIsGeneratingLore(true);
+    setLoreError('');
+    try {
+      const res = await fetch('/api/generate-lore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Server error ${res.status}`);
+      }
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setCustomDraft(d => ({
+        ...d,
+        specs: data.specs || d.specs,
+        prompt: data.prompt || d.prompt,
+        _power: data.power,
+      }));
+      sounds.select();
+    } catch (err) {
+      console.error('Failed to generate lore:', err);
+      setLoreError(err.message.includes('API') || err.message.includes('.env')
+        ? 'Add ANTHROPIC_API_KEY to .env and restart dev server'
+        : 'Generation failed — try again or fill manually');
+    } finally {
+      setIsGeneratingLore(false);
+    }
+  };
+
+  const removeCustomModule = (id) => {
+    setCustomModules(prev => prev.filter(m => m.id !== id));
+    // Also deselect if selected
+    setSelectedModules(prev => {
+      const custom = prev.custom || [];
+      const filtered = custom.filter(m => m.id !== id);
+      if (!filtered.length) { const { custom: _, ...rest } = prev; return rest; }
+      return { ...prev, custom: filtered };
+    });
+  };
+
+  // Responsive listener
+  React.useEffect(() => {
+    const onResize = () => {
+      const w = window.innerWidth;
+      setIsMobile(w < 768);
+      setScreenSize(w < 768 ? 'mobile' : w < 1200 ? 'tablet' : 'desktop');
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const allSelected = Object.values(selectedModules).flat();
   const totalPower = allSelected.reduce((sum, m) => sum + (m?.power || 0), 0);
@@ -242,7 +345,13 @@ export default function SkillClone() {
       recs.push({ catId: 'writing', mod: GENIUS_CATEGORIES.writing.modules[2] }); // Pixar
       recs.push({ catId: 'film', mod: GENIUS_CATEGORIES.film.modules[2] }); // Tarantino
     }
-    if (/copy|ad|headline|sales|landing|convert|persuade/i.test(t)) {
+    if (/landing|page.*convert|convert.*page/i.test(t)) {
+      // Landing pages are cross-domain: copy + design + conversion
+      recs.push({ catId: 'copy', mod: GENIUS_CATEGORIES.copy.modules[0] }); // Ogilvy — headlines
+      recs.push({ catId: 'copy', mod: GENIUS_CATEGORIES.copy.modules[3] }); // Hormozi — offer structure
+      recs.push({ catId: 'design', mod: GENIUS_CATEGORIES.design.modules[2] }); // Awwwards — visual
+      recs.push({ catId: 'copy', mod: GENIUS_CATEGORIES.copy.modules[4] }); // Wiebe — conversion copy
+    } else if (/copy|ad|headline|sales|convert|persuade/i.test(t)) {
       recs.push({ catId: 'copy', mod: GENIUS_CATEGORIES.copy.modules[0] }); // Ogilvy
       recs.push({ catId: 'copy', mod: GENIUS_CATEGORIES.copy.modules[3] }); // Hormozi
     }
@@ -329,45 +438,60 @@ Begin.`;
 
       {/* UPGRADE MODAL */}
       {showUpgrade && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
           onClick={() => setShowUpgrade(false)}>
           <div onClick={(e) => e.stopPropagation()}
-            style={{ background: 'linear-gradient(135deg, #1a1a24, #12121a)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '20px', padding: '32px 40px', maxWidth: '440px', width: '100%', textAlign: 'center' }}>
-            
-            {/* Big visual: 3 → ∞ */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '24px', marginBottom: '16px' }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '42px', fontWeight: 700, color: 'rgba(255,255,255,0.4)' }}>3</div>
-                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', letterSpacing: '1px' }}>FREE</div>
+            style={{ background: '#161620', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '16px', maxWidth: '400px', width: '100%', overflow: 'hidden' }}>
+
+            {/* Header */}
+            <div style={{ padding: '24px 28px 0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'white' }}>Skillclone Pro</h3>
+                <button onClick={() => setShowUpgrade(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '18px', padding: '0 2px' }}>×</button>
               </div>
-              <div style={{ fontSize: '28px', color: 'rgba(139,92,246,0.5)' }}>→</div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '42px', fontWeight: 700, background: 'linear-gradient(135deg, #8b5cf6, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>∞</div>
-                <div style={{ fontSize: '11px', color: '#a78bfa', letterSpacing: '1px' }}>PRO</div>
-              </div>
+              <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>Unlimited geniuses. Unlimited power.</p>
             </div>
-            
-            <h3 style={{ margin: '0 0 24px 0', fontSize: '18px', fontWeight: 500, color: 'rgba(255,255,255,0.8)' }}>Unlock unlimited geniuses</h3>
-            
-            <div style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '12px', padding: '18px 24px', marginBottom: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <span style={{ fontSize: '15px', color: 'rgba(255,255,255,0.7)' }}>Monthly</span>
-                <span style={{ fontSize: '22px', fontWeight: 600 }}>$12<span style={{ fontSize: '14px', fontWeight: 400, color: 'rgba(255,255,255,0.5)' }}>/mo</span></span>
+
+            {/* Feature card */}
+            <div style={{ margin: '0 16px', padding: '20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px' }}>
+              {/* Price header */}
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', paddingBottom: '14px', marginBottom: '14px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                <span style={{ fontSize: '15px', fontWeight: 600, color: 'white' }}>Lifetime Access</span>
+                <div>
+                  <span style={{ fontSize: '28px', fontWeight: 800, color: 'white' }}>$49</span>
+                  <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.35)', marginLeft: '2px' }}>once</span>
+                </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '15px', color: 'rgba(255,255,255,0.7)' }}>Lifetime</span>
-                <span style={{ fontSize: '22px', fontWeight: 600 }}>$49 <span style={{ fontSize: '12px', fontWeight: 500, color: '#22c55e' }}>BEST</span></span>
-              </div>
+
+              {/* Features checklist */}
+              {[
+                'Unlimited genius selections',
+                'Fuse 10, 20, 50+ minds at once',
+                'Custom genius creation with AI',
+                'All future geniuses & categories',
+                'Priority prompt generation',
+                'Support indie development',
+              ].map((feature, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 0' }}>
+                  <span style={{ fontSize: '13px', color: '#8b5cf6' }}>&#10003;</span>
+                  <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.75)' }}>{feature}</span>
+                </div>
+              ))}
             </div>
-            
-            <div style={{ display: 'flex', gap: '12px' }}>
+
+            {/* CTA buttons */}
+            <div style={{ padding: '16px' }}>
+              <a href={`${STRIPE_LINKS.lifetime}?client_reference_id=web`}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', padding: '14px', fontSize: '15px', fontWeight: 700, background: 'linear-gradient(135deg, #7c3aed, #6366f1, #3b82f6)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', textDecoration: 'none', boxSizing: 'border-box', letterSpacing: '0.2px' }}>
+                Get Lifetime Access
+              </a>
+              <a href={`${STRIPE_LINKS.monthly}?client_reference_id=web`}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', padding: '12px', marginTop: '8px', fontSize: '13px', fontWeight: 600, background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', textDecoration: 'none', boxSizing: 'border-box' }}>
+                Or $12/month
+              </a>
               <button onClick={() => setShowUpgrade(false)}
-                style={{ flex: 1, padding: '14px 24px', fontSize: '15px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', color: 'white', cursor: 'pointer' }}>
-                Stay Free
-              </button>
-              <button onClick={() => { setIsPro(true); setShowUpgrade(false); sounds.select(); }}
-                style={{ flex: 1, padding: '14px 24px', fontSize: '15px', fontWeight: 600, background: 'linear-gradient(135deg, #8b5cf6, #ec4899)', border: 'none', borderRadius: '12px', color: 'white', cursor: 'pointer' }}>
-                Go Pro →
+                style={{ display: 'block', width: '100%', marginTop: '10px', padding: '8px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.25)', cursor: 'pointer', fontSize: '12px', textAlign: 'center' }}>
+                Stay on Free (3 geniuses)
               </button>
             </div>
           </div>
@@ -376,42 +500,44 @@ Begin.`;
 
       {/* LANDING */}
       {stage === 'landing' && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '20px' }}>
-          
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '40px 20px' }}>
+
           {/* BREATHING ORB WITH FLOATING GENIUS ICONS */}
-          <div style={{ width: '140px', height: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', marginBottom: '16px' }}>
+          <div style={{ width: '200px', height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', marginBottom: '24px' }}>
             {/* Floating genius icons */}
-            <div style={{ position: 'absolute', top: '-8px', left: '-20px', fontSize: '20px', animation: 'float1 3s ease-in-out infinite' }}>🎬</div>
-            <div style={{ position: 'absolute', top: '10px', right: '-25px', fontSize: '18px', animation: 'float2 3.5s ease-in-out infinite' }}>💎</div>
-            <div style={{ position: 'absolute', bottom: '5px', left: '-15px', fontSize: '16px', animation: 'float3 4s ease-in-out infinite' }}>✍️</div>
-            <div style={{ position: 'absolute', bottom: '-5px', right: '-15px', fontSize: '17px', animation: 'float1 3.2s ease-in-out infinite' }}>🎨</div>
-            
+            <div style={{ position: 'absolute', top: '-4px', left: '-28px', fontSize: '26px', animation: 'float1 3s ease-in-out infinite' }}>🎬</div>
+            <div style={{ position: 'absolute', top: '16px', right: '-32px', fontSize: '24px', animation: 'float2 3.5s ease-in-out infinite' }}>💎</div>
+            <div style={{ position: 'absolute', bottom: '10px', left: '-22px', fontSize: '22px', animation: 'float3 4s ease-in-out infinite' }}>✍️</div>
+            <div style={{ position: 'absolute', bottom: '-2px', right: '-20px', fontSize: '23px', animation: 'float1 3.2s ease-in-out infinite' }}>🎨</div>
+            <div style={{ position: 'absolute', top: '50%', left: '-40px', fontSize: '20px', animation: 'float2 3.8s ease-in-out infinite', transform: 'translateY(-50%)' }}>💻</div>
+            <div style={{ position: 'absolute', top: '-10px', right: '20px', fontSize: '20px', animation: 'float3 4.2s ease-in-out infinite' }}>📈</div>
+
             {/* Orb */}
-            <div style={{ position: 'absolute', width: '90px', height: '90px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(139,92,246,0.3) 0%, transparent 70%)', animation: 'breathe 3s ease-in-out infinite' }} />
-            <div style={{ position: 'absolute', width: '65px', height: '65px', borderRadius: '50%', background: 'radial-gradient(circle at 30% 30%, rgba(99,102,241,0.5), rgba(139,92,246,0.2) 50%, transparent 70%)' }} />
-            <div style={{ width: '45px', height: '45px', borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%, rgba(129,140,248,0.95), rgba(139,92,246,0.7) 40%, rgba(99,102,241,0.4) 70%)', boxShadow: '0 0 35px rgba(139,92,246,0.5), inset 0 0 15px rgba(255,255,255,0.15)' }} />
+            <div style={{ position: 'absolute', width: '130px', height: '130px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(139,92,246,0.3) 0%, transparent 70%)', animation: 'breathe 3s ease-in-out infinite' }} />
+            <div style={{ position: 'absolute', width: '90px', height: '90px', borderRadius: '50%', background: 'radial-gradient(circle at 30% 30%, rgba(99,102,241,0.5), rgba(139,92,246,0.2) 50%, transparent 70%)' }} />
+            <div style={{ width: '65px', height: '65px', borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%, rgba(129,140,248,0.95), rgba(139,92,246,0.7) 40%, rgba(99,102,241,0.4) 70%)', boxShadow: '0 0 50px rgba(139,92,246,0.5), inset 0 0 20px rgba(255,255,255,0.15)' }} />
           </div>
-          
-          <h1 style={{ fontSize: '42px', fontWeight: 300, margin: 0 }}>
+
+          <h1 style={{ fontSize: isMobile ? '48px' : '64px', fontWeight: 300, margin: 0, letterSpacing: '-1px' }}>
             <span style={{ color: 'rgba(255,255,255,0.9)' }}>skill</span>
             <span style={{ background: 'linear-gradient(135deg, #60a5fa, #a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>clone</span>
           </h1>
-          
-          {/* Value prop - clearer */}
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '15px', marginTop: '8px', textAlign: 'center', maxWidth: '340px' }}>
+
+          {/* Value prop */}
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: isMobile ? '16px' : '18px', marginTop: '12px', textAlign: 'center', maxWidth: '460px', lineHeight: 1.5 }}>
             Fuse legendary minds into one AI prompt.<br/>
-            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '13px' }}>Jobs. Spielberg. Ogilvy. Miyamoto. 50+ masters.</span>
+            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: isMobile ? '14px' : '15px' }}>Jobs. Spielberg. Ogilvy. Miyamoto. 50+ masters.</span>
           </p>
-          
+
           {/* Input */}
-          <div style={{ width: '100%', maxWidth: '440px', marginTop: '28px' }}>
+          <div style={{ width: '100%', maxWidth: '520px', marginTop: '36px' }}>
             <input type="text" value={userIntent} onChange={(e) => setUserIntent(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && userIntent.trim() && (sounds.click(), setStage('building'))}
               placeholder="What do you want to create?"
-              style={{ width: '100%', padding: '16px 20px', fontSize: '15px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: 'white', outline: 'none', boxSizing: 'border-box' }} />
-            
-            {/* Category quick-picks - SPECIFIC exciting prompts */}
-            <div style={{ display: 'flex', gap: '6px', marginTop: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              style={{ width: '100%', padding: '18px 24px', fontSize: '17px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', color: 'white', outline: 'none', boxSizing: 'border-box' }} />
+
+            {/* Category quick-picks */}
+            <div style={{ display: 'flex', gap: '8px', marginTop: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
               {[
                 { icon: '🎬', label: 'Viral YouTube script' },
                 { icon: '✍️', label: 'Landing page that converts' },
@@ -421,24 +547,24 @@ Begin.`;
               ].map(cat => (
                 <button key={cat.label}
                   onClick={() => { setUserIntent(cat.label); sounds.hover(); }}
-                  style={{ padding: '6px 12px', fontSize: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  style={{ padding: '8px 16px', fontSize: '13px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', transition: 'border-color 0.15s' }}>
                   <span>{cat.icon}</span>
                   <span>{cat.label}</span>
                 </button>
               ))}
             </div>
           </div>
-          
+
           {userIntent.trim() && (
             <button onClick={() => { sounds.click(); setStage('building'); }}
-              style={{ marginTop: '20px', padding: '12px 32px', fontSize: '14px', fontWeight: 500, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', border: 'none', borderRadius: '50px', color: 'white', cursor: 'pointer' }}>
+              style={{ marginTop: '28px', padding: '14px 40px', fontSize: '16px', fontWeight: 500, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', border: 'none', borderRadius: '50px', color: 'white', cursor: 'pointer', letterSpacing: '0.3px' }}>
               Choose Your Geniuses →
             </button>
           )}
-          
-          {/* Social proof / How it works hint */}
+
+          {/* How it works */}
           {!userIntent && (
-            <p style={{ marginTop: '40px', fontSize: '12px', color: 'rgba(255,255,255,0.25)', textAlign: 'center' }}>
+            <p style={{ marginTop: '48px', fontSize: '13px', color: 'rgba(255,255,255,0.25)', textAlign: 'center', letterSpacing: '0.5px' }}>
               Pick geniuses → Fuse them → Get a superhuman prompt
             </p>
           )}
@@ -449,17 +575,30 @@ Begin.`;
       {stage === 'building' && (
         <div style={{ display: 'flex', minHeight: '100vh' }}>
           {/* MAIN */}
-          <div style={{ flex: 1, padding: '16px', paddingRight: moduleCount > 0 ? '300px' : '16px', transition: 'padding 0.2s' }}>
-            {/* Mission */}
-            <div style={{ marginBottom: '16px' }}>
-              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '1px' }}>Mission: </span>
-              <span style={{ fontSize: '15px', color: 'rgba(255,255,255,0.8)' }}>"{userIntent}"</span>
+          <div style={{ flex: 1, padding: isMobile ? '12px' : '18px 22px', paddingRight: (!isMobile && moduleCount > 0) ? '300px' : (isMobile ? '12px' : '22px'), paddingBottom: (isMobile && moduleCount > 0) ? '80px' : '18px', transition: 'padding 0.2s' }}>
+            {/* Header: Mission + Search */}
+            <div style={{ marginBottom: isMobile ? '14px' : '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+                <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+                  <div style={{ fontSize: '10px', fontWeight: 800, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '4px', marginBottom: '4px' }}>MISSION</div>
+                  <h1 style={{ margin: 0, fontSize: isMobile ? '24px' : '36px', fontWeight: 900, color: 'white', lineHeight: 1.05, letterSpacing: '-0.03em', textTransform: 'uppercase' }}>
+                    {userIntent}
+                  </h1>
+                  <div style={{ marginTop: '8px', height: '3px', width: isMobile ? '40px' : '60px', background: 'linear-gradient(90deg, #8b5cf6, #ec4899)', borderRadius: '2px' }} />
+                </div>
+                <div style={{ position: 'relative', flex: '0 0 auto', width: isMobile ? '100%' : '220px', marginTop: isMobile ? '8px' : '12px' }}>
+                  <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search geniuses..."
+                    style={{ width: '100%', padding: '8px 12px 8px 32px', fontSize: '13px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: 'white', outline: 'none', boxSizing: 'border-box' }} />
+                  <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: 'rgba(255,255,255,0.25)', pointerEvents: 'none' }}>⌕</span>
+                </div>
+              </div>
             </div>
 
-            {/* Recommendations */}
-            {getRecommendations().length > 0 && (
-              <div style={{ marginBottom: '20px', padding: '14px', background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(236,72,153,0.04))', border: '1px solid rgba(139,92,246,0.15)', borderRadius: '10px' }}>
-                <p style={{ margin: '0 0 10px 0', fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>✨ RECOMMENDED FOR YOU</p>
+            {/* Recommendations — hide when searching */}
+            {!searchQuery && getRecommendations().length > 0 && (
+              <div style={{ marginBottom: '14px', padding: '10px 14px', background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(236,72,153,0.04))', border: '1px solid rgba(139,92,246,0.15)', borderRadius: '10px' }}>
+                <p style={{ margin: '0 0 8px 0', fontSize: '10px', fontWeight: 600, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.5px' }}>RECOMMENDED FOR YOU</p>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                   {getRecommendations().map(({ catId, mod }) => {
                     const sel = isSelected(catId, mod.id);
@@ -477,39 +616,168 @@ Begin.`;
               </div>
             )}
 
-            {/* Categories */}
-            {Object.values(GENIUS_CATEGORIES).map(cat => {
-              const catSelected = selectedModules[cat.id] || [];
+            {/* Custom Geniuses — show at top if any exist */}
+            {(customModules.length > 0 || showCustomForm) && (
+              <div style={{ marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '14px' }}>⭐</span>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#fbbf24' }}>Your Creations</span>
+                  {(selectedModules.custom || []).length > 0 && <span style={{ fontSize: '10px', padding: '2px 6px', background: '#fbbf2420', borderRadius: '8px', color: '#fbbf24' }}>{(selectedModules.custom || []).length}</span>}
+                </div>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', overflowX: isMobile ? 'auto' : 'visible', WebkitOverflowScrolling: isMobile ? 'touch' : undefined }}>
+                  {customModules
+                    .filter(mod => !searchQuery || mod.name.toLowerCase().includes(searchQuery.toLowerCase()) || mod.specs.toLowerCase().includes(searchQuery.toLowerCase()))
+                    .map(mod => {
+                    const sel = isSelected('custom', mod.id);
+                    return (
+                      <div key={mod.id} onClick={() => toggleModule('custom', mod)} onMouseEnter={() => !isMobile && sounds.hover()}
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: sel ? '#fbbf2418' : 'rgba(255,255,255,0.04)', border: sel ? '1px solid #fbbf24' : '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', cursor: 'pointer', transition: 'border-color 0.15s, background 0.15s', flexShrink: 0 }}>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: sel ? 'white' : 'rgba(255,255,255,0.7)' }}>{mod.name}</span>
+                        <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>{mod.specs}</span>
+                        {sel && <span style={{ fontSize: '10px', color: '#fbbf24' }}>✓</span>}
+                        <button onClick={(e) => { e.stopPropagation(); removeCustomModule(mod.id); }}
+                          style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.2)', cursor: 'pointer', fontSize: '12px', padding: '0 2px', lineHeight: 1, marginLeft: '2px' }}
+                          title="Remove">×</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Categories — columnar grid layout */}
+            {(() => {
+              const q = searchQuery.toLowerCase();
+              const visibleCategories = Object.values(GENIUS_CATEGORIES)
+                .map(cat => ({
+                  ...cat,
+                  filteredMods: q
+                    ? cat.modules.filter(m => m.name.toLowerCase().includes(q) || m.specs.toLowerCase().includes(q))
+                    : cat.modules,
+                  catSelected: selectedModules[cat.id] || [],
+                }))
+                .filter(cat => cat.filteredMods.length > 0);
+
               return (
-                <div key={cat.id} style={{ marginBottom: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '14px' }}>{cat.icon}</span>
-                    <span style={{ fontSize: '13px', fontWeight: 600, color: cat.color }}>{cat.name}</span>
-                    {catSelected.length > 0 && <span style={{ fontSize: '10px', padding: '2px 6px', background: `${cat.color}20`, borderRadius: '8px', color: cat.color }}>{catSelected.length}</span>}
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '6px' }}>
-                    {cat.modules.map(mod => {
-                      const sel = isSelected(cat.id, mod.id);
-                      return (
-                        <div key={mod.id} onClick={() => toggleModule(cat.id, mod)} onMouseEnter={() => sounds.hover()}
-                          style={{ minWidth: '150px', maxWidth: '150px', padding: '10px', background: sel ? `${cat.color}12` : 'rgba(255,255,255,0.02)', border: sel ? `2px solid ${cat.color}` : '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', cursor: 'pointer', flexShrink: 0 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                            <span style={{ fontSize: '12px', fontWeight: 600, color: sel ? 'white' : 'rgba(255,255,255,0.8)' }}>{mod.name}</span>
-                            {sel && <span style={{ fontSize: '12px', color: cat.color }}>✓</span>}
-                          </div>
-                          <p style={{ margin: 0, fontSize: '9px', color: 'rgba(255,255,255,0.35)', lineHeight: 1.3 }}>{mod.specs}</p>
-                          <div style={{ marginTop: '6px', fontSize: '10px', color: sel ? cat.color : 'rgba(255,255,255,0.25)' }}>⚡{mod.power}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: screenSize === 'mobile' ? 'repeat(2, 1fr)'
+                    : screenSize === 'tablet' ? 'repeat(3, 1fr)'
+                    : 'repeat(5, 1fr)',
+                  gap: screenSize === 'mobile' ? '10px 8px' : '14px 12px',
+                  alignItems: 'start',
+                }}>
+                  {visibleCategories.map(cat => (
+                    <div key={cat.id}>
+                      {/* Column header */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', paddingBottom: '6px', marginBottom: '2px', borderBottom: `2px solid ${cat.color}30` }}>
+                        <span style={{ fontSize: '14px' }}>{cat.icon}</span>
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: cat.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{cat.name}</span>
+                        {cat.catSelected.length > 0 && <span style={{ fontSize: '9px', padding: '1px 5px', background: `${cat.color}20`, borderRadius: '8px', color: cat.color, flexShrink: 0 }}>{cat.catSelected.length}</span>}
+                      </div>
+                      {/* Vertical list of items */}
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        {cat.filteredMods.map(mod => {
+                          const sel = isSelected(cat.id, mod.id);
+                          return (
+                            <div key={mod.id} className="genius-item" onClick={() => toggleModule(cat.id, mod)} onMouseEnter={() => !isMobile && sounds.hover()}
+                              style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                padding: '4px 6px', minHeight: '32px', cursor: 'pointer',
+                                borderLeft: sel ? `3px solid ${cat.color}` : '3px solid transparent',
+                                background: sel ? `${cat.color}10` : 'transparent',
+                                transition: 'background 0.12s, border-color 0.12s',
+                                borderRadius: '2px',
+                              }}>
+                              <div style={{ minWidth: 0, flex: 1 }}>
+                                <div style={{ fontSize: '12px', fontWeight: 600, color: sel ? 'white' : 'rgba(255,255,255,0.8)', lineHeight: 1.3 }}>{mod.name}</div>
+                                <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{mod.specs}</div>
+                              </div>
+                              <div style={{ flexShrink: 0, marginLeft: '4px', fontSize: '11px', color: sel ? cat.color : 'rgba(255,255,255,0.2)' }}>
+                                {sel ? '✓' : `⚡${mod.power}`}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               );
-            })}
+            })()}
+
+            {/* Create Custom Genius */}
+            {!showCustomForm ? (
+              <button onClick={() => { setShowCustomForm(true); sounds.click(); }}
+                className="genius-item"
+                style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 18px', background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(236,72,153,0.06))', border: '1px dashed rgba(139,92,246,0.35)', borderRadius: '10px', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '13px', fontWeight: 600, width: '100%', marginTop: '16px', marginBottom: '24px', transition: 'border-color 0.15s, background 0.15s' }}>
+                <span style={{ fontSize: '16px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #8b5cf6, #ec4899)', borderRadius: '8px', color: 'white', flexShrink: 0 }}>+</span>
+                <span>Create your own genius <span style={{ color: 'rgba(255,255,255,0.35)', fontWeight: 400 }}>— anyone, any expertise</span></span>
+              </button>
+            ) : (
+              <div style={{ maxWidth: '420px', marginTop: '16px', marginBottom: '20px', padding: '14px', background: 'rgba(251,191,36,0.04)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                  <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, color: '#fbbf24' }}>Create Custom Genius</p>
+                  <button onClick={() => { setShowCustomForm(false); setCustomDraft({ name: '', specs: '', prompt: '' }); setLoreError(''); }}
+                    style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '14px', padding: '0 2px' }}>×</button>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <input type="text" value={customDraft.name} onChange={(e) => setCustomDraft(d => ({ ...d, name: e.target.value }))}
+                      onKeyDown={(e) => e.key === 'Enter' && customDraft.name.trim() && generateLore()}
+                      placeholder="Name — e.g. Marie Curie"
+                      autoFocus
+                      style={{ flex: 1, padding: '8px 10px', fontSize: '12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'white', outline: 'none', boxSizing: 'border-box' }} />
+                    <button onClick={generateLore}
+                      disabled={!customDraft.name.trim() || isGeneratingLore}
+                      style={{ padding: '8px 12px', fontSize: '11px', fontWeight: 700, background: customDraft.name.trim() && !isGeneratingLore ? 'linear-gradient(135deg, #8b5cf6, #6366f1)' : 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '6px', color: customDraft.name.trim() && !isGeneratingLore ? 'white' : 'rgba(255,255,255,0.2)', cursor: customDraft.name.trim() && !isGeneratingLore ? 'pointer' : 'default', whiteSpace: 'nowrap', flexShrink: 0, letterSpacing: '0.3px' }}>
+                      {isGeneratingLore ? '...' : 'AI Generate'}
+                    </button>
+                  </div>
+                  {isGeneratingLore && (
+                    <div style={{ height: '2px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', background: 'linear-gradient(90deg, #8b5cf6, #ec4899, #8b5cf6)', backgroundSize: '200% 100%', animation: 'loading 1.5s ease-in-out infinite alternate', borderRadius: '2px' }} />
+                    </div>
+                  )}
+                  {loreError && (
+                    <p style={{ margin: 0, fontSize: '11px', color: '#ef4444', lineHeight: 1.3 }}>{loreError}</p>
+                  )}
+                  <input type="text" value={customDraft.specs} onChange={(e) => setCustomDraft(d => ({ ...d, specs: e.target.value }))}
+                    placeholder={isGeneratingLore ? 'Generating...' : 'Specialty — Radioactivity, Leadership...'}
+                    style={{ width: '100%', padding: '8px 10px', fontSize: '12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'white', outline: 'none', boxSizing: 'border-box' }} />
+                  <textarea value={customDraft.prompt} onChange={(e) => setCustomDraft(d => ({ ...d, prompt: e.target.value }))}
+                    placeholder={isGeneratingLore ? 'Generating lore...' : 'Lore (optional) — or hit AI Generate'}
+                    rows={2}
+                    style={{ width: '100%', padding: '8px 10px', fontSize: '12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'white', outline: 'none', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit' }} />
+                  <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                    <button onClick={() => { setShowCustomForm(false); setCustomDraft({ name: '', specs: '', prompt: '' }); setLoreError(''); }}
+                      style={{ padding: '6px 12px', fontSize: '12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
+                      Cancel
+                    </button>
+                    <button onClick={addCustomModule}
+                      disabled={!customDraft.name.trim() || isGeneratingLore}
+                      style={{ padding: '6px 14px', fontSize: '12px', fontWeight: 700, background: customDraft.name.trim() && !isGeneratingLore ? 'linear-gradient(135deg, #fbbf24, #f59e0b)' : 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '6px', color: customDraft.name.trim() && !isGeneratingLore ? 'black' : 'rgba(255,255,255,0.2)', cursor: customDraft.name.trim() && !isGeneratingLore ? 'pointer' : 'default' }}>
+                      Add Genius
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* No results message */}
+            {searchQuery && Object.values(GENIUS_CATEGORIES).every(cat => cat.modules.every(m => !m.name.toLowerCase().includes(searchQuery.toLowerCase()) && !m.specs.toLowerCase().includes(searchQuery.toLowerCase()))) && (
+              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', margin: '0 0 12px 0' }}>No geniuses match "{searchQuery}"</p>
+                <button onClick={() => { setShowCustomForm(true); setCustomDraft(d => ({ ...d, name: searchQuery })); setSearchQuery(''); }}
+                  style={{ padding: '10px 20px', fontSize: '13px', fontWeight: 500, background: 'linear-gradient(135deg, #fbbf24, #f59e0b)', border: 'none', borderRadius: '8px', color: 'black', cursor: 'pointer' }}>
+                  + Create "{searchQuery}" as a custom genius
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* STICKY CART */}
-          {moduleCount > 0 && (
+          {/* DESKTOP STICKY CART */}
+          {!isMobile && moduleCount > 0 && (
             <div style={{ position: 'fixed', right: 0, top: 0, bottom: 0, width: '280px', background: '#0f0f13', borderLeft: '1px solid rgba(255,255,255,0.08)', padding: '16px', display: 'flex', flexDirection: 'column', zIndex: 100 }}>
               <div style={{ marginBottom: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -519,7 +787,6 @@ Begin.`;
                 <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>
                   {isPro ? `${moduleCount} geniuses` : `${moduleCount}/${FREE_LIMIT} geniuses`} • ⚡{totalPower}
                 </p>
-                {/* Progress bar - only show for free users */}
                 {!isPro && (
                   <div style={{ marginTop: '8px', height: '3px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${(moduleCount / FREE_LIMIT) * 100}%`, background: moduleCount >= FREE_LIMIT ? '#ef4444' : 'linear-gradient(90deg, #8b5cf6, #ec4899)', transition: 'width 0.3s' }} />
@@ -540,15 +807,14 @@ Begin.`;
                   ));
                 })}
               </div>
-              
-              {/* Upgrade prompt if at limit and not pro */}
+
               {!isPro && moduleCount >= FREE_LIMIT && (
                 <button onClick={() => setShowUpgrade(true)}
                   style={{ marginBottom: '10px', padding: '10px', fontSize: '12px', background: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(236,72,153,0.1))', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '8px', color: 'white', cursor: 'pointer', textAlign: 'center' }}>
                   ⚡ Upgrade for more geniuses
                 </button>
               )}
-              
+
               <button onClick={generatePrompt}
                 style={{ marginTop: 'auto', padding: '14px', fontSize: '14px', fontWeight: 600, background: 'linear-gradient(135deg, #8b5cf6, #ec4899)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', width: '100%' }}>
                 🧬 Fuse {moduleCount} Geniuses
@@ -559,9 +825,58 @@ Begin.`;
             </div>
           )}
 
+          {/* MOBILE BOTTOM BAR */}
+          {isMobile && moduleCount > 0 && (
+            <>
+              {/* Expanded cart drawer */}
+              {mobileCartOpen && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.7)' }} onClick={() => setMobileCartOpen(false)}>
+                  <div onClick={(e) => e.stopPropagation()}
+                    style={{ position: 'absolute', bottom: 0, left: 0, right: 0, maxHeight: '60vh', background: '#0f0f13', borderTop: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px 16px 0 0', padding: '20px 16px 100px', overflowY: 'auto' }}>
+                    <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.15)', borderRadius: '2px', margin: '0 auto 16px' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                      <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600 }}>Your Squad</h3>
+                      <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>⚡{totalPower}</span>
+                    </div>
+                    {Object.entries(selectedModules).map(([catId, mods]) => {
+                      const cat = GENIUS_CATEGORIES[catId];
+                      return mods.map(mod => (
+                        <div key={mod.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', marginBottom: '6px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', borderLeft: `2px solid ${cat.color}` }}>
+                          <span style={{ fontSize: '16px' }}>{cat.icon}</span>
+                          <div style={{ flex: 1 }}>
+                            <p style={{ margin: 0, fontSize: '13px', fontWeight: 500 }}>{mod.name}</p>
+                            <p style={{ margin: 0, fontSize: '10px', color: 'rgba(255,255,255,0.35)' }}>{mod.specs}</p>
+                          </div>
+                          <button onClick={() => toggleModule(catId, mod)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '18px', padding: '4px' }}>×</button>
+                        </div>
+                      ));
+                    })}
+                    {!isPro && moduleCount >= FREE_LIMIT && (
+                      <button onClick={() => { setMobileCartOpen(false); setShowUpgrade(true); }}
+                        style={{ width: '100%', marginTop: '10px', padding: '12px', fontSize: '13px', background: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(236,72,153,0.1))', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '10px', color: 'white', cursor: 'pointer' }}>
+                        ⚡ Upgrade for more geniuses
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+              {/* Sticky bottom bar */}
+              <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 150, background: '#0f0f13', borderTop: '1px solid rgba(255,255,255,0.1)', padding: '10px 16px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <button onClick={() => setMobileCartOpen(!mobileCartOpen)}
+                  style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                  {moduleCount} {isPro ? '' : `/ ${FREE_LIMIT}`} ⚡{totalPower}
+                </button>
+                <button onClick={generatePrompt}
+                  style={{ flex: 1, padding: '12px', fontSize: '14px', fontWeight: 600, background: 'linear-gradient(135deg, #8b5cf6, #ec4899)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer' }}>
+                  🧬 Fuse {moduleCount} Geniuses
+                </button>
+              </div>
+            </>
+          )}
+
           {moduleCount === 0 && (
             <div style={{ position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', padding: '10px 20px', background: 'rgba(0,0,0,0.8)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50px', fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>
-              👆 Select geniuses to build your clone
+              Select geniuses to build your clone
             </div>
           )}
         </div>
@@ -601,6 +916,7 @@ Begin.`;
         ::-webkit-scrollbar { height: 5px; width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+        .genius-item:hover { background: rgba(255,255,255,0.04) !important; }
       `}</style>
     </div>
   );
