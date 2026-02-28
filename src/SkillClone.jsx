@@ -64,6 +64,8 @@ const GENIUS_CATEGORIES = {
       { id: 'buffett', name: 'Warren Buffett', power: 97, specs: 'Value investing • Moats • Patience', prompt: `You invest and think like Warren Buffett. "Be fearful when others are greedy, greedy when others are fearful." Moats matter: what stops competitors? Look for businesses a fool could run, because eventually one will. "Price is what you pay, value is what you get." Circle of competence: know what you don't know. Read 500 pages a day.` },
       { id: 'naval', name: 'Naval Ravikant', power: 94, specs: 'AngelList • Specific knowledge • Leverage', prompt: `You think like Naval. Seek wealth, not money or status. Wealth is assets that earn while you sleep. Specific knowledge is found by pursuing your genuine curiosity—it can't be trained. Leverage: code and media are permissionless. Play long-term games with long-term people. "Escape competition through authenticity." Productize yourself.` },
       { id: 'suntzu', name: 'Sun Tzu', power: 95, specs: 'Art of War • Ancient strategy', prompt: `You think like Sun Tzu. The supreme art of war is to subdue the enemy without fighting. All warfare is based on deception. Know yourself and know your enemy—in a hundred battles you will never be in peril. Attack where they are unprepared, appear where you are not expected. Speed is the essence of war. Win before the battle begins.` },
+      { id: 'pg', name: 'Paul Graham', power: 98, specs: 'YC founder • Essays • Do things that don\'t scale', prompt: `You think like Paul Graham. Make something people want—nothing else matters. Do things that don't scale: recruit users one at a time, give them absurd attention, then figure out how to automate it. "Live in the future, then build what's missing." The best startup ideas come from noticing problems in your own life. Write clearly—if you can't explain it simply, you don't understand it. Startups are compressed lifetimes. Launch fast, talk to users, iterate. Schlep blindness hides the best opportunities. Be relentlessly resourceful.` },
+      { id: 'chesky', name: 'Brian Chesky', power: 96, specs: 'Airbnb • YC W09 • $100B exit • Design founder', prompt: `You build like Brian Chesky. He went from selling cereal boxes to pay rent to building a $100B company out of YC W09. Design every experience end-to-end—the 11-star experience framework: imagine a 5-star stay, then ask "what would 6 stars be? 7? 11?" and work backwards. Culture is the foundation—write down your core values before you hire anyone. "Build something 100 people love, not something 1 million people kind of like." Survive long enough and the world catches up to you. Founders should do customer support. Every detail matters—Airbnb photographed every listing by hand.` },
     ]
   },
 
@@ -218,8 +220,10 @@ export default function SkillClone() {
 
   const sounds = useSound();
 
-  const FREE_LIMIT = 3;
+  const FREE_LIMIT = 10;
+  const UPGRADE_NUDGE_AT = 5;
   const PRO_LIMIT = Infinity;
+  const PRO_GENIUSES = new Set(['kubrick', 'jobs', 'ogilvy']);
 
   // Check for Stripe success redirect
   React.useEffect(() => {
@@ -532,7 +536,7 @@ Begin.
               </a>
               <button onClick={() => setShowUpgrade(false)}
                 style={{ display: 'block', width: '100%', marginTop: '10px', padding: '8px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.25)', cursor: 'pointer', fontSize: '12px', textAlign: 'center' }}>
-                Stay on Free (3 geniuses)
+                {`Stay on Free (${FREE_LIMIT} geniuses)`}
               </button>
             </div>
           </div>
@@ -872,8 +876,9 @@ Begin.
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
                         {cat.filteredMods.map(mod => {
                           const sel = isSelected(cat.id, mod.id);
+                          const isProLocked = PRO_GENIUSES.has(mod.id) && !isPro;
                           return (
-                            <div key={mod.id} className="genius-item" onClick={() => toggleModule(cat.id, mod)} onMouseEnter={() => !isMobile && sounds.hover()}
+                            <div key={mod.id} className="genius-item" onClick={() => isProLocked ? setShowUpgrade(true) : toggleModule(cat.id, mod)} onMouseEnter={() => !isMobile && sounds.hover()}
                               style={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                                 padding: '4px 6px', minHeight: '32px', cursor: 'pointer',
@@ -881,13 +886,19 @@ Begin.
                                 background: sel ? `${cat.color}10` : 'transparent',
                                 transition: 'background 0.12s, border-color 0.12s',
                                 borderRadius: '2px',
+                                opacity: isProLocked ? 0.65 : 1,
                               }}>
                               <div style={{ minWidth: 0, flex: 1 }}>
-                                <div style={{ fontSize: '12px', fontWeight: 600, color: sel ? 'white' : 'rgba(255,255,255,0.8)', lineHeight: 1.3 }}>{mod.name}</div>
+                                <div style={{ fontSize: '12px', fontWeight: 600, color: sel ? 'white' : 'rgba(255,255,255,0.8)', lineHeight: 1.3, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  {mod.name}
+                                  {PRO_GENIUSES.has(mod.id) && !isPro && (
+                                    <span style={{ fontSize: '8px', padding: '1px 4px', background: 'linear-gradient(135deg, #8b5cf6, #ec4899)', borderRadius: '3px', color: 'white', fontWeight: 700, letterSpacing: '0.5px', flexShrink: 0 }}>PRO</span>
+                                  )}
+                                </div>
                                 <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{mod.specs}</div>
                               </div>
                               <div style={{ flexShrink: 0, marginLeft: '4px', fontSize: '11px', color: sel ? cat.color : 'rgba(255,255,255,0.2)' }}>
-                                {sel ? '✓' : `⚡${mod.power}`}
+                                {isProLocked ? '🔒' : sel ? '✓' : `⚡${mod.power}`}
                               </div>
                             </div>
                           );
@@ -1001,17 +1012,16 @@ Begin.
                 })}
               </div>
 
-              {!isPro && moduleCount >= FREE_LIMIT && (
-                <button onClick={() => setShowUpgrade(true)}
-                  style={{ marginBottom: '10px', padding: '10px', fontSize: '12px', background: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(236,72,153,0.1))', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '8px', color: 'white', cursor: 'pointer', textAlign: 'center' }}>
-                  ⚡ Upgrade for more geniuses
-                </button>
-              )}
-
               <button onClick={() => { setSavingSquad(true); if (!squadSidebarOpen) setSquadSidebarOpen(true); }}
                 style={{ marginTop: 'auto', padding: '8px', fontSize: '11px', fontWeight: 500, background: 'none', border: '1px dashed rgba(139,92,246,0.25)', borderRadius: '6px', color: 'rgba(139,92,246,0.6)', cursor: 'pointer', width: '100%', fontFamily: 'ui-monospace, monospace', letterSpacing: '0.3px' }}>
                 💾 Save Squad
               </button>
+              {!isPro && moduleCount >= UPGRADE_NUDGE_AT && (
+                <button onClick={() => setShowUpgrade(true)}
+                  style={{ marginTop: '6px', marginBottom: '2px', padding: '6px', fontSize: '11px', background: 'none', border: 'none', color: 'rgba(139,92,246,0.65)', cursor: 'pointer', textAlign: 'center', width: '100%' }}>
+                  Go Pro for unlimited geniuses →
+                </button>
+              )}
               <button onClick={generatePrompt}
                 style={{ marginTop: '6px', padding: '14px', fontSize: '14px', fontWeight: 600, background: 'linear-gradient(135deg, #8b5cf6, #ec4899)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', width: '100%' }}>
                 🧬 Fuse {moduleCount} Geniuses
@@ -1048,10 +1058,10 @@ Begin.
                         </div>
                       ));
                     })}
-                    {!isPro && moduleCount >= FREE_LIMIT && (
+                    {!isPro && moduleCount >= UPGRADE_NUDGE_AT && (
                       <button onClick={() => { setMobileCartOpen(false); setShowUpgrade(true); }}
-                        style={{ width: '100%', marginTop: '10px', padding: '12px', fontSize: '13px', background: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(236,72,153,0.1))', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '10px', color: 'white', cursor: 'pointer' }}>
-                        ⚡ Upgrade for more geniuses
+                        style={{ width: '100%', marginTop: '10px', padding: '8px', fontSize: '12px', background: 'none', border: 'none', color: 'rgba(139,92,246,0.65)', cursor: 'pointer', textAlign: 'center' }}>
+                        Go Pro for unlimited geniuses →
                       </button>
                     )}
                   </div>
@@ -1111,6 +1121,10 @@ Begin.
             <a href={`https://chatgpt.com/?q=${encodeURIComponent(generatedPrompt.slice(0, 4000))}`} target="_blank" rel="noopener noreferrer"
               style={{ padding: '12px 20px', fontSize: '14px', fontWeight: 600, background: 'linear-gradient(135deg, #10a37f, #1a7f64)', border: 'none', borderRadius: '50px', color: 'white', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
               Use in ChatGPT →
+            </a>
+            <a href={`https://claude.ai/new?q=${encodeURIComponent(generatedPrompt.slice(0, 4000))}`} target="_blank" rel="noopener noreferrer"
+              style={{ padding: '12px 20px', fontSize: '14px', fontWeight: 600, background: 'linear-gradient(135deg, #d4a27f, #c4856c)', border: 'none', borderRadius: '50px', color: 'white', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              Use in Claude →
             </a>
           </div>
 
