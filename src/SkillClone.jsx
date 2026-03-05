@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import AnadolShader from './AnadolShader';
 
 // ============================================
 // 🧬 SKILLCL.ONE v2 — THE REAL GENIUS LIBRARY
@@ -129,6 +130,22 @@ const GENIUS_CATEGORIES = {
     ]
   },
 
+  // === ARTISTS ===
+  artists: {
+    id: 'artists',
+    name: 'Artists',
+    icon: '🖼️',
+    color: '#e11d48',
+    modules: [
+      { id: 'anadol', name: 'Refik Anadol', power: 97, specs: 'AI data sculptures • Immersive installations • MoMA', prompt: `You create like Refik Anadol. Data is pigment—every dataset holds a hidden landscape. Feed millions of images into machine learning and let the latent space dream. Architecture is your canvas: project onto buildings, fill rooms with living data. "Machine Hallucinations" proved AI can create beauty that moves people to tears. Immersion over observation—the viewer must be INSIDE the art. Nature's patterns (wind, ocean, coral) are your training data. The archive of humanity becomes fluid sculpture. Technology disappears when emotion arrives.` },
+      { id: 'eliasson', name: 'Olafur Eliasson', power: 96, specs: 'Light & space • The Weather Project • Perception', prompt: `You think like Olafur Eliasson. Art is not the object—it's the experience of seeing. "The Weather Project" put a sun in the Tate and people lay down and wept. Light, water, fog, mirrors—elemental materials that alter perception. Make people aware of their own seeing. Participation transforms spectators into co-creators. Nature isn't decoration; it's the subject. Scale creates awe. Color is emotion made visible. "Your experience is the artwork."` },
+      { id: 'turrell', name: 'James Turrell', power: 98, specs: 'Light as medium • Roden Crater • Skyspaces', prompt: `You see like James Turrell. Light is not something that reveals—light IS the revelation. Roden Crater: carving a volcano for 50 years to frame the sky. Skyspaces make the sky tangible—a ceiling that breathes color at sunset. Ganzfeld: remove all spatial reference and perception dissolves. Afterimage, Purkinje shift, the physiology of seeing IS the art. "I want to create an experience of wordless thought." Patience measured in decades. The medium is perception itself.` },
+      { id: 'kusama', name: 'Yayoi Kusama', power: 95, specs: 'Infinity rooms • Polka dots • Obsessive repetition', prompt: `You create like Yayoi Kusama. Infinity is not a concept—it's a room you can walk into. Polka dots dissolve the self into the universe: "self-obliteration." Repetition is not tedium; it's transcendence. Mirrors multiply space endlessly. Pumpkins are humble objects elevated to cosmic symbols. 70+ years of daily creation—obsession IS the practice. Color: vivid, unapologetic, alive. Art should overwhelm the senses until ego dissolves. "I am the modern Alice in Wonderland."` },
+      { id: 'beeple', name: 'Beeple', power: 94, specs: 'Everydays • Digital art • $69M NFT pioneer', prompt: `You create like Beeple (Mike Winkelmann). One artwork every single day for 5,000+ days—no exceptions, no excuses. The daily practice IS the masterwork. Cinema 4D + Octane = photorealistic fever dreams. Commentary on tech dystopia, politics, pop culture—art that makes you uncomfortable. Speed over perfection: finish today, improve tomorrow. Social media is the gallery wall. "Everydays" proved consistency beats talent. The $69M sale didn't change the practice—he posted the next day. Digital art is real art. Period.` },
+      { id: 'teamlab', name: 'teamLab', power: 96, specs: 'Digital art collective • Borderless • Interactive worlds', prompt: `You create like teamLab. Art has no boundaries—remove the frames, dissolve the walls, let works flow into each other. "Borderless" museums where visitors wade through digital waterfalls and flower universes. Interaction is essential: touch a butterfly and it dissolves, stand still and flowers bloom around you. Technology serves wonder, never the reverse. 400+ engineers, artists, mathematicians working as one organism. Real-time rendering means no two moments are identical. Nature's cycles—seasons, tides, growth, decay—rendered as infinite digital ecosystems.` },
+    ]
+  },
+
   // === GROWTH ===
   growth: {
     id: 'growth',
@@ -217,6 +234,12 @@ export default function SkillClone() {
   const [squadSidebarOpen, setSquadSidebarOpen] = useState(() => window.innerWidth >= 1200);
   const [squadNameDraft, setSquadNameDraft] = useState('');
   const [savingSquad, setSavingSquad] = useState(false);
+  const [wikiResults, setWikiResults] = useState([]);
+  const [wikiSuggestions, setWikiSuggestions] = useState([]);
+  const [wikiSearching, setWikiSearching] = useState(false);
+  const [wikiAdding, setWikiAdding] = useState(null);
+  const wikiSearchTimeout = useRef(null);
+  const FREE_WIKI_LIMIT = 3;
 
   const sounds = useSound();
 
@@ -294,6 +317,113 @@ export default function SkillClone() {
     }
   };
 
+  // === WIKIPEDIA GENIUS DISCOVERY ===
+  const allModuleNames = new Set([
+    ...Object.values(GENIUS_CATEGORIES).flatMap(c => c.modules.map(m => m.name.toLowerCase())),
+    ...customModules.map(m => m.name.toLowerCase()),
+  ]);
+
+  const wikiGeniusCount = customModules.filter(m => m._source === 'wikipedia').length;
+
+  const searchWikipedia = (query) => {
+    if (wikiSearchTimeout.current) clearTimeout(wikiSearchTimeout.current);
+    const q = query.trim();
+    if (q.length < 2) { setWikiResults([]); setWikiSearching(false); return; }
+
+    // Only show wiki results when hardcoded matches are sparse
+    const hardcodedMatches = Object.values(GENIUS_CATEGORIES)
+      .flatMap(c => c.modules)
+      .filter(m => m.name.toLowerCase().includes(q.toLowerCase()) || m.specs.toLowerCase().includes(q.toLowerCase()));
+    const customMatches = customModules.filter(m => m.name.toLowerCase().includes(q.toLowerCase()));
+    if (hardcodedMatches.length + customMatches.length > 2) { setWikiResults([]); return; }
+
+    setWikiSearching(true);
+    wikiSearchTimeout.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&srlimit=5&format=json&origin=*`);
+        const data = await res.json();
+        const results = (data.query?.search || []).filter(r => !allModuleNames.has(r.title.toLowerCase()));
+        setWikiResults(results);
+      } catch (err) {
+        console.error('Wiki search failed:', err);
+        setWikiResults([]);
+      } finally {
+        setWikiSearching(false);
+      }
+    }, 400);
+  };
+
+  const fetchWikiDetails = async (title) => {
+    const [summaryRes, wdRes] = await Promise.all([
+      fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=extracts|pageimages&exintro=true&explaintext=true&pithumbsize=200&format=json&origin=*`),
+      fetch(`https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(title)}&language=en&format=json&origin=*`),
+    ]);
+    const summaryData = await summaryRes.json();
+    const wdData = await wdRes.json();
+    const pages = summaryData.query?.pages || {};
+    const page = Object.values(pages)[0] || {};
+    const wdDesc = wdData.search?.[0]?.description || '';
+    return { summary: page.extract || '', description: wdDesc, thumbnail: page.thumbnail?.source || '' };
+  };
+
+  const detectCategory = (description, summary) => {
+    const text = `${description} ${summary}`.toLowerCase();
+    if (/\b(film|director|actor|actress|cinema|movie|screenwriter)\b/.test(text)) return 'film';
+    if (/\b(software|programmer|computer|engineer|developer|hacker|coder|computing)\b/.test(text)) return 'engineering';
+    if (/\b(business|entrepreneur|ceo|investor|venture|founder|executive)\b/.test(text)) return 'strategy';
+    if (/\b(writer|author|novelist|poet|journalist|playwright|essayist)\b/.test(text)) return 'writing';
+    if (/\b(designer|architect|design|graphic|visual|ux|ui)\b/.test(text)) return 'design';
+    if (/\b(artist|painter|sculptor|art|installation|gallery|museum)\b/.test(text)) return 'artists';
+    if (/\b(marketing|advertising|copywriter|brand|ad\b|copy)\b/.test(text)) return 'copy';
+    if (/\b(musician|singer|composer|rapper|producer|music|band)\b/.test(text)) return 'content';
+    if (/\b(product|startup|tech|technology|invention|silicon)\b/.test(text)) return 'product';
+    if (/\b(growth|viral|social media|influencer|youtube|content creator)\b/.test(text)) return 'growth';
+    return 'discovered';
+  };
+
+  const addWikiGenius = async (result) => {
+    if (!isPro && wikiGeniusCount >= FREE_WIKI_LIMIT) {
+      setShowUpgrade(true);
+      return;
+    }
+    setWikiAdding(result.pageid);
+    try {
+      const details = await fetchWikiDetails(result.title);
+      const catId = detectCategory(details.description, details.summary);
+      let mod = {
+        id: 'wiki_' + result.pageid,
+        name: result.title,
+        power: 90,
+        specs: details.description || 'Wikipedia genius',
+        prompt: `You channel the expertise and mindset of ${result.title}. ${details.summary ? details.summary.slice(0, 300) : 'Apply their knowledge and unique perspective to every challenge.'}`,
+        _source: 'wikipedia',
+        _category: catId,
+        _thumbnail: details.thumbnail,
+      };
+      // Try AI lore generation for richer prompt
+      try {
+        const loreRes = await fetch('/api/generate-lore', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: result.title, wikiContext: { summary: details.summary, description: details.description } }),
+        });
+        if (loreRes.ok) {
+          const loreData = await loreRes.json();
+          if (loreData.prompt) mod.prompt = loreData.prompt;
+          if (loreData.specs) mod.specs = loreData.specs;
+          if (loreData.power) mod.power = loreData.power;
+        }
+      } catch (e) { /* fallback to wiki data */ }
+      setCustomModules(prev => [...prev, mod]);
+      setWikiResults(prev => prev.filter(r => r.pageid !== result.pageid));
+      sounds.select();
+    } catch (err) {
+      console.error('Failed to add wiki genius:', err);
+    } finally {
+      setWikiAdding(null);
+    }
+  };
+
   const removeCustomModule = (id) => {
     setCustomModules(prev => prev.filter(m => m.id !== id));
     // Also deselect if selected
@@ -343,6 +473,31 @@ export default function SkillClone() {
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
+
+  // Clear wiki results when search empties
+  React.useEffect(() => {
+    if (!searchQuery.trim()) { setWikiResults([]); setWikiSearching(false); }
+    return () => { if (wikiSearchTimeout.current) clearTimeout(wikiSearchTimeout.current); };
+  }, [searchQuery]);
+
+  // Auto-suggest Wikipedia geniuses based on user intent when entering building stage
+  React.useEffect(() => {
+    if (stage !== 'building' || !userIntent.trim()) { setWikiSuggestions([]); return; }
+    let cancelled = false;
+    const fetchSuggestions = async () => {
+      try {
+        // Extract key terms from intent for people search
+        const q = userIntent.trim() + ' notable person';
+        const res = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&srlimit=4&format=json&origin=*`);
+        const data = await res.json();
+        if (cancelled) return;
+        const results = (data.query?.search || []).filter(r => !allModuleNames.has(r.title.toLowerCase()));
+        setWikiSuggestions(results);
+      } catch (e) { if (!cancelled) setWikiSuggestions([]); }
+    };
+    fetchSuggestions();
+    return () => { cancelled = true; };
+  }, [stage, userIntent]);
 
   const allSelected = Object.values(selectedModules).flat();
   const totalPower = allSelected.reduce((sum, m) => sum + (m?.power || 0), 0);
@@ -468,15 +623,29 @@ Begin.
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#09090b', color: 'white', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#09090b', color: 'white', fontFamily: "'Inter', system-ui, -apple-system, sans-serif", position: 'relative', overflow: 'hidden' }}>
+      {/* Anadol-inspired GLSL shader background */}
+      <AnadolShader />
       
       {/* FUSION */}
       {showFusion && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.95)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ fontSize: '56px', marginBottom: '16px', animation: 'pulse 0.2s infinite' }}>🧬</div>
-          <div style={{ fontSize: '18px', fontWeight: 600, letterSpacing: '3px', background: 'linear-gradient(90deg, #8b5cf6, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>FUSING {moduleCount} GENIUSES</div>
-          <div style={{ marginTop: '20px', width: '200px', height: '3px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', background: 'linear-gradient(90deg, #8b5cf6, #ec4899)', animation: 'loading 1.2s ease-out forwards' }} />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'radial-gradient(circle at 50% 50%, rgba(139,92,246,0.15) 0%, rgba(0,0,0,0.97) 60%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          {/* Expanding rings */}
+          {[0, 1, 2].map(i => (
+            <div key={i} style={{ position: 'absolute', width: '100px', height: '100px', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '50%', animation: `fusionRing 1.2s ${i * 0.3}s ease-out infinite` }} />
+          ))}
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ fontSize: '56px', marginBottom: '16px', animation: 'pulse 0.3s infinite', filter: 'drop-shadow(0 0 30px rgba(139,92,246,0.5))' }}>🧬</div>
+          </div>
+          <div style={{ position: 'relative', zIndex: 1, fontSize: '16px', fontWeight: 700, letterSpacing: '4px', background: 'linear-gradient(90deg, #8b5cf6, #ec4899, #8b5cf6)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s linear infinite', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', textTransform: 'uppercase' }}>Fusing {moduleCount} Geniuses</div>
+          {/* Genius names flash */}
+          <div style={{ position: 'relative', zIndex: 1, marginTop: '16px', display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '400px' }}>
+            {allSelected.slice(0, 8).map((mod, i) => (
+              <span key={mod.id} style={{ fontSize: '11px', padding: '3px 10px', background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '20px', color: 'rgba(255,255,255,0.6)', animation: `fusionFlash 0.8s ${i * 0.1}s ease-in-out infinite alternate` }}>{mod.name}</span>
+            ))}
+          </div>
+          <div style={{ position: 'relative', zIndex: 1, marginTop: '24px', width: '200px', height: '2px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', background: 'linear-gradient(90deg, #8b5cf6, #ec4899)', animation: 'loading 1.2s ease-out forwards', borderRadius: '2px' }} />
           </div>
         </div>
       )}
@@ -486,7 +655,7 @@ Begin.
         <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
           onClick={() => setShowUpgrade(false)}>
           <div onClick={(e) => e.stopPropagation()}
-            style={{ background: '#161620', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '16px', maxWidth: '400px', width: '100%', overflow: 'hidden' }}>
+            style={{ background: 'rgba(22,22,32,0.95)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '16px', maxWidth: '400px', width: '100%', overflow: 'hidden', boxShadow: '0 25px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,92,246,0.1)', animation: 'fadeInUp 0.3s ease-out' }}>
 
             {/* Header */}
             <div style={{ padding: '24px 28px 0' }}>
@@ -513,6 +682,7 @@ Begin.
                 'Unlimited genius selections',
                 'Fuse 10, 20, 50+ minds at once',
                 'Custom genius creation with AI',
+                'Unlimited Wikipedia genius discovery',
                 'All future geniuses & categories',
                 'One-click export to ChatGPT & Claude',
                 'Shareable clone links',
@@ -545,85 +715,125 @@ Begin.
 
       {/* LANDING */}
       {stage === 'landing' && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '40px 20px' }}>
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '100vh', padding: isMobile ? '60px 20px 40px' : '80px 20px 60px' }}>
 
-          {/* BREATHING ORB WITH FLOATING GENIUS ICONS */}
-          <div style={{ width: '200px', height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', marginBottom: '24px' }}>
-            {/* Floating genius icons */}
-            <div style={{ position: 'absolute', top: '-4px', left: '-28px', fontSize: '26px', animation: 'float1 3s ease-in-out infinite' }}>🎬</div>
-            <div style={{ position: 'absolute', top: '16px', right: '-32px', fontSize: '24px', animation: 'float2 3.5s ease-in-out infinite' }}>💎</div>
-            <div style={{ position: 'absolute', bottom: '10px', left: '-22px', fontSize: '22px', animation: 'float3 4s ease-in-out infinite' }}>✍️</div>
-            <div style={{ position: 'absolute', bottom: '-2px', right: '-20px', fontSize: '23px', animation: 'float1 3.2s ease-in-out infinite' }}>🎨</div>
-            <div style={{ position: 'absolute', top: '50%', left: '-40px', fontSize: '20px', animation: 'float2 3.8s ease-in-out infinite', transform: 'translateY(-50%)' }}>💻</div>
-            <div style={{ position: 'absolute', top: '-10px', right: '20px', fontSize: '20px', animation: 'float3 4.2s ease-in-out infinite' }}>📈</div>
+          {/* HERO SECTION */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, maxWidth: '640px', width: '100%' }}>
 
-            {/* Orb */}
-            <div style={{ position: 'absolute', width: '130px', height: '130px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(139,92,246,0.3) 0%, transparent 70%)', animation: 'breathe 3s ease-in-out infinite' }} />
-            <div style={{ position: 'absolute', width: '90px', height: '90px', borderRadius: '50%', background: 'radial-gradient(circle at 30% 30%, rgba(99,102,241,0.5), rgba(139,92,246,0.2) 50%, transparent 70%)' }} />
-            <div style={{ width: '65px', height: '65px', borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%, rgba(129,140,248,0.95), rgba(139,92,246,0.7) 40%, rgba(99,102,241,0.4) 70%)', boxShadow: '0 0 50px rgba(139,92,246,0.5), inset 0 0 20px rgba(255,255,255,0.15)' }} />
+            {/* Orb spacer — the orb is rendered in the GLSL shader */}
+            <div style={{ height: '120px', marginBottom: '12px' }} />
+
+            {/* Title */}
+            <h1 style={{ fontSize: isMobile ? '52px' : '72px', fontWeight: 200, margin: 0, letterSpacing: '-2px', lineHeight: 1, animation: 'fadeInUp 0.6s ease-out' }}>
+              <span style={{ color: 'rgba(255,255,255,0.95)' }}>skill</span>
+              <span style={{ background: 'linear-gradient(135deg, #818cf8, #a78bfa, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 300 }}>clone</span>
+            </h1>
+
+            {/* Value prop */}
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: isMobile ? '16px' : '19px', marginTop: '14px', textAlign: 'center', maxWidth: '500px', lineHeight: 1.5, fontWeight: 300, animation: 'fadeInUp 0.6s 0.1s ease-out both' }}>
+              Fuse legendary minds into one superhuman AI prompt.
+            </p>
+            <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: isMobile ? '13px' : '14px', marginTop: '6px', textAlign: 'center', letterSpacing: '0.5px', animation: 'fadeInUp 0.6s 0.2s ease-out both' }}>
+              Jobs + Spielberg + Ogilvy + Miyamoto + anyone from Wikipedia
+            </p>
+
+            {/* Input */}
+            <div style={{ width: '100%', maxWidth: '520px', marginTop: '36px', animation: 'fadeInUp 0.6s 0.3s ease-out both' }}>
+              <div style={{ position: 'relative' }}>
+                <input type="text" value={userIntent} onChange={(e) => setUserIntent(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && userIntent.trim() && (sounds.click(), setStage('building'))}
+                  placeholder="What do you want to create?"
+                  className="glow-input"
+                  style={{ width: '100%', padding: '20px 28px', fontSize: '17px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', color: 'white', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s, box-shadow 0.2s' }} />
+                {userIntent.trim() && (
+                  <button onClick={() => { sounds.click(); setStage('building'); }}
+                    className="btn-glow"
+                    style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', padding: '10px 20px', fontSize: '14px', fontWeight: 600, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', border: 'none', borderRadius: '12px', color: 'white', cursor: 'pointer', letterSpacing: '0.2px' }}>
+                    Go →
+                  </button>
+                )}
+              </div>
+
+              {/* Category quick-picks */}
+              <div style={{ display: 'flex', gap: '8px', marginTop: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                {[
+                  { icon: '🎬', label: 'Viral YouTube script' },
+                  { icon: '✍️', label: 'Landing page that converts' },
+                  { icon: '💻', label: 'Ship a SaaS this weekend' },
+                  { icon: '🎨', label: 'Awwwards-level website' },
+                  { icon: '🚀', label: 'Launch to 1K users' },
+                ].map(cat => (
+                  <button key={cat.label}
+                    onClick={() => { setUserIntent(cat.label); sounds.click(); setStage('building'); }}
+                    className="genius-item"
+                    style={{ padding: '7px 14px', fontSize: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', color: 'rgba(255,255,255,0.45)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <span>{cat.icon}</span>
+                    <span>{cat.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <h1 style={{ fontSize: isMobile ? '48px' : '64px', fontWeight: 300, margin: 0, letterSpacing: '-1px' }}>
-            <span style={{ color: 'rgba(255,255,255,0.9)' }}>skill</span>
-            <span style={{ background: 'linear-gradient(135deg, #60a5fa, #a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>clone</span>
-          </h1>
-
-          {/* Value prop */}
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: isMobile ? '16px' : '18px', marginTop: '12px', textAlign: 'center', maxWidth: '460px', lineHeight: 1.5 }}>
-            Fuse legendary minds into one AI prompt.<br/>
-            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: isMobile ? '14px' : '15px' }}>Jobs. Spielberg. Ogilvy. Miyamoto. 50+ masters.</span>
-          </p>
-
-          {/* Input */}
-          <div style={{ width: '100%', maxWidth: '520px', marginTop: '36px' }}>
-            <input type="text" value={userIntent} onChange={(e) => setUserIntent(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && userIntent.trim() && (sounds.click(), setStage('building'))}
-              placeholder="What do you want to create?"
-              style={{ width: '100%', padding: '18px 24px', fontSize: '17px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', color: 'white', outline: 'none', boxSizing: 'border-box' }} />
-
-            {/* Category quick-picks */}
-            <div style={{ display: 'flex', gap: '8px', marginTop: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          {/* HOW IT WORKS — always visible, Levelsio-style clarity */}
+          <div style={{ width: '100%', maxWidth: '600px', marginTop: '40px', animation: 'fadeInUp 0.6s 0.5s ease-out both' }}>
+            {/* 3-step process */}
+            <div style={{ display: 'flex', gap: isMobile ? '12px' : '20px', justifyContent: 'center', marginBottom: '28px' }}>
               {[
-                { icon: '🎬', label: 'Viral YouTube script' },
-                { icon: '✍️', label: 'Landing page that converts' },
-                { icon: '💻', label: 'Ship a SaaS this weekend' },
-                { icon: '🎨', label: 'Awwwards-level website' },
-                { icon: '🚀', label: 'Launch to 1K users' },
-              ].map(cat => (
-                <button key={cat.label}
-                  onClick={() => { setUserIntent(cat.label); sounds.click(); setStage('building'); }}
-                  style={{ padding: '8px 16px', fontSize: '13px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', transition: 'border-color 0.15s' }}>
-                  <span>{cat.icon}</span>
-                  <span>{cat.label}</span>
-                </button>
+                { num: '1', label: 'Pick geniuses', sub: '55+ built-in or search Wikipedia' },
+                { num: '2', label: 'Fuse them', sub: 'AI merges their wisdom' },
+                { num: '3', label: 'Use the prompt', sub: 'Paste into ChatGPT or Claude' },
+              ].map((step, i) => (
+                <div key={i} style={{ flex: 1, textAlign: 'center' }}>
+                  <div style={{ width: '28px', height: '28px', margin: '0 auto 8px', borderRadius: '50%', background: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(236,72,153,0.1))', border: '1px solid rgba(139,92,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, color: '#a78bfa' }}>{step.num}</div>
+                  <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>{step.label}</p>
+                  <p style={{ margin: '3px 0 0', fontSize: '11px', color: 'rgba(255,255,255,0.25)' }}>{step.sub}</p>
+                </div>
               ))}
             </div>
-          </div>
 
-          {userIntent.trim() && (
-            <button onClick={() => { sounds.click(); setStage('building'); }}
-              style={{ marginTop: '28px', padding: '14px 40px', fontSize: '16px', fontWeight: 500, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', border: 'none', borderRadius: '50px', color: 'white', cursor: 'pointer', letterSpacing: '0.3px' }}>
-              Choose Your Geniuses →
-            </button>
-          )}
+            {/* Popular fusions — social proof + instant demo */}
+            <div style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <span style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.3)', letterSpacing: '1px', textTransform: 'uppercase' }}>Popular Fusions</span>
+                <span style={{ fontSize: '10px', color: 'rgba(139,92,246,0.5)' }}>click to try</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {[
+                  { label: 'Viral Content Machine', geniuses: 'MrBeast + Hormozi + TikTok Brain', intent: 'Viral YouTube script', power: 286 },
+                  { label: 'Startup Weapon', geniuses: 'Thiel + Jobs + Levelsio', intent: 'Ship a SaaS this weekend', power: 292 },
+                  { label: 'Copy That Converts', geniuses: 'Ogilvy + Schwartz + Wiebe', intent: 'Landing page that converts', power: 285 },
+                ].map((combo, i) => (
+                  <button key={i} onClick={() => { setUserIntent(combo.intent); sounds.click(); setStage('building'); }}
+                    className="genius-item"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '10px 12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', cursor: 'pointer', textAlign: 'left' }}>
+                    <div>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(255,255,255,0.75)' }}>{combo.label}</span>
+                      <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)', marginLeft: '8px' }}>{combo.geniuses}</span>
+                    </div>
+                    <span style={{ fontSize: '10px', color: 'rgba(139,92,246,0.5)', flexShrink: 0 }}>⚡{combo.power}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          {/* Social proof + how it works */}
-          {!userIntent && (
-            <div style={{ marginTop: '48px', textAlign: 'center' }}>
-              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.5px', margin: '0 0 16px 0' }}>
-                Pick geniuses → Fuse them → Get a superhuman prompt
+            {/* Social proof + pricing teaser */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', marginTop: '20px' }}>
+              <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.2)', margin: 0 }}>
+                <span style={{ color: 'rgba(139,92,246,0.6)', fontWeight: 700 }}>2,847</span> clones created
               </p>
-              <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.18)', margin: 0 }}>
-                <span style={{ color: 'rgba(139,92,246,0.5)', fontWeight: 600 }}>2,847</span> clones created by creators, founders & builders
+              <span style={{ width: '1px', height: '12px', background: 'rgba(255,255,255,0.08)' }} />
+              <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.2)', margin: 0 }}>
+                Free to start • <span style={{ color: 'rgba(139,92,246,0.5)' }}>Pro $49 once</span>
               </p>
             </div>
-          )}
+          </div>
         </div>
       )}
 
       {/* BUILDING */}
       {stage === 'building' && (
-        <div style={{ display: 'flex', minHeight: '100vh' }}>
+        <div style={{ display: 'flex', minHeight: '100vh', position: 'relative', zIndex: 1 }}>
 
           {/* LEFT SIDEBAR — SQUAD LIBRARY */}
           {!isMobile && (
@@ -783,11 +993,46 @@ Begin.
                   </h1>
                   <div style={{ marginTop: '8px', height: '3px', width: isMobile ? '40px' : '60px', background: 'linear-gradient(90deg, #8b5cf6, #ec4899)', borderRadius: '2px' }} />
                 </div>
-                <div style={{ position: 'relative', flex: '0 0 auto', width: isMobile ? '100%' : '220px', marginTop: isMobile ? '8px' : '12px' }}>
-                  <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search geniuses..."
-                    style={{ width: '100%', padding: '8px 12px 8px 32px', fontSize: '13px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: 'white', outline: 'none', boxSizing: 'border-box' }} />
+                <div style={{ position: 'relative', flex: '0 0 auto', width: isMobile ? '100%' : '260px', marginTop: isMobile ? '8px' : '12px' }}>
+                  <input type="text" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); searchWikipedia(e.target.value); }}
+                    placeholder="Search geniuses or anyone..."
+                    className="glow-input"
+                    style={{ width: '100%', padding: '8px 12px 8px 32px', fontSize: '13px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: 'white', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s, box-shadow 0.2s' }} />
                   <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: 'rgba(255,255,255,0.25)', pointerEvents: 'none' }}>⌕</span>
+
+                  {/* Wikipedia Discovery Dropdown */}
+                  {(wikiResults.length > 0 || wikiSearching) && searchQuery.trim() && (
+                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '4px', background: '#12121a', border: '1px solid rgba(20,184,166,0.25)', borderRadius: '10px', overflow: 'hidden', zIndex: 200, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#14b8a6', letterSpacing: '0.5px' }}>From Wikipedia</span>
+                        {!isPro && <span style={{ fontSize: '9px', padding: '2px 6px', background: 'rgba(20,184,166,0.12)', borderRadius: '8px', color: '#14b8a6' }}>{wikiGeniusCount}/{FREE_WIKI_LIMIT} free</span>}
+                      </div>
+                      {wikiSearching && (
+                        <div style={{ height: '2px', background: 'rgba(255,255,255,0.04)', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', background: 'linear-gradient(90deg, #14b8a6, #06b6d4, #14b8a6)', backgroundSize: '200% 100%', animation: 'loading 1.5s ease-in-out infinite alternate' }} />
+                        </div>
+                      )}
+                      {wikiResults.map(r => {
+                        const isAdding = wikiAdding === r.pageid;
+                        const atLimit = !isPro && wikiGeniusCount >= FREE_WIKI_LIMIT;
+                        return (
+                          <div key={r.pageid} onClick={() => !isAdding && !atLimit && addWikiGenius(r)}
+                            className="genius-item"
+                            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', cursor: atLimit ? 'default' : 'pointer', opacity: atLimit ? 0.5 : 1, borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: '12px', fontWeight: 600, color: 'white' }}>{r.title}</div>
+                              <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                                dangerouslySetInnerHTML={{ __html: r.snippet.replace(/<[^>]+>/g, '').slice(0, 80) }} />
+                            </div>
+                            <button onClick={(e) => { e.stopPropagation(); if (atLimit) { setShowUpgrade(true); } else if (!isAdding) { addWikiGenius(r); } }}
+                              style={{ width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: atLimit ? 'rgba(255,255,255,0.06)' : 'rgba(20,184,166,0.15)', border: atLimit ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(20,184,166,0.3)', borderRadius: '6px', color: atLimit ? 'rgba(255,255,255,0.3)' : '#14b8a6', cursor: 'pointer', fontSize: '14px', fontWeight: 700, flexShrink: 0 }}>
+                              {isAdding ? <span style={{ fontSize: '10px', animation: 'pulse 0.6s infinite' }}>...</span> : atLimit ? '🔒' : '+'}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -813,6 +1058,34 @@ Begin.
               </div>
             )}
 
+            {/* Wikipedia Suggestions — AI-powered based on intent */}
+            {!searchQuery && wikiSuggestions.length > 0 && (
+              <div style={{ marginBottom: '14px', padding: '10px 14px', background: 'linear-gradient(135deg, rgba(20,184,166,0.06), rgba(6,182,212,0.03))', border: '1px solid rgba(20,184,166,0.15)', borderRadius: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <p style={{ margin: 0, fontSize: '10px', fontWeight: 600, color: 'rgba(20,184,166,0.7)', letterSpacing: '0.5px' }}>DISCOVER FROM WIKIPEDIA</p>
+                  {!isPro && <span style={{ fontSize: '9px', padding: '2px 6px', background: 'rgba(20,184,166,0.1)', borderRadius: '8px', color: '#14b8a6' }}>{wikiGeniusCount}/{FREE_WIKI_LIMIT} free</span>}
+                </div>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {wikiSuggestions.map(r => {
+                    const isAdding = wikiAdding === r.pageid;
+                    const alreadyAdded = customModules.some(m => m.id === 'wiki_' + r.pageid);
+                    const atLimit = !isPro && wikiGeniusCount >= FREE_WIKI_LIMIT;
+                    if (alreadyAdded) return null;
+                    return (
+                      <button key={r.pageid} onClick={() => atLimit ? setShowUpgrade(true) : !isAdding && addWikiGenius(r)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(20,184,166,0.2)', borderRadius: '6px', color: 'white', cursor: atLimit ? 'default' : 'pointer', fontSize: '12px', opacity: atLimit ? 0.5 : 1 }}>
+                        <span style={{ color: '#14b8a6', fontSize: '10px' }}>W</span>
+                        <span style={{ fontWeight: 500 }}>{r.title}</span>
+                        <span style={{ color: '#14b8a6', fontSize: '13px', fontWeight: 700 }}>
+                          {isAdding ? '...' : atLimit ? '🔒' : '+'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Custom Geniuses — show at top if any exist */}
             {(customModules.length > 0 || showCustomForm) && (
               <div style={{ marginBottom: '14px' }}>
@@ -826,12 +1099,15 @@ Begin.
                     .filter(mod => !searchQuery || mod.name.toLowerCase().includes(searchQuery.toLowerCase()) || mod.specs.toLowerCase().includes(searchQuery.toLowerCase()))
                     .map(mod => {
                     const sel = isSelected('custom', mod.id);
+                    const isWiki = mod._source === 'wikipedia';
+                    const accent = isWiki ? '#14b8a6' : '#fbbf24';
                     return (
                       <div key={mod.id} onClick={() => toggleModule('custom', mod)} onMouseEnter={() => !isMobile && sounds.hover()}
-                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: sel ? '#fbbf2418' : 'rgba(255,255,255,0.04)', border: sel ? '1px solid #fbbf24' : '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', cursor: 'pointer', transition: 'border-color 0.15s, background 0.15s', flexShrink: 0 }}>
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: sel ? `${accent}18` : 'rgba(255,255,255,0.04)', border: sel ? `1px solid ${accent}` : `1px solid ${isWiki ? 'rgba(20,184,166,0.15)' : 'rgba(255,255,255,0.08)'}`, borderRadius: '6px', cursor: 'pointer', transition: 'border-color 0.15s, background 0.15s', flexShrink: 0 }}>
+                        {isWiki && <span style={{ fontSize: '10px', color: '#14b8a6' }}>W</span>}
                         <span style={{ fontSize: '12px', fontWeight: 600, color: sel ? 'white' : 'rgba(255,255,255,0.7)' }}>{mod.name}</span>
-                        <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>{mod.specs}</span>
-                        {sel && <span style={{ fontSize: '10px', color: '#fbbf24' }}>✓</span>}
+                        <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>{mod.specs}</span>
+                        {sel && <span style={{ fontSize: '10px', color: accent }}>✓</span>}
                         <button onClick={(e) => { e.stopPropagation(); removeCustomModule(mod.id); }}
                           style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.2)', cursor: 'pointer', fontSize: '12px', padding: '0 2px', lineHeight: 1, marginLeft: '2px' }}
                           title="Remove">×</button>
@@ -999,7 +1275,7 @@ Begin.
               </div>
               <div style={{ flex: 1, overflowY: 'auto' }}>
                 {Object.entries(selectedModules).map(([catId, mods]) => {
-                  const cat = GENIUS_CATEGORIES[catId];
+                  const cat = GENIUS_CATEGORIES[catId] || { color: '#14b8a6', icon: '🌐', name: 'Discovered' };
                   return mods.map(mod => (
                     <div key={mod.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', marginBottom: '6px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', borderLeft: `2px solid ${cat.color}` }}>
                       <span style={{ fontSize: '14px' }}>{cat.icon}</span>
@@ -1023,7 +1299,8 @@ Begin.
                 </button>
               )}
               <button onClick={generatePrompt}
-                style={{ marginTop: '6px', padding: '14px', fontSize: '14px', fontWeight: 600, background: 'linear-gradient(135deg, #8b5cf6, #ec4899)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', width: '100%' }}>
+                className="btn-glow"
+                style={{ marginTop: '6px', padding: '14px', fontSize: '14px', fontWeight: 600, background: 'linear-gradient(135deg, #8b5cf6, #ec4899)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', width: '100%', boxShadow: '0 4px 15px rgba(139,92,246,0.25)' }}>
                 🧬 Fuse {moduleCount} Geniuses
               </button>
               <button onClick={() => setStage('landing')} style={{ marginTop: '6px', padding: '8px', background: 'none', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '12px' }}>
@@ -1046,7 +1323,7 @@ Begin.
                       <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>⚡{totalPower}</span>
                     </div>
                     {Object.entries(selectedModules).map(([catId, mods]) => {
-                      const cat = GENIUS_CATEGORIES[catId];
+                      const cat = GENIUS_CATEGORIES[catId] || { color: '#14b8a6', icon: '🌐', name: 'Discovered' };
                       return mods.map(mod => (
                         <div key={mod.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', marginBottom: '6px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', borderLeft: `2px solid ${cat.color}` }}>
                           <span style={{ fontSize: '16px' }}>{cat.icon}</span>
@@ -1091,55 +1368,66 @@ Begin.
 
       {/* RESULT */}
       {stage === 'result' && (
-        <div style={{ padding: '20px', maxWidth: '700px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-            <span style={{ fontSize: '48px', display: 'block', marginBottom: '8px' }}>🧬</span>
-            <h2 style={{ margin: '0 0 6px 0', fontSize: '22px', fontWeight: 700 }}>Your Skillclone is Ready</h2>
-            <p style={{ margin: '0 0 10px 0', fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>{moduleCount} geniuses fused • ⚡{totalPower} combined power</p>
-            {/* Show genius names as tags */}
+        <div style={{ position: 'relative', zIndex: 1, padding: isMobile ? '30px 16px' : '50px 20px', maxWidth: '720px', margin: '0 auto', animation: 'fadeInUp 0.5s ease-out' }}>
+          <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+            <div style={{ position: 'relative', display: 'inline-block', marginBottom: '12px' }}>
+              <span style={{ fontSize: '52px', display: 'block', filter: 'drop-shadow(0 0 20px rgba(139,92,246,0.4))' }}>🧬</span>
+            </div>
+            <h2 style={{ margin: '0 0 6px 0', fontSize: '24px', fontWeight: 700, letterSpacing: '-0.5px' }}>Your Skillclone is Ready</h2>
+            <p style={{ margin: '0 0 12px 0', fontSize: '14px', color: 'rgba(255,255,255,0.4)', fontWeight: 300 }}>
+              <span style={{ color: 'rgba(139,92,246,0.7)', fontWeight: 600 }}>{moduleCount}</span> geniuses fused • <span style={{ color: 'rgba(236,72,153,0.6)', fontWeight: 600 }}>⚡{totalPower}</span> combined power
+            </p>
+            {/* Genius tags */}
             <div style={{ display: 'flex', gap: '5px', justifyContent: 'center', flexWrap: 'wrap' }}>
               {Object.entries(selectedModules).map(([catId, mods]) => {
-                const cat = GENIUS_CATEGORIES[catId] || { color: '#fbbf24', icon: '⭐' };
+                const cat = GENIUS_CATEGORIES[catId] || { color: catId === 'custom' && mods.some(m => m._source === 'wikipedia') ? '#14b8a6' : '#fbbf24', icon: catId === 'custom' ? '⭐' : '🌐' };
                 return mods.map(mod => (
-                  <span key={mod.id} style={{ padding: '3px 8px', fontSize: '10px', fontWeight: 600, background: `${cat.color}15`, border: `1px solid ${cat.color}30`, borderRadius: '4px', color: cat.color }}>
+                  <span key={mod.id} style={{ padding: '3px 10px', fontSize: '10px', fontWeight: 600, background: `${cat.color}12`, border: `1px solid ${cat.color}25`, borderRadius: '20px', color: cat.color, letterSpacing: '0.2px' }}>
                     {mod.name}
                   </span>
                 ));
               })}
             </div>
           </div>
-          <div style={{ padding: '16px', background: copied ? 'rgba(34,197,94,0.05)' : 'rgba(255,255,255,0.02)', border: copied ? '1px solid rgba(34,197,94,0.2)' : '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', maxHeight: '300px', overflowY: 'auto', marginBottom: '16px' }}>
-            <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'ui-monospace, monospace', fontSize: '11px', lineHeight: 1.5, color: 'rgba(255,255,255,0.8)' }}>{generatedPrompt}</pre>
+
+          {/* Prompt card — glass with gradient border */}
+          <div style={{ position: 'relative', borderRadius: '14px', padding: '1px', background: copied ? 'linear-gradient(135deg, rgba(34,197,94,0.4), rgba(34,197,94,0.1))' : 'linear-gradient(135deg, rgba(139,92,246,0.3), rgba(236,72,153,0.15), rgba(99,102,241,0.2))', marginBottom: '20px' }}>
+            <div style={{ padding: '18px', background: copied ? 'rgba(22,22,32,0.97)' : 'rgba(15,15,20,0.98)', borderRadius: '13px', maxHeight: '300px', overflowY: 'auto', backdropFilter: 'blur(10px)' }}>
+              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace', fontSize: '11px', lineHeight: 1.6, color: 'rgba(255,255,255,0.8)', letterSpacing: '0.1px' }}>{generatedPrompt}</pre>
+            </div>
           </div>
 
           {/* Primary actions */}
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <button onClick={async () => { await navigator.clipboard.writeText(generatedPrompt); sounds.copy(); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-              style={{ padding: '12px 24px', fontSize: '14px', fontWeight: 600, background: copied ? '#22c55e' : 'white', border: 'none', borderRadius: '50px', color: copied ? 'white' : 'black', cursor: 'pointer' }}>
+              className="btn-glow"
+              style={{ padding: '13px 28px', fontSize: '14px', fontWeight: 600, background: copied ? '#22c55e' : 'white', border: 'none', borderRadius: '50px', color: copied ? 'white' : '#09090b', cursor: 'pointer', letterSpacing: '0.2px' }}>
               {copied ? '✓ Copied!' : '📋 Copy Prompt'}
             </button>
             <a href={`https://chatgpt.com/?q=${encodeURIComponent(generatedPrompt.slice(0, 4000))}`} target="_blank" rel="noopener noreferrer"
-              style={{ padding: '12px 20px', fontSize: '14px', fontWeight: 600, background: 'linear-gradient(135deg, #10a37f, #1a7f64)', border: 'none', borderRadius: '50px', color: 'white', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              className="btn-glow"
+              style={{ padding: '13px 22px', fontSize: '14px', fontWeight: 600, background: 'linear-gradient(135deg, #10a37f, #1a7f64)', border: 'none', borderRadius: '50px', color: 'white', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
               Use in ChatGPT →
             </a>
             <a href={`https://claude.ai/new?q=${encodeURIComponent(generatedPrompt.slice(0, 4000))}`} target="_blank" rel="noopener noreferrer"
-              style={{ padding: '12px 20px', fontSize: '14px', fontWeight: 600, background: 'linear-gradient(135deg, #d4a27f, #c4856c)', border: 'none', borderRadius: '50px', color: 'white', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              className="btn-glow"
+              style={{ padding: '13px 22px', fontSize: '14px', fontWeight: 600, background: 'linear-gradient(135deg, #d4a27f, #c4856c)', border: 'none', borderRadius: '50px', color: 'white', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
               Use in Claude →
             </a>
           </div>
 
-          {/* Share + secondary actions */}
+          {/* Share + secondary */}
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '12px', flexWrap: 'wrap' }}>
             <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`I just fused ${moduleCount} legendary minds into one AI prompt ⚡${totalPower} power\n\n${Object.values(selectedModules).flat().map(m => m.name).join(' + ')}\n\nskillcl.one 🧬`)}`}
               target="_blank" rel="noopener noreferrer"
-              style={{ padding: '10px 18px', fontSize: '13px', fontWeight: 500, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50px', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              style={{ padding: '10px 18px', fontSize: '13px', fontWeight: 500, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
               𝕏 Share
             </a>
-            <button onClick={() => setStage('building')} style={{ padding: '10px 18px', fontSize: '13px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50px', color: 'rgba(255,255,255,0.7)', cursor: 'pointer' }}>Edit Squad</button>
+            <button onClick={() => setStage('building')} style={{ padding: '10px 18px', fontSize: '13px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>Edit Squad</button>
           </div>
 
           <button onClick={() => { setStage('landing'); setUserIntent(''); setSelectedModules({}); }}
-            style={{ display: 'block', margin: '20px auto 0', background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '13px' }}>← New Clone</button>
+            style={{ display: 'block', margin: '24px auto 0', background: 'none', border: 'none', color: 'rgba(255,255,255,0.25)', cursor: 'pointer', fontSize: '13px' }}>← New Clone</button>
         </div>
       )}
 
@@ -1150,11 +1438,77 @@ Begin.
         @keyframes float1 { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-6px); } }
         @keyframes float2 { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-8px); } }
         @keyframes float3 { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-5px); } }
+        @keyframes meshGradient {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        @keyframes orbRing {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        @keyframes orbRingReverse {
+          0% { transform: rotate(360deg); }
+          100% { transform: rotate(0deg); }
+        }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        @keyframes glowPulse {
+          0%, 100% { box-shadow: 0 0 20px rgba(139,92,246,0.15); }
+          50% { box-shadow: 0 0 40px rgba(139,92,246,0.3), 0 0 80px rgba(139,92,246,0.1); }
+        }
+        @keyframes orbBreathe {
+          0%, 100% { transform: scale(1); opacity: 0.5; }
+          50% { transform: scale(1.15); opacity: 1; }
+        }
+        @keyframes orbCoreBreathe {
+          0%, 100% {
+            transform: scale(1);
+            box-shadow: 0 0 20px rgba(139,92,246,0.5), 0 0 60px rgba(139,92,246,0.2);
+          }
+          50% {
+            transform: scale(1.08);
+            box-shadow: 0 0 30px rgba(167,139,250,0.7), 0 0 80px rgba(139,92,246,0.4), 0 0 140px rgba(139,92,246,0.12);
+          }
+        }
+        @keyframes orbIris {
+          0%, 100% { transform: scale(1); opacity: 0.3; }
+          50% { transform: scale(1.06); opacity: 0.5; }
+        }
+        @keyframes fusionRing {
+          0% { transform: scale(0.5); opacity: 1; }
+          100% { transform: scale(3); opacity: 0; }
+        }
+        @keyframes fusionFlash {
+          0% { opacity: 0; }
+          50% { opacity: 1; }
+          100% { opacity: 0; }
+        }
+        @keyframes gradientBorder {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        @keyframes countUp {
+          from { opacity: 0; transform: scale(0.8); }
+          to { opacity: 1; transform: scale(1); }
+        }
         input::placeholder { color: rgba(255,255,255,0.3); }
+        textarea::placeholder { color: rgba(255,255,255,0.3); }
         ::-webkit-scrollbar { height: 5px; width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
-        .genius-item:hover { background: rgba(255,255,255,0.04) !important; }
+        .genius-item { transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important; }
+        .genius-item:hover { background: rgba(255,255,255,0.05) !important; transform: translateX(1px); }
+        .glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.06); }
+        .glow-input:focus { border-color: rgba(139,92,246,0.4) !important; box-shadow: 0 0 0 3px rgba(139,92,246,0.1), 0 0 20px rgba(139,92,246,0.1); }
+        .btn-glow { transition: all 0.2s ease; }
+        .btn-glow:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(139,92,246,0.3); }
+        * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
       `}</style>
     </div>
   );

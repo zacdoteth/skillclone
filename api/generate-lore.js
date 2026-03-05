@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { name } = req.body;
+    const { name, wikiContext } = req.body;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -23,7 +23,7 @@ export default async function handler(req, res) {
         max_tokens: 400,
         messages: [{
           role: 'user',
-          content: `Generate a genius profile for "${name}" for a prompt-building app. Return ONLY valid JSON (no markdown fences) with these fields:
+          content: `Generate a genius profile for "${name}" for a prompt-building app.${wikiContext ? `\n\nReal context about this person:\nDescription: ${wikiContext.description || 'N/A'}\nSummary: ${(wikiContext.summary || '').slice(0, 800)}\n\nUse these REAL details to make the lore specific and accurate.` : ''} Return ONLY valid JSON (no markdown fences) with these fields:
 - "specs": Short tagline under 60 chars of their key expertise, using bullet separators. Example: "Blockbuster master • Emotional resonance"
 - "prompt": A rich second-person lore paragraph (3-5 sentences) written as "You were mentored by..." or "You channel..." that captures their unique philosophy, techniques, and mindset. Be specific with real details about their actual work, methods, and signature ideas. Make it feel like secret knowledge passed down.
 - "power": A number 88-99 representing mastery level.`
