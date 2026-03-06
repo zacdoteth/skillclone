@@ -166,13 +166,13 @@ void main(){
     float d = sdRoundBox(cardP, cardB, cardR);
 
     // Fluid displacement — push domain warping outward near card
-    float pushZone = 0.08;
-    float push = smoothstep(pushZone, 0.0, d) * 0.35;
+    float pushZone = 0.10;
+    float push = smoothstep(pushZone, 0.0, d) * 0.42;
     vec2 pushDir = normalize(cardP + 0.001);
     p += pushDir * push;
 
     // Bright meniscus glow at card edge
-    float edgeBand = smoothstep(0.025, 0.005, abs(d)) * smoothstep(-0.01, 0.003, d);
+    float edgeBand = smoothstep(0.03, 0.004, abs(d)) * smoothstep(-0.012, 0.003, d);
     cardEdgeGlow = edgeBand;
     float flowNoise = fbm(cardP * 15.0 + t * 2.0) * 0.5 + 0.5;
     cardEdgeGlow *= 0.6 + flowNoise * 0.6;
@@ -192,10 +192,10 @@ void main(){
     vec2 c2P = (uv - c2Center) * vec2(asp, 1.0);
     vec2 c2B = c2Half * vec2(asp, 1.0);
     float c2d = sdRoundBox(c2P, c2B, 0.012);
-    float push2 = smoothstep(0.08, 0.0, c2d) * 0.35;
+    float push2 = smoothstep(0.10, 0.0, c2d) * 0.42;
     vec2 pushDir2 = normalize(c2P + 0.001);
     p += pushDir2 * push2;
-    float edge2 = smoothstep(0.025, 0.005, abs(c2d)) * smoothstep(-0.01, 0.003, c2d);
+    float edge2 = smoothstep(0.03, 0.004, abs(c2d)) * smoothstep(-0.012, 0.003, c2d);
     float flow2 = fbm(c2P * 15.0 + t * 2.0) * 0.5 + 0.5;
     card2EdgeGlow = edge2 * (0.6 + flow2 * 0.6);
     card2Shadow = smoothstep(0.003, -0.01, c2d);

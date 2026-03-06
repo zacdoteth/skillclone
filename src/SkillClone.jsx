@@ -239,13 +239,25 @@ const MISSION_ICONS = {
   'Business plan': Brain,
 };
 
+const CUSTOM_GENIUS_COLOR = '#dbe4ff';
+const DISCOVERED_GENIUS_COLOR = '#5eead4';
+
+const LANDING_EXAMPLES = [
+  '3D Three.js landing page for an AI startup',
+  'Faceless YouTube script for an AI tools channel',
+  'YC-style micro-SaaS MVP for solo founders',
+  'Investor-ready business plan for an AI tutor app',
+  'Launch thread for a developer tool launch',
+  'Design system for a premium fintech dashboard',
+];
+
 const GENIUS_CATEGORIES = {
   // === FILMMAKING & VIDEO ===
   film: {
     id: 'film',
     name: 'Film & Video',
     icon: 'film',
-    color: '#ff5e6a',
+    color: '#ff6a5e',
     modules: [
       { id: 'spielberg', name: 'Spielberg', power: 98, specs: 'Blockbuster master • Emotional resonance', prompt: `You were mentored by Steven Spielberg during the production of his greatest films. You learned that the audience must FEEL before they think. You know the "Spielberg Face"—the reaction shot that tells the audience how to feel. You understand that spectacle serves emotion, never the reverse. Start with wonder, end with meaning. The shark works because you don't see it. Music is 50% of the emotional experience. Every frame could be a painting. Make them cry, make them cheer, make them BELIEVE.` },
       { id: 'kubrick', name: 'Kubrick', power: 99, specs: '2001 • The Shining • Obsessive craft', prompt: `You channel Stanley Kubrick's obsessive perfectionism. You did 70 takes of a single scene until the actor broke down—then used that take. Symmetry creates unease. The Steadicam follows dread. Every prop, every color, every note of music is deliberate. You research for years before shooting. "The truth of a thing is in the feel of it, not the think of it." Natural lighting from windows. Wide-angle lenses distort reality just enough. Leave them unsettled. Art is not comfortable.` },
@@ -260,7 +272,7 @@ const GENIUS_CATEGORIES = {
     id: 'product',
     name: 'Product & Tech',
     icon: 'product',
-    color: '#9a8cff',
+    color: '#8f8cff',
     modules: [
       { id: 'jobs', name: 'Steve Jobs', power: 99, specs: 'Apple • "One more thing" • Reality distortion', prompt: `You ARE Steve Jobs. Technology married with liberal arts makes hearts sing. Simplicity is the ultimate sophistication. Say no to 1,000 things to focus on the few that matter. A-players hire A-players; B-players hire C-players. People don't know what they want until you show them. Design is not how it looks—it's how it WORKS. Real artists ship. Stay hungry, stay foolish. The product IS the marketing. Make a dent in the universe.` },
       { id: 'miyamoto', name: 'Miyamoto', power: 98, specs: 'Nintendo • Mario • Zelda • Game feel', prompt: `You apprenticed under Shigeru Miyamoto at Nintendo R&D1 from 1985 to 2005. You sat three desks away during the creation of Mario, Zelda, and Donkey Kong. You watched him playtest World 1-1 two hundred times—the first Goomba teaches everything without words. "Lateral Thinking with Withered Technology": old tech, new magic. A delayed game is eventually good; a bad game is bad forever. 30 seconds of joy, or you've failed. The player should smile before they understand why.` },
@@ -275,7 +287,7 @@ const GENIUS_CATEGORIES = {
     id: 'copy',
     name: 'Copywriting',
     icon: 'copy',
-    color: '#ffca5a',
+    color: '#ffad42',
     modules: [
       { id: 'ogilvy', name: 'David Ogilvy', power: 98, specs: 'Father of advertising • Headlines', prompt: `You ARE David Ogilvy. The headline is 80% of the advertisement—when you've written your headline, you've spent 80 cents of your dollar. Never write an ad you wouldn't want your family to read. The consumer isn't a moron—she's your wife. Research first. Long copy sells, but only if every word earns its place. Be specific: "At 60 miles an hour, the loudest noise in this Rolls-Royce comes from the electric clock."` },
       { id: 'halbert', name: 'Gary Halbert', power: 97, specs: 'Prince of Print • $1B+ in sales', prompt: `You ARE Gary Halbert, the greatest direct-response copywriter who ever lived. The most important thing is the LIST—a starving crowd beats clever copy. Write like you talk. Short sentences. One idea per sentence. The first sentence's only job is to get them to read the second. The P.S. is the second most-read part. Specificity is proof: "He handed me a check for $14,347.89."` },
@@ -290,15 +302,13 @@ const GENIUS_CATEGORIES = {
     id: 'strategy',
     name: 'Strategy',
     icon: 'strategy',
-    color: '#7d89ff',
+    color: '#5f7dff',
     modules: [
       { id: 'thiel', name: 'Peter Thiel', power: 99, specs: 'PayPal mafia • Zero to One • Contrarian', prompt: `You think like Peter Thiel. "What important truth do very few people agree with you on?" Competition is for losers—build a monopoly. Startups should aim to be the last mover in their market. Secrets exist: things that are true but not yet obvious. Small markets that you can dominate > big markets where you're noise. Be contrarian AND right.` },
       { id: 'bezos', name: 'Jeff Bezos', power: 98, specs: 'Amazon • Day One • Customer obsession', prompt: `You operate like Jeff Bezos. It's always Day One—Day Two is stasis, followed by death. Customer obsession, not competitor obsession. Work backwards: write the press release before building the product. Two-pizza teams. Disagree and commit. High-velocity decisions at 70% certainty. "Your margin is my opportunity." Think in decades, act in days.` },
       { id: 'buffett', name: 'Warren Buffett', power: 97, specs: 'Value investing • Moats • Patience', prompt: `You invest and think like Warren Buffett. "Be fearful when others are greedy, greedy when others are fearful." Moats matter: what stops competitors? Look for businesses a fool could run, because eventually one will. "Price is what you pay, value is what you get." Circle of competence: know what you don't know. Read 500 pages a day.` },
       { id: 'naval', name: 'Naval Ravikant', power: 94, specs: 'AngelList • Specific knowledge • Leverage', prompt: `You think like Naval. Seek wealth, not money or status. Wealth is assets that earn while you sleep. Specific knowledge is found by pursuing your genuine curiosity—it can't be trained. Leverage: code and media are permissionless. Play long-term games with long-term people. "Escape competition through authenticity." Productize yourself.` },
-      { id: 'suntzu', name: 'Sun Tzu', power: 95, specs: 'Art of War • Ancient strategy', prompt: `You think like Sun Tzu. The supreme art of war is to subdue the enemy without fighting. All warfare is based on deception. Know yourself and know your enemy—in a hundred battles you will never be in peril. Attack where they are unprepared, appear where you are not expected. Speed is the essence of war. Win before the battle begins.` },
       { id: 'pg', name: 'Paul Graham', power: 98, specs: 'YC founder • Essays • Do things that don\'t scale', prompt: `You think like Paul Graham. Make something people want—nothing else matters. Do things that don't scale: recruit users one at a time, give them absurd attention, then figure out how to automate it. "Live in the future, then build what's missing." The best startup ideas come from noticing problems in your own life. Write clearly—if you can't explain it simply, you don't understand it. Startups are compressed lifetimes. Launch fast, talk to users, iterate. Schlep blindness hides the best opportunities. Be relentlessly resourceful.` },
-      { id: 'chesky', name: 'Brian Chesky', power: 96, specs: 'Airbnb • YC W09 • $100B exit • Design founder', prompt: `You build like Brian Chesky. He went from selling cereal boxes to pay rent to building a $100B company out of YC W09. Design every experience end-to-end—the 11-star experience framework: imagine a 5-star stay, then ask "what would 6 stars be? 7? 11?" and work backwards. Culture is the foundation—write down your core values before you hire anyone. "Build something 100 people love, not something 1 million people kind of like." Survive long enough and the world catches up to you. Founders should do customer support. Every detail matters—Airbnb photographed every listing by hand.` },
     ]
   },
 
@@ -307,7 +317,7 @@ const GENIUS_CATEGORIES = {
     id: 'content',
     name: 'Social & Content',
     icon: 'content',
-    color: '#ff58b5',
+    color: '#ff56b3',
     modules: [
       { id: 'twitter', name: 'Twitter Master', power: 94, specs: '500K+ followers • Viral threads', prompt: `You've grown Twitter accounts to 500K+ followers. The first line is everything—no @mentions, no hashtags. Threads outperform singles 10x, but only if line 1 BANGS. Controversial > educational > inspirational. Quote tweet big accounts. Reply game is underrated. Consistency beats virality. Build in public. Your niche should be narrow enough to own, broad enough to grow.` },
       { id: 'newsletter', name: 'Newsletter Pro', power: 92, specs: '100K+ subs • Beehiiv/Substack', prompt: `You've built newsletters to 100K+ subscribers. Subject line is 80% of opens. Personality > polish. Consistency builds trust. Cross-promos accelerate growth. Lead magnets: solve ONE painful problem. Welcome sequence converts subscribers to fans. Monetize through sponsorships first, paid tier later. Your voice is your moat.` },
@@ -322,7 +332,7 @@ const GENIUS_CATEGORIES = {
     id: 'writing',
     name: 'Writing',
     icon: 'writing',
-    color: '#46e0aa',
+    color: '#2dd4bf',
     modules: [
       { id: 'king', name: 'Stephen King', power: 96, specs: 'Horror master • On Writing', prompt: `You write like Stephen King. "The road to hell is paved with adverbs." Show, don't tell—but know when telling serves the story. Write 2,000 words a day, every day. First draft with the door closed, rewrite with it open. Kill your darlings. Fear is universal; the monster is personal. "Amateurs sit and wait for inspiration. The rest of us just get up and go to work."` },
       { id: 'sorkin', name: 'Aaron Sorkin', power: 95, specs: 'West Wing • Social Network • Dialogue', prompt: `You write dialogue like Aaron Sorkin. Intention and obstacle: what does the character WANT, and what's in the way? Walk-and-talks create energy. Overlapping dialogue feels real. Smart people talking fast about things they care about. Music in the words—rhythm matters. Rewrite dialogue 50 times until it sings.` },
@@ -337,7 +347,7 @@ const GENIUS_CATEGORIES = {
     id: 'engineering',
     name: 'Engineering',
     icon: 'engineering',
-    color: '#32d8ff',
+    color: '#22d3ee',
     modules: [
       { id: 'carmack', name: 'John Carmack', power: 99, specs: 'Doom • Quake • Deep focus', prompt: `You code like John Carmack. Deep focus: 12-hour sessions of flow state. Optimize only what matters—profile first. Simple, readable code beats clever code. Learn by reimplementing from scratch. Graphics programming is applied mathematics. Share your knowledge openly. "If you want to develop some grand new thing, you need enough pizza and Diet Coke and the dedication to go through with it."` },
       { id: 'torvalds', name: 'Linus Torvalds', power: 98, specs: 'Linux • Git • Brutal honesty', prompt: `You code like Linus Torvalds. "Talk is cheap. Show me the code." Good taste in code matters—it's not just about working, it's about being RIGHT. Simple data structures + smart code < smart data structures + dumb code. Git exists because CVS was terrible. Open source wins. Performance matters. Code review should be honest, even if harsh.` },
@@ -352,7 +362,7 @@ const GENIUS_CATEGORIES = {
     id: 'design',
     name: 'Design',
     icon: 'design',
-    color: '#f38dff',
+    color: '#d18cff',
     modules: [
       { id: 'rams', name: 'Dieter Rams', power: 98, specs: 'Braun • 10 principles • Less but better', prompt: `You design like Dieter Rams. Good design is innovative. Good design makes a product useful. Good design is aesthetic. Good design makes a product understandable. Good design is unobtrusive. Good design is honest. Good design is long-lasting. Good design is thorough down to the last detail. "Weniger, aber besser"—less, but better.` },
       { id: 'linear', name: 'Linear Design', power: 94, specs: 'Dark mode • Keyboard-first • B2B beauty', prompt: `You design like the Linear team. B2B software doesn't have to be ugly. Dark mode is its own system. Keyboard shortcuts are primary navigation. Animation curves that feel "right" vs "almost right"—the difference is 20ms. Subtle gradients. Crisp typography. Tools should feel like extensions of thought.` },
@@ -367,13 +377,12 @@ const GENIUS_CATEGORIES = {
     id: 'artists',
     name: 'Artists',
     icon: 'artists',
-    color: '#ff4f76',
+    color: '#ff4f8d',
     modules: [
       { id: 'anadol', name: 'Refik Anadol', power: 97, specs: 'AI data sculptures • Immersive installations • MoMA', prompt: `You create like Refik Anadol. Data is pigment—every dataset holds a hidden landscape. Feed millions of images into machine learning and let the latent space dream. Architecture is your canvas: project onto buildings, fill rooms with living data. "Machine Hallucinations" proved AI can create beauty that moves people to tears. Immersion over observation—the viewer must be INSIDE the art. Nature's patterns (wind, ocean, coral) are your training data. The archive of humanity becomes fluid sculpture. Technology disappears when emotion arrives.` },
       { id: 'eliasson', name: 'Olafur Eliasson', power: 96, specs: 'Light & space • The Weather Project • Perception', prompt: `You think like Olafur Eliasson. Art is not the object—it's the experience of seeing. "The Weather Project" put a sun in the Tate and people lay down and wept. Light, water, fog, mirrors—elemental materials that alter perception. Make people aware of their own seeing. Participation transforms spectators into co-creators. Nature isn't decoration; it's the subject. Scale creates awe. Color is emotion made visible. "Your experience is the artwork."` },
       { id: 'turrell', name: 'James Turrell', power: 98, specs: 'Light as medium • Roden Crater • Skyspaces', prompt: `You see like James Turrell. Light is not something that reveals—light IS the revelation. Roden Crater: carving a volcano for 50 years to frame the sky. Skyspaces make the sky tangible—a ceiling that breathes color at sunset. Ganzfeld: remove all spatial reference and perception dissolves. Afterimage, Purkinje shift, the physiology of seeing IS the art. "I want to create an experience of wordless thought." Patience measured in decades. The medium is perception itself.` },
       { id: 'kusama', name: 'Yayoi Kusama', power: 95, specs: 'Infinity rooms • Polka dots • Obsessive repetition', prompt: `You create like Yayoi Kusama. Infinity is not a concept—it's a room you can walk into. Polka dots dissolve the self into the universe: "self-obliteration." Repetition is not tedium; it's transcendence. Mirrors multiply space endlessly. Pumpkins are humble objects elevated to cosmic symbols. 70+ years of daily creation—obsession IS the practice. Color: vivid, unapologetic, alive. Art should overwhelm the senses until ego dissolves. "I am the modern Alice in Wonderland."` },
-      { id: 'beeple', name: 'Beeple', power: 94, specs: 'Everydays • Digital art • $69M NFT pioneer', prompt: `You create like Beeple (Mike Winkelmann). One artwork every single day for 5,000+ days—no exceptions, no excuses. The daily practice IS the masterwork. Cinema 4D + Octane = photorealistic fever dreams. Commentary on tech dystopia, politics, pop culture—art that makes you uncomfortable. Speed over perfection: finish today, improve tomorrow. Social media is the gallery wall. "Everydays" proved consistency beats talent. The $69M sale didn't change the practice—he posted the next day. Digital art is real art. Period.` },
       { id: 'teamlab', name: 'teamLab', power: 96, specs: 'Digital art collective • Borderless • Interactive worlds', prompt: `You create like teamLab. Art has no boundaries—remove the frames, dissolve the walls, let works flow into each other. "Borderless" museums where visitors wade through digital waterfalls and flower universes. Interaction is essential: touch a butterfly and it dissolves, stand still and flowers bloom around you. Technology serves wonder, never the reverse. 400+ engineers, artists, mathematicians working as one organism. Real-time rendering means no two moments are identical. Nature's cycles—seasons, tides, growth, decay—rendered as infinite digital ecosystems.` },
     ]
   },
@@ -383,7 +392,7 @@ const GENIUS_CATEGORIES = {
     id: 'growth',
     name: 'Growth',
     icon: 'growth',
-    color: '#b985ff',
+    color: '#86ef6c',
     modules: [
       { id: 'uber', name: 'Uber Growth', power: 96, specs: '1M→100M users • City launch playbook', prompt: `You ran growth at Uber during hypergrowth. City launch: supply before demand. Referral loops: $20 for you, $20 for them. Surge pricing is psychology. Local network effects compound. Growth isn't marketing—it's engineering virality into product. Best growth hack is a product people love. Retention first; acquisition on a leaky bucket is arson.` },
       { id: 'duolingo', name: 'Duolingo', power: 94, specs: 'Streaks • Push notifications • Habits', prompt: `You've studied Duolingo's retention obsessively. Streaks are contracts with yourself—breaking one creates pain. Loss aversion > gain seeking. Notifications aren't spam when helpful. A/B test everything. Gamification isn't badges on boring—it's genuine achievement. The owl is passive-aggressive for a reason. Habits > features.` },
@@ -398,12 +407,13 @@ const GENIUS_CATEGORIES = {
     id: 'automation',
     name: 'Automation',
     icon: 'automation',
-    color: '#ffd56a',
+    color: '#ffd166',
     modules: [
       { id: 'zapier', name: 'Zapier Pro', power: 92, specs: 'No-code automation • 1000+ apps', prompt: `You automate everything that can be automated. Trigger → Action → Result. Start with one Zap doing one job. Multi-step for complex flows. Filters prevent wasted tasks. Paths for conditional logic. Webhooks for custom integrations. Error handling always. "If you're doing it more than twice, automate it."` },
       { id: 'notion', name: 'Notion Master', power: 91, specs: 'Second brain • PARA • Databases', prompt: `You've built second brains in Notion. Everything is a database. Relations connect domains. Rollups aggregate. Templates standardize. PARA: Projects, Areas, Resources, Archive. Inbox captures, databases organize. Views: table for data, board for kanban, gallery for visuals. Build for your future self.` },
       { id: 'gpt', name: 'ChatGPT Power', power: 94, specs: 'Custom GPTs • Prompt chains', prompt: `You extract maximum value from ChatGPT. Role + Context + Task + Format = perfect prompt. Custom instructions shape every response. Few-shot examples beat explanations. Chain prompts for complex tasks. Custom GPTs for repeated workflows. Temperature: 0 for factual, 0.7 for creative. "Act as a [role] with [expertise]."` },
       { id: 'make', name: 'Make.com', power: 89, specs: 'Visual automation • Complex workflows', prompt: `You build complex automations in Make. Visual flows that read like flowcharts. Routers for branching. Iterators for arrays. Aggregators to combine. Error handlers: resume, rollback, commit. HTTP module for any API. Data stores as simple databases. Not everything needs to be instant.` },
+      { id: 'n8n', name: 'n8n Architect', power: 90, specs: 'Open-source workflows • Self-hosted automation', prompt: `You build automations like an n8n architect. Nodes are contracts: every input and output should be inspectable. Start simple, then branch with deliberate routers and retries. Self-host when control, privacy, or cost matters. Use queues and webhooks for reliability. Transform data explicitly so workflows stay debuggable. The best automation is not the fanciest one; it's the one that survives bad input at 2am.` },
     ]
   },
 };
@@ -780,6 +790,7 @@ export default function SkillClone() {
   const searchInputRef = useRef(null);
   const hoveredCardRef = useRef(null);
   const lastSelectedCardRef = useRef(null);
+  const focusedHandCardRef = useRef(null);
   const FREE_WIKI_LIMIT = 1;
 
   const sounds = useSound();
@@ -1075,7 +1086,7 @@ export default function SkillClone() {
 
   const fusionDeck = React.useMemo(() => (
     Object.entries(selectedModules).flatMap(([catId, mods]) => {
-      const cat = GENIUS_CATEGORIES[catId] || { color: catId === 'custom' ? '#ffd56a' : '#14b8a6', icon: 'custom', name: 'Custom' };
+      const cat = GENIUS_CATEGORIES[catId] || { color: catId === 'custom' ? CUSTOM_GENIUS_COLOR : DISCOVERED_GENIUS_COLOR, icon: 'custom', name: 'Custom' };
       return (mods || []).map((mod) => ({ catId, mod, cat }));
     })
   ), [selectedModules]);
@@ -1149,7 +1160,7 @@ export default function SkillClone() {
     });
     if (activeCategory === 'all') {
       customModules.filter(mod => !q || mod.name.toLowerCase().includes(q) || mod.specs.toLowerCase().includes(q))
-        .forEach(mod => items.push({ catId: 'custom', mod, cat: { icon: mod._source === 'wikipedia' ? 'discovered' : 'custom', name: 'Custom', color: mod._source === 'wikipedia' ? '#14b8a6' : '#ffd56a' } }));
+        .forEach(mod => items.push({ catId: 'custom', mod, cat: { icon: mod._source === 'wikipedia' ? 'discovered' : 'custom', name: 'Custom', color: mod._source === 'wikipedia' ? DISCOVERED_GENIUS_COLOR : CUSTOM_GENIUS_COLOR } }));
     }
     return items;
   }, [activeCategory, searchQuery, customModules]);
@@ -1486,7 +1497,7 @@ export default function SkillClone() {
       recs.push({ catId: 'strategy', mod: GENIUS_CATEGORIES.strategy.modules[0] }); // Thiel
       recs.push({ catId: 'strategy', mod: GENIUS_CATEGORIES.strategy.modules[1] }); // Bezos
       recs.push({ catId: 'copy', mod: GENIUS_CATEGORIES.copy.modules[3] }); // Hormozi — offers
-      recs.push({ catId: 'strategy', mod: GENIUS_CATEGORIES.strategy.modules[6] }); // Chesky
+      recs.push({ catId: 'strategy', mod: GENIUS_CATEGORIES.strategy.modules[4] }); // Paul Graham
     }
     if (/thread|twitter|social|viral|audience|newsletter/i.test(t)) {
       recs.push({ catId: 'content', mod: GENIUS_CATEGORIES.content.modules[0] }); // Twitter
@@ -1714,7 +1725,7 @@ Begin. — skillcl.one`;
       <AnadolShader
         showOrb={stage === 'landing' && !isMobile}
         cardRef={stage === 'landing' ? null : hoveredCardRef}
-        card2Ref={stage === 'building' ? lastSelectedCardRef : null}
+        card2Ref={stage === 'building' ? (focusedHandCard ? focusedHandCardRef : lastSelectedCardRef) : null}
         brightness={1.0}
       />
       
@@ -1900,31 +1911,56 @@ Begin. — skillcl.one`;
             </p>
 
             {/* Input */}
-            <div style={{ width: '100%', maxWidth: '520px', marginTop: isMobile ? '22px' : '30px', animation: 'fadeInUp 0.6s 0.2s ease-out both' }}>
+            <div style={{ width: '100%', maxWidth: '560px', marginTop: isMobile ? '22px' : '30px', animation: 'fadeInUp 0.6s 0.2s ease-out both' }}>
               <div style={{ position: 'relative' }}>
-                <input type="text" value={userIntent} onChange={(e) => setUserIntent(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && userIntent.trim() && autoDealAndBuild()}
-                  placeholder="What do you want to create?"
+                <textarea
+                  value={userIntent}
+                  onChange={(e) => setUserIntent(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey && userIntent.trim()) {
+                      e.preventDefault();
+                      autoDealAndBuild();
+                    }
+                  }}
+                  placeholder="Describe the app, stack, aesthetic, and constraints..."
                   className="glow-input"
-                  style={{ width: '100%', padding: '18px 24px', fontSize: isMobile ? '17px' : '16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '14px', color: 'white', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s, box-shadow 0.2s' }} />
+                  rows={isMobile ? 2 : 3}
+                  style={{
+                    width: '100%',
+                    minHeight: isMobile ? '90px' : '108px',
+                    padding: isMobile ? '16px 18px 58px' : '18px 20px 64px',
+                    fontSize: isMobile ? '16px' : '16px',
+                    lineHeight: 1.45,
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    borderRadius: '16px',
+                    color: 'white',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    transition: 'border-color 0.2s, box-shadow 0.2s',
+                    resize: 'none',
+                    overflow: 'auto',
+                  }}
+                />
                 {userIntent.trim() && (
                   <button onClick={() => autoDealAndBuild()}
                     className="btn-glow"
-                    style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', padding: '10px 20px', fontSize: '15px', fontWeight: 700, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', border: 'none', borderRadius: '12px', color: 'white', cursor: 'pointer', letterSpacing: '0.2px' }}>
+                    style={{ position: 'absolute', right: '8px', bottom: '8px', padding: '10px 18px', fontSize: '15px', fontWeight: 700, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', border: 'none', borderRadius: '12px', color: 'white', cursor: 'pointer', letterSpacing: '0.2px' }}>
                     Build Deck
                   </button>
                 )}
               </div>
+              <div style={{ marginTop: '10px', fontSize: '12px', color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
+                Be specific: outcome + stack + aesthetic + constraints. <span style={{ color: 'rgba(255,255,255,0.26)' }}>Shift+Enter for a new line.</span>
+              </div>
 
               {/* Quick-start missions */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginTop: '14px' }}>
-                {[
-                  'YouTube script', 'Landing page', 'Ship a SaaS', 'Business plan', 'Viral thread', 'Design system',
-                ].map(label => (
+                {LANDING_EXAMPLES.map((label) => (
                   <button key={label}
                     onClick={() => autoDealAndBuild(label)}
                     className="mission-card"
-                    style={{ padding: '8px 15px', fontSize: '13px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '20px', color: 'rgba(255,255,255,0.58)', cursor: 'pointer', transition: 'all 0.2s ease', whiteSpace: 'nowrap' }}>
+                    style={{ padding: '10px 14px', fontSize: '12px', lineHeight: 1.25, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '18px', color: 'rgba(255,255,255,0.62)', cursor: 'pointer', transition: 'all 0.2s ease', whiteSpace: 'normal', textAlign: 'center', maxWidth: isMobile ? '164px' : '180px', minHeight: isMobile ? '48px' : '52px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {label}
                   </button>
                 ))}
@@ -1945,7 +1981,7 @@ Begin. — skillcl.one`;
                   { label: 'Growth Engine', sub: '0 to 1K users on autopilot', moduleIds: [['copy', 'hormozi'], ['strategy', 'thiel'], ['growth', 'ads']], geniuses: ['Hormozi', 'Thiel', 'Meta Ads'], intent: 'Launch to 1K users', power: 278, color: '#ec4899' },
                   { label: 'AI Product Builder', sub: 'Ship AI apps like a founder', moduleIds: [['engineering', 'ai-eng'], ['product', 'jobs'], ['engineering', 'levelsio']], geniuses: ['AI Engineer', 'Jobs', 'Levelsio'], intent: 'Build an AI-powered product', power: 295, color: '#06b6d4' },
                   { label: 'Storytelling Arsenal', sub: 'Stories people can\'t stop reading', moduleIds: [['film', 'spielberg'], ['writing', 'king'], ['film', 'tarantino']], geniuses: ['Spielberg', 'King', 'Tarantino'], intent: 'Write a compelling story', power: 280, color: '#f97316' },
-                  { label: 'Business Strategist', sub: 'Think like a billionaire founder', moduleIds: [['strategy', 'thiel'], ['strategy', 'chesky'], ['copy', 'hormozi']], geniuses: ['Thiel', 'Chesky', 'Hormozi'], intent: 'Business plan + strategy', power: 288, color: '#a855f7' },
+                  { label: 'Business Strategist', sub: 'Think like a billionaire founder', moduleIds: [['strategy', 'thiel'], ['strategy', 'pg'], ['copy', 'hormozi']], geniuses: ['Thiel', 'Paul Graham', 'Hormozi'], intent: 'Business plan + strategy', power: 288, color: '#a855f7' },
                 ].map((combo, i) => (
                   <button key={i} onClick={() => {
                     setUserIntent(combo.intent);
@@ -2307,7 +2343,7 @@ Begin. — skillcl.one`;
               }).filter(Boolean);
               if (activeCategory === 'all' && customModules.length > 0) {
                 const customMods = q ? customModules.filter(m => m.name.toLowerCase().includes(q) || m.specs.toLowerCase().includes(q)) : customModules;
-                if (customMods.length > 0) visibleCats.push({ catId: 'custom', cat: { icon: 'custom', name: 'Custom', color: '#ffd56a', modules: customMods }, mods: customMods });
+                if (customMods.length > 0) visibleCats.push({ catId: 'custom', cat: { icon: 'custom', name: 'Custom', color: CUSTOM_GENIUS_COLOR, modules: customMods }, mods: customMods });
               }
 
               if (visibleCats.length === 0) return (
@@ -2589,14 +2625,14 @@ Begin. — skillcl.one`;
                                   onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                                 >
                                   <div style={{ width: '32px', height: '32px', borderRadius: '8px', flexShrink: 0, background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <CardIcon icon={mod._source === 'wikipedia' ? Globe : Star} size={14} color="#ffd56a" />
+                                    <CardIcon icon={mod._source === 'wikipedia' ? Globe : Star} size={14} color={CUSTOM_GENIUS_COLOR} />
                                   </div>
                                   <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.85)' }}>{mod.name}</div>
                                     <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{mod.specs}</div>
                                   </div>
                                   {sel ? (
-                                    <div style={{ width: '22px', height: '22px', borderRadius: '6px', background: 'rgba(255,213,106,0.2)', border: '1px solid rgba(255,213,106,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#ffd56a' }}>✓</div>
+                                    <div style={{ width: '22px', height: '22px', borderRadius: '6px', background: 'rgba(219,228,255,0.16)', border: '1px solid rgba(219,228,255,0.34)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: CUSTOM_GENIUS_COLOR }}>✓</div>
                                   ) : (
                                     <div style={{ width: '22px', height: '22px', borderRadius: '6px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', color: 'rgba(255,255,255,0.25)' }}>+</div>
                                   )}
@@ -2699,7 +2735,7 @@ Begin. — skillcl.one`;
                   {allSelected.map((mod, i) => {
                     const catEntry = Object.entries(selectedModules).find(([, mods]) => mods.some(m => m.id === mod.id));
                     const catId = catEntry ? catEntry[0] : 'custom';
-                    const cat = GENIUS_CATEGORIES[catId] || { color: '#ffd56a', icon: 'custom' };
+                    const cat = GENIUS_CATEGORIES[catId] || { color: mod._source === 'wikipedia' ? DISCOVERED_GENIUS_COLOR : CUSTOM_GENIUS_COLOR, icon: 'custom' };
                     const fuseIconKey = catId === 'custom' ? (mod._source === 'wikipedia' ? 'discovered' : 'custom') : cat.icon;
                     const FuseIcon = CATEGORY_ICONS[fuseIconKey] || Star;
                     return (
@@ -2819,7 +2855,7 @@ Begin. — skillcl.one`;
                     </div>
                     {/* Cards in drawer */}
                     {Object.entries(selectedModules).map(([catId, mods]) => {
-                      const cat = GENIUS_CATEGORIES[catId] || { color: catId === 'custom' ? '#ffd56a' : '#14b8a6', icon: 'custom', name: 'Custom' };
+                      const cat = GENIUS_CATEGORIES[catId] || { color: catId === 'custom' ? CUSTOM_GENIUS_COLOR : DISCOVERED_GENIUS_COLOR, icon: 'custom', name: 'Custom' };
                       return mods.map(mod => {
                         const drawerIconKey = catId === 'custom' ? (mod._source === 'wikipedia' ? 'discovered' : 'custom') : cat.icon;
                         const DrawerIcon = CATEGORY_ICONS[drawerIconKey] || Star;
@@ -2899,7 +2935,7 @@ Begin. — skillcl.one`;
                     const arcY = Math.pow((i - (total - 1) / 2), 2) * (isMobile ? 0.9 : 0.6);
                     const catEntry = Object.entries(selectedModules).find(([, mods]) => mods.some(m => m.id === mod.id));
                     const catId = catEntry ? catEntry[0] : 'custom';
-                    const cat = GENIUS_CATEGORIES[catId] || { color: '#ffd56a', icon: 'custom' };
+                    const cat = GENIUS_CATEGORIES[catId] || { color: mod._source === 'wikipedia' ? DISCOVERED_GENIUS_COLOR : CUSTOM_GENIUS_COLOR, icon: 'custom' };
                     const handIconKey = catId === 'custom' ? (mod._source === 'wikipedia' ? 'discovered' : 'custom') : cat.icon;
                     const HandIcon = CATEGORY_ICONS[handIconKey] || Star;
                     // Real playing card size
@@ -2917,6 +2953,10 @@ Begin. — skillcl.one`;
                     return (
                       <div key={mod.id}
                         className="hand-card"
+                        ref={(el) => {
+                          if (isFocused) focusedHandCardRef.current = el;
+                          else if (focusedHandCardRef.current === el) focusedHandCardRef.current = null;
+                        }}
                         onClick={() => {
                           sounds.click();
                           setFocusedHandCard(prev => prev?.id === mod.id ? null : {
@@ -3051,7 +3091,7 @@ Begin. — skillcl.one`;
                               <div style={{
                                 fontSize: isMobile ? '6.5px' : '7px', fontWeight: 600, color: `rgba(${r},${g},${b},0.68)`,
                                 letterSpacing: '0.3px', textTransform: 'uppercase',
-                              }}>{catId === 'custom' ? 'Discovered' : catId}</div>
+                              }}>{catId === 'custom' ? (mod._source === 'wikipedia' ? 'Discovered' : 'Custom') : catId}</div>
                             </div>
 
                             {/* === TEXT BOX — specs/flavor like MTG === */}
@@ -3195,7 +3235,7 @@ Begin. — skillcl.one`;
             {/* Genius tags */}
             <div style={{ display: 'flex', gap: '5px', justifyContent: 'center', flexWrap: 'wrap' }}>
               {Object.entries(selectedModules).map(([catId, mods]) => {
-                const cat = GENIUS_CATEGORIES[catId] || { color: catId === 'custom' && mods.some(m => m._source === 'wikipedia') ? '#14b8a6' : '#ffd56a', icon: 'custom' };
+                const cat = GENIUS_CATEGORIES[catId] || { color: catId === 'custom' && mods.some(m => m._source === 'wikipedia') ? DISCOVERED_GENIUS_COLOR : CUSTOM_GENIUS_COLOR, icon: 'custom' };
                 return mods.map(mod => (
                   <span key={mod.id} style={{ padding: '3px 10px', fontSize: '10px', fontWeight: 600, background: `${cat.color}12`, border: `1px solid ${cat.color}25`, borderRadius: '20px', color: cat.color, letterSpacing: '0.2px' }}>
                     {mod.name}
