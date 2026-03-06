@@ -10,11 +10,21 @@ Fuse legendary minds into one AI prompt. Jobs. Spielberg. Ogilvy. Miyamoto. 50+ 
 # Install dependencies
 npm install
 
+# Configure environment
+cp .env.example .env
+
 # Run dev server
 npm run dev
 ```
 
 Then open http://localhost:5173
+
+## Environment Variables
+
+Set these in `.env` (local) and Vercel project settings (production):
+
+- `ANTHROPIC_API_KEY` — required for `/api/generate-fusion` and `/api/generate-lore`
+- `VITE_STRIPE_MONTHLY_URL` — Stripe Payment Link for Skillclone Pro
 
 ## Build for Production
 
