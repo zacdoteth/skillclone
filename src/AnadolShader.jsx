@@ -238,6 +238,7 @@ void main(){
   float f = fbm(flowP + 3.5 * s);
   float f2 = fbm(flowP + 3.0 * r + vec2(2.1, 4.7) + t * 0.15);
   float latentBloom = fbm(flowP * 0.58 + s * 1.7 - t * 0.08);
+  float latentTrace = abs(f - f2) + abs(latentBloom - f2) * 0.55;
 
   float qm = length(q);
   float rm = length(r);
@@ -271,6 +272,14 @@ void main(){
   col += vec3(0.18, 0.38, 0.65) * st2 * 0.10;
   float veins = rfbm(p * 1.5 + s * 2.0 + t * 0.4);
   col += vec3(0.30, 0.15, 0.50) * smoothstep(0.25, 0.5, veins) * 0.08;
+
+  // Latent contours: inspired by RAS's "algorithmic connections" language,
+  // this traces soft data paths between neighboring field states.
+  float contourA = 1.0 - smoothstep(0.020, 0.060, abs(latentTrace - 0.24));
+  float contourB = 1.0 - smoothstep(0.012, 0.040, abs((rm - sm) + latentBloom * 0.35));
+  float contourMask = smoothstep(0.14, 0.72, latentBloom) * (0.45 + smoothstep(0.20, 0.62, veins) * 0.55);
+  float contourNet = max(contourA * contourMask, contourB * (0.35 + contourMask * 0.65));
+  col += mix(vec3(0.34, 0.14, 0.54), vec3(0.16, 0.54, 0.94), smoothstep(0.18, 0.82, f2)) * contourNet * 0.07;
 
   // "Data Poems": faint connection ribbons make the field feel plotted and alive.
   float poem1 = smoothstep(0.94, 0.995, 0.5 + 0.5 * sin((f + rm * 0.10) * 32.0 - t * 4.5));
@@ -415,7 +424,11 @@ void main(){
   float grain = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233)) + u_time) * 43758.5453);
   col += (grain - 0.5) * 0.012;
 
-  gl_FragColor = vec4(max(col, 0.0), 1.0);
+  col = max(col, 0.0);
+  col = col / (1.0 + col * 0.16);
+  col = pow(col, vec3(0.96));
+
+  gl_FragColor = vec4(col, 1.0);
 }`;
 
 // ─── RIPPLE SIMULATION RESOLUTION ───────────
