@@ -1,29 +1,11 @@
-import React, { useState, useRef, useEffect, useCallback, Suspense } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import AnadolShader from './AnadolShader';
-import CatGuide from './CatGuide';
 import {
   Clapperboard, Gem, PenTool, Crown, Smartphone, BookOpen,
   Terminal, Palette, Frame, TrendingUp, Zap, Globe, Star,
   Film, Swords, Monitor, Brush, BarChart3, Bot,
-  Lock, Check, Video, Type, Code, Sparkles, Rocket, Brain,
+  Lock, Check, Sparkles, Brain, Pencil,
 } from 'lucide-react';
-
-// Error boundary so 3D cat can't crash the app
-class CatErrorBoundary extends React.Component {
-  state = { hasError: false };
-  static getDerivedStateFromError() { return { hasError: true }; }
-  componentDidCatch(e) { console.warn('CatGuide error:', e.message); }
-  render() { return this.state.hasError ? null : this.props.children; }
-}
-function CatGuideWrapper(props) {
-  return (
-    <CatErrorBoundary>
-      <Suspense fallback={null}>
-        <CatGuide {...props} />
-      </Suspense>
-    </CatErrorBoundary>
-  );
-}
 
 // ============================================
 // GLSL FUSE BUTTON — living energy shader
@@ -230,15 +212,6 @@ const CATEGORY_ICONS = {
 };
 
 // Mission card icon map
-const MISSION_ICONS = {
-  'YouTube script': Video,
-  'Landing page': Type,
-  'Ship a SaaS': Code,
-  'Awwwards site': Sparkles,
-  'Launch to 1K': Rocket,
-  'Business plan': Brain,
-};
-
 const CUSTOM_GENIUS_COLOR = '#dbe4ff';
 const DISCOVERED_GENIUS_COLOR = '#5eead4';
 
@@ -758,6 +731,8 @@ export default function SkillClone() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [screenSize, setScreenSize] = useState(() => window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1200 ? 'tablet' : 'desktop');
   const [searchQuery, setSearchQuery] = useState('');
+  const [missionDraft, setMissionDraft] = useState('');
+  const [editingMission, setEditingMission] = useState(false);
   const [customModules, setCustomModules] = useState(() => {
     try { return JSON.parse(localStorage.getItem('skillclone_custom') || '[]'); } catch { return []; }
   });
@@ -791,6 +766,7 @@ export default function SkillClone() {
   const hoveredCardRef = useRef(null);
   const lastSelectedCardRef = useRef(null);
   const focusedHandCardRef = useRef(null);
+  const missionInputRef = useRef(null);
   const FREE_WIKI_LIMIT = 1;
 
   const sounds = useSound();
@@ -826,6 +802,19 @@ export default function SkillClone() {
   React.useEffect(() => {
     localStorage.setItem('skillclone_custom', JSON.stringify(customModules));
   }, [customModules]);
+
+  React.useEffect(() => {
+    if (!editingMission) setMissionDraft(userIntent);
+  }, [userIntent, editingMission]);
+
+  React.useEffect(() => {
+    if (!editingMission) return;
+    const t = setTimeout(() => {
+      missionInputRef.current?.focus();
+      missionInputRef.current?.select();
+    }, 0);
+    return () => clearTimeout(t);
+  }, [editingMission]);
 
   // Persist saved squads
   React.useEffect(() => {
@@ -1265,6 +1254,18 @@ export default function SkillClone() {
           e.currentTarget.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.4, 0.64, 1)';
           setTimeout(() => { try { e.currentTarget.style.transition = ''; } catch(ex) {} }, 400);
         }}>
+        {sel && (
+          <div style={{
+            position: 'absolute',
+            inset: large ? '-10px' : '-8px',
+            borderRadius: large ? '16px' : '12px',
+            background: `radial-gradient(circle at 50% 42%, rgba(${r},${g},${b},0.28) 0%, rgba(${r},${g},${b},0.16) 30%, rgba(${r},${g},${b},0.08) 48%, transparent 72%)`,
+            filter: `blur(${large ? '14px' : '12px'})`,
+            opacity: 0.95,
+            pointerEvents: 'none',
+            zIndex: 0,
+          }} />
+        )}
         {/* MTG-style card frame */}
         <div style={{
           width: '100%', aspectRatio: large ? '3 / 4' : undefined, height: large ? undefined : cardH, position: 'relative',
@@ -1719,6 +1720,12 @@ Begin. — skillcl.one`;
     track('Fusion', { geniuses: moduleCount, power: totalPower, aiAdapted: !!userIntent.trim() && modules.length >= 2 });
   };
 
+  const commitMissionEdit = () => {
+    const nextMission = missionDraft.trim();
+    if (nextMission && nextMission !== userIntent) setUserIntent(nextMission);
+    setEditingMission(false);
+  };
+
   const upgradeHighlights = [
     {
       icon: Sparkles,
@@ -2007,10 +2014,13 @@ Begin. — skillcl.one`;
                   rows={isMobile ? 2 : 3}
                   style={{
                     width: '100%',
-                    minHeight: isMobile ? '90px' : '108px',
-                    padding: isMobile ? '16px 18px 58px' : '18px 20px 64px',
+                    minHeight: isMobile ? '88px' : '104px',
+                    padding: isMobile ? '15px 18px 64px' : '17px 20px 68px',
                     fontSize: isMobile ? '16px' : '16px',
                     lineHeight: 1.45,
+                    fontFamily: 'inherit',
+                    fontWeight: 400,
+                    letterSpacing: '-0.01em',
                     background: 'rgba(255,255,255,0.04)',
                     border: '1px solid rgba(255,255,255,0.12)',
                     borderRadius: '16px',
@@ -2025,7 +2035,26 @@ Begin. — skillcl.one`;
                 {userIntent.trim() && (
                   <button onClick={() => autoDealAndBuild()}
                     className="btn-glow"
-                    style={{ position: 'absolute', right: '8px', bottom: '8px', padding: '10px 18px', fontSize: '15px', fontWeight: 700, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', border: 'none', borderRadius: '12px', color: 'white', cursor: 'pointer', letterSpacing: '0.2px' }}>
+                    style={{
+                      position: 'absolute',
+                      right: '12px',
+                      bottom: '12px',
+                      minWidth: isMobile ? '132px' : '140px',
+                      padding: isMobile ? '12px 18px' : '12px 20px',
+                      fontSize: '15px',
+                      fontWeight: 700,
+                      background: 'linear-gradient(135deg, rgba(109,88,255,0.98) 0%, rgba(139,92,246,0.98) 58%, rgba(196,132,252,0.94) 100%)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      borderRadius: '14px',
+                      color: 'white',
+                      cursor: 'pointer',
+                      letterSpacing: '-0.01em',
+                      boxShadow: '0 14px 28px rgba(109,88,255,0.32), 0 0 0 1px rgba(255,255,255,0.04) inset',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                    }}>
                     Build Deck
                   </button>
                 )}
@@ -2296,15 +2325,40 @@ Begin. — skillcl.one`;
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                     <div style={{ fontSize: '9px', fontWeight: 800, color: 'rgba(139,92,246,0.5)', textTransform: 'uppercase', letterSpacing: '3px' }}>MISSION</div>
                     <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.04)' }} />
+                    <button
+                      onClick={() => setEditingMission(true)}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 8px', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.38)', cursor: 'pointer', fontSize: '10px', fontWeight: 600, flexShrink: 0 }}
+                    >
+                      <Pencil size={10} strokeWidth={2.2} />
+                      {!isMobile && <span>Edit</span>}
+                    </button>
                     {moduleCount > 0 && (
                       <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)', fontWeight: 600 }}>
                         {moduleCount} selected {'\u00B7'} {totalPower} pw
                       </div>
                     )}
                   </div>
-                  <h1 style={{ margin: 0, fontSize: isMobile ? '22px' : '30px', fontWeight: 800, color: 'white', lineHeight: 1.1, letterSpacing: '-0.02em' }}>
-                    {userIntent}
-                  </h1>
+                  {editingMission ? (
+                    <input
+                      ref={missionInputRef}
+                      type="text"
+                      value={missionDraft}
+                      onChange={(e) => setMissionDraft(e.target.value)}
+                      onBlur={commitMissionEdit}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') commitMissionEdit();
+                        if (e.key === 'Escape') {
+                          setMissionDraft(userIntent);
+                          setEditingMission(false);
+                        }
+                      }}
+                      style={{ width: '100%', margin: 0, padding: isMobile ? '0 0 2px' : '0 0 3px', fontSize: isMobile ? '22px' : '30px', fontWeight: 800, color: 'white', lineHeight: 1.1, letterSpacing: '-0.02em', background: 'transparent', border: 'none', outline: 'none', fontFamily: 'inherit' }}
+                    />
+                  ) : (
+                    <h1 style={{ margin: 0, fontSize: isMobile ? '22px' : '30px', fontWeight: 800, color: 'white', lineHeight: 1.1, letterSpacing: '-0.02em' }}>
+                      {userIntent}
+                    </h1>
+                  )}
                   <div style={{ marginTop: '8px', height: '2px', width: isMobile ? '40px' : '60px', background: 'linear-gradient(90deg, #8b5cf6, #ec4899)', borderRadius: '2px' }} />
                 </div>
                 <div style={{ position: 'relative', flex: '0 0 auto', width: isMobile ? '100%' : '260px', marginTop: isMobile ? '8px' : '12px' }}>
@@ -2395,7 +2449,7 @@ Begin. — skillcl.one`;
                         boxShadow: isActive ? `0 0 12px ${meta.color}18` : 'none',
                         display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', transition: 'all 0.15s ease',
                       }}>
-                      <span>{meta.icon}</span>
+                      <CardIcon icon={CATEGORY_ICONS[meta.icon] || Star} size={11} color={isActive ? meta.color : 'rgba(255,255,255,0.36)'} />
                       <span>{meta.name}</span>
                       <span style={{ fontSize: '9px', padding: '1px 5px', background: isActive ? `${meta.color}20` : 'rgba(255,255,255,0.06)', borderRadius: '8px' }}>{count}</span>
                     </button>
