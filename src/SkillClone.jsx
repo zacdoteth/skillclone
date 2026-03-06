@@ -413,6 +413,208 @@ const CATEGORY_META = Object.fromEntries(
   Object.entries(GENIUS_CATEGORIES).map(([id, c]) => [id, { icon: c.icon, name: c.name, color: c.color }])
 );
 
+const hexToRgb = (hex) => {
+  const clean = hex.replace('#', '');
+  return {
+    r: parseInt(clean.slice(0, 2), 16),
+    g: parseInt(clean.slice(2, 4), 16),
+    b: parseInt(clean.slice(4, 6), 16),
+  };
+};
+
+const FUSION_HELIX_STEPS = Array.from({ length: 12 }, (_, i) => {
+  const center = 5.5;
+  const offset = i - center;
+  return {
+    id: `helix-${i}`,
+    y: offset * 25,
+    rungWidth: 128 - Math.abs(offset) * 10,
+    delay: i * 0.14,
+  };
+});
+
+const FUSION_SPARKS = [
+  { left: '16%', top: '18%', size: 5, delay: 0.0 },
+  { left: '24%', top: '70%', size: 3, delay: 0.5 },
+  { left: '74%', top: '20%', size: 4, delay: 0.9 },
+  { left: '83%', top: '64%', size: 6, delay: 0.25 },
+  { left: '50%', top: '12%', size: 4, delay: 0.6 },
+  { left: '58%', top: '82%', size: 5, delay: 1.1 },
+];
+
+const FusionHelixLoader = React.memo(function FusionHelixLoader({ deck = [], isMobile = false }) {
+  const fallbackDeck = [{ catId: 'product', cat: CATEGORY_META.product, mod: { id: 'fusion-core', name: 'Skillclone', power: 99 } }];
+  const visibleDeck = (deck.length ? deck : fallbackDeck).slice(0, 6);
+  const width = isMobile ? 290 : 400;
+  const height = isMobile ? 320 : 400;
+  const nodeSize = isMobile ? 38 : 46;
+  const nodeSpan = isMobile ? 54 : 72;
+  const nodeDepth = isMobile ? 78 : 104;
+  const coreSize = isMobile ? 90 : 116;
+
+  return (
+    <div style={{ position: 'relative', width: `${width}px`, height: `${height}px`, marginBottom: isMobile ? '20px' : '24px', pointerEvents: 'none' }}>
+      <div className="fusion-helix-stage" style={{ position: 'relative', width: '100%', height: '100%', transformStyle: 'preserve-3d' }}>
+        <div style={{
+          position: 'absolute',
+          inset: isMobile ? '34px 30px 26px' : '26px 36px 20px',
+          borderRadius: '36px',
+          background: 'radial-gradient(circle at 50% 50%, rgba(139,92,246,0.18) 0%, rgba(79,70,229,0.08) 34%, rgba(6,6,10,0.0) 76%)',
+          filter: 'blur(10px)',
+        }} />
+        <div style={{
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          width: isMobile ? '176px' : '220px',
+          height: isMobile ? '250px' : '300px',
+          transform: 'translate(-50%, -50%)',
+          borderRadius: '999px',
+          border: '1px solid rgba(139,92,246,0.08)',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.0) 100%)',
+          boxShadow: 'inset 0 0 60px rgba(139,92,246,0.05)',
+        }} />
+        <div style={{
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          width: '8px',
+          height: isMobile ? '232px' : '280px',
+          transform: 'translate(-50%, -50%)',
+          borderRadius: '999px',
+          background: 'linear-gradient(180deg, rgba(196,181,253,0.05) 0%, rgba(96,165,250,0.28) 20%, rgba(255,255,255,0.78) 50%, rgba(167,139,250,0.24) 78%, rgba(196,181,253,0.04) 100%)',
+          boxShadow: '0 0 20px rgba(96,165,250,0.14), 0 0 50px rgba(139,92,246,0.12)',
+          opacity: 0.9,
+        }} />
+
+        {FUSION_SPARKS.map((spark, i) => (
+          <div
+            key={`spark-${i}`}
+            className="fusion-spark"
+            style={{
+              position: 'absolute',
+              left: spark.left,
+              top: spark.top,
+              width: `${spark.size}px`,
+              height: `${spark.size}px`,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(196,181,253,0.6) 42%, rgba(255,255,255,0) 100%)',
+              animationDelay: `${spark.delay}s`,
+            }}
+          />
+        ))}
+
+        {FUSION_HELIX_STEPS.map((step) => (
+          <div
+            key={`rung-${step.id}`}
+            className="fusion-helix-rung"
+            style={{
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              width: `${step.rungWidth}px`,
+              height: '2px',
+              '--rung-y': `${step.y}px`,
+              borderRadius: '999px',
+              background: 'linear-gradient(90deg, rgba(196,181,253,0.0) 0%, rgba(196,181,253,0.65) 18%, rgba(96,165,250,0.82) 50%, rgba(196,181,253,0.65) 82%, rgba(196,181,253,0.0) 100%)',
+              boxShadow: '0 0 12px rgba(139,92,246,0.14)',
+              animationDelay: `${-step.delay}s`,
+            }}
+          />
+        ))}
+
+        {FUSION_HELIX_STEPS.map((step, i) => {
+          const leftEntry = visibleDeck[i % visibleDeck.length];
+          const rightEntry = visibleDeck[(i + Math.ceil(visibleDeck.length / 2)) % visibleDeck.length];
+          const nodes = [
+            { entry: leftEntry, strand: 'a' },
+            { entry: rightEntry, strand: 'b' },
+          ];
+
+          return nodes.map(({ entry, strand }) => {
+            const iconKey = entry.catId === 'custom'
+              ? (entry.mod._source === 'wikipedia' ? 'discovered' : 'custom')
+              : entry.cat.icon;
+            const NodeIcon = CATEGORY_ICONS[iconKey] || Star;
+            const { r, g, b } = hexToRgb(entry.cat.color);
+
+            return (
+              <div
+                key={`${step.id}-${strand}-${entry.mod.id}`}
+                className={`fusion-helix-node fusion-helix-node-${strand}`}
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  top: '50%',
+                  width: `${nodeSize}px`,
+                  height: `${nodeSize}px`,
+                  '--node-y': `${step.y}px`,
+                  '--node-span': `${nodeSpan}px`,
+                  '--node-depth': `${nodeDepth}px`,
+                  animationDelay: `${-step.delay}s`,
+                }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  borderRadius: isMobile ? '13px' : '16px',
+                  background: `linear-gradient(180deg, rgba(${r},${g},${b},0.32) 0%, rgba(20,20,28,0.98) 36%, rgba(10,10,16,0.98) 100%)`,
+                  border: `1px solid rgba(${r},${g},${b},0.36)`,
+                  boxShadow: `0 10px 24px rgba(0,0,0,0.34), 0 0 24px rgba(${r},${g},${b},0.16), inset 0 1px 0 rgba(255,255,255,0.08)`,
+                }} />
+                <div style={{
+                  position: 'absolute',
+                  inset: '1px',
+                  borderRadius: isMobile ? '12px' : '15px',
+                  background: `radial-gradient(circle at 50% 32%, rgba(${r},${g},${b},0.22) 0%, rgba(255,255,255,0.03) 38%, rgba(8,8,12,0.0) 100%)`,
+                }} />
+                <div style={{
+                  position: 'absolute',
+                  top: '4px',
+                  right: '4px',
+                  fontSize: isMobile ? '6px' : '7px',
+                  fontWeight: 900,
+                  color: `rgba(${r},${g},${b},0.92)`,
+                  fontFamily: 'ui-monospace, monospace',
+                  textShadow: `0 0 8px rgba(${r},${g},${b},0.45)`,
+                }}>
+                  {entry.mod.power}
+                </div>
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  filter: `drop-shadow(0 0 10px rgba(${r},${g},${b},0.5))`,
+                }}>
+                  <CardIcon icon={NodeIcon} size={isMobile ? 18 : 22} color={entry.cat.color} />
+                </div>
+              </div>
+            );
+          });
+        })}
+
+        <div className="fusion-core-shell" style={{
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          width: `${coreSize}px`,
+          height: `${coreSize}px`,
+          transform: 'translate(-50%, -50%)',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle at 35% 35%, rgba(255,255,255,0.9) 0%, rgba(196,181,253,0.8) 12%, rgba(139,92,246,0.28) 38%, rgba(99,102,241,0.0) 74%)',
+          boxShadow: '0 0 34px rgba(139,92,246,0.22), 0 0 90px rgba(99,102,241,0.18)',
+        }}>
+          <div className="fusion-core-ring" style={{ position: 'absolute', inset: isMobile ? '-8px' : '-10px', borderRadius: '50%', border: '1px solid rgba(196,181,253,0.18)' }} />
+          <div className="fusion-core-ring fusion-core-ring-b" style={{ position: 'absolute', inset: isMobile ? '10px' : '12px', borderRadius: '50%', border: '1px solid rgba(96,165,250,0.18)' }} />
+          <div className="fusion-core-ring fusion-core-ring-c" style={{ position: 'absolute', inset: isMobile ? '24px' : '30px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.24)' }} />
+        </div>
+      </div>
+    </div>
+  );
+});
+
 // Cognitive routing triggers — maps each domain to the task signals that activate its experts
 const ROUTING_TRIGGERS = {
   film: 'video, storytelling, narrative, cinematography, audience engagement, pacing, editing, scenes',
@@ -572,6 +774,7 @@ export default function SkillClone() {
   const [sparklingCards, setSparklingCards] = useState(new Set()); // sparkle burst on select
   const [poofingCards, setPoofingCards] = useState(new Set()); // poof spiral on deselect from hand
   const [wobblingCards, setWobblingCards] = useState(new Set()); // neighbor wobble on deselect
+  const [focusedHandCard, setFocusedHandCard] = useState(null);
   const wikiSearchTimeout = useRef(null);
   const heroCardRef = useRef(null);
   const searchInputRef = useRef(null);
@@ -870,10 +1073,26 @@ export default function SkillClone() {
     return () => { cancelled = true; };
   }, [stage, userIntent]);
 
-  const allSelected = Object.values(selectedModules).flat();
+  const fusionDeck = React.useMemo(() => (
+    Object.entries(selectedModules).flatMap(([catId, mods]) => {
+      const cat = GENIUS_CATEGORIES[catId] || { color: catId === 'custom' ? '#ffd56a' : '#14b8a6', icon: 'custom', name: 'Custom' };
+      return (mods || []).map((mod) => ({ catId, mod, cat }));
+    })
+  ), [selectedModules]);
+  const allSelected = fusionDeck.map(({ mod }) => mod);
   const totalPower = allSelected.reduce((sum, m) => sum + (m?.power || 0), 0);
   const moduleCount = allSelected.length;
   const maxGeniuses = isPro ? PRO_LIMIT : FREE_LIMIT;
+
+  React.useEffect(() => {
+    if (!focusedHandCard) return;
+    const stillExists = (selectedModules[focusedHandCard.catId] || []).some((mod) => mod.id === focusedHandCard.id);
+    if (!stillExists) setFocusedHandCard(null);
+  }, [focusedHandCard, selectedModules]);
+
+  React.useEffect(() => {
+    if (stage !== 'building' || mobileCartOpen) setFocusedHandCard(null);
+  }, [mobileCartOpen, stage]);
 
   const enforcePlanLimits = useCallback((draftSelection = {}) => {
     if (isPro) {
@@ -961,6 +1180,28 @@ export default function SkillClone() {
       return { ...prev, [catId]: [...current, module] };
     });
   };
+
+  const removeFromDeck = useCallback((catId, moduleId) => {
+    sounds.deselect();
+    setSelectedModules(prev => {
+      const current = prev[catId] || [];
+      const filtered = current.filter(m => m.id !== moduleId);
+      return filtered.length ? { ...prev, [catId]: filtered } : (({ [catId]: _, ...rest }) => rest)(prev);
+    });
+  }, [sounds]);
+
+  const removeFocusedHandCard = useCallback(() => {
+    if (!focusedHandCard) return;
+    const neighborIds = new Set([focusedHandCard.leftId, focusedHandCard.rightId].filter(Boolean));
+    setPoofingCards(prev => new Set(prev).add(focusedHandCard.id));
+    setWobblingCards(neighborIds);
+    setFocusedHandCard(null);
+    setTimeout(() => {
+      setPoofingCards(prev => { const next = new Set(prev); next.delete(focusedHandCard.id); return next; });
+      setWobblingCards(new Set());
+      removeFromDeck(focusedHandCard.catId, focusedHandCard.id);
+    }, 220);
+  }, [focusedHandCard, removeFromDeck]);
 
   const isSelected = (catId, modId) => (selectedModules[catId] || []).some(m => m.id === modId);
 
@@ -1474,28 +1715,97 @@ Begin. — skillcl.one`;
         showOrb={stage === 'landing' && !isMobile}
         cardRef={stage === 'landing' ? null : hoveredCardRef}
         card2Ref={stage === 'building' ? lastSelectedCardRef : null}
-        brightness={stage === 'landing' ? 1.0 : stage === 'building' ? 0.4 : 0.3}
+        brightness={1.0}
       />
       
       {/* FUSION */}
       {showFusion && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'radial-gradient(circle at 50% 50%, rgba(139,92,246,0.15) 0%, rgba(0,0,0,0.97) 60%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          {/* Expanding rings */}
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 1000,
+          background: 'radial-gradient(circle at 50% 38%, rgba(139,92,246,0.24) 0%, rgba(76,29,149,0.16) 20%, rgba(7,7,12,0.86) 56%, rgba(3,3,6,0.97) 100%)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: isMobile ? '30px 18px' : '48px 24px',
+          overflow: 'hidden',
+        }}>
           {[0, 1, 2].map(i => (
-            <div key={i} style={{ position: 'absolute', width: '100px', height: '100px', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '50%', animation: `fusionRing 1.2s ${i * 0.3}s ease-out infinite` }} />
+            <div key={i} style={{
+              position: 'absolute',
+              width: isMobile ? '180px' : '240px',
+              height: isMobile ? '180px' : '240px',
+              border: '1px solid rgba(139,92,246,0.12)',
+              borderRadius: '50%',
+              animation: `fusionRing ${1.9 + i * 0.2}s ${i * 0.28}s ease-out infinite`,
+            }} />
           ))}
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ fontSize: '56px', marginBottom: '16px', animation: 'pulse 0.3s infinite', filter: 'drop-shadow(0 0 30px rgba(139,92,246,0.5))' }}>🧬</div>
+
+          <FusionHelixLoader deck={fusionDeck} isMobile={isMobile} />
+
+          <div style={{
+            position: 'relative',
+            zIndex: 1,
+            fontSize: isMobile ? '15px' : '17px',
+            fontWeight: 800,
+            letterSpacing: isMobile ? '0.24em' : '0.32em',
+            background: 'linear-gradient(90deg, #a78bfa, #f472b6, #60a5fa, #a78bfa)',
+            backgroundSize: '220% 100%',
+            animation: 'shimmer 2.1s linear infinite',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            textTransform: 'uppercase',
+            textAlign: 'center',
+          }}>
+            Fusing {moduleCount} Geniuses
           </div>
-          <div style={{ position: 'relative', zIndex: 1, fontSize: '16px', fontWeight: 700, letterSpacing: '4px', background: 'linear-gradient(90deg, #8b5cf6, #ec4899, #8b5cf6)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s linear infinite', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', textTransform: 'uppercase' }}>Fusing {moduleCount} Geniuses</div>
-          {/* Genius names flash */}
-          <div style={{ position: 'relative', zIndex: 1, marginTop: '16px', display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '400px' }}>
-            {allSelected.slice(0, 8).map((mod, i) => (
-              <span key={mod.id} style={{ fontSize: '11px', padding: '3px 10px', background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '20px', color: 'rgba(255,255,255,0.6)', animation: `fusionFlash 0.8s ${i * 0.1}s ease-in-out infinite alternate` }}>{mod.name}</span>
+          <div style={{
+            position: 'relative',
+            zIndex: 1,
+            marginTop: '8px',
+            fontSize: isMobile ? '12px' : '13px',
+            color: 'rgba(255,255,255,0.55)',
+            letterSpacing: '0.02em',
+            textAlign: 'center',
+          }}>
+            Sequencing their best instincts into one build brain
+          </div>
+
+          <div style={{
+            position: 'relative',
+            zIndex: 1,
+            marginTop: '18px',
+            display: 'flex',
+            gap: '8px',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            maxWidth: isMobile ? '310px' : '520px',
+          }}>
+            {fusionDeck.slice(0, 6).map(({ mod, cat }, i) => (
+              <span
+                key={mod.id}
+                style={{
+                  fontSize: isMobile ? '10px' : '11px',
+                  padding: isMobile ? '5px 10px' : '6px 12px',
+                  background: `linear-gradient(180deg, ${cat.color}14 0%, rgba(10,10,16,0.72) 100%)`,
+                  border: `1px solid ${cat.color}30`,
+                  borderRadius: '999px',
+                  color: 'rgba(255,255,255,0.74)',
+                  boxShadow: `0 0 18px ${cat.color}10`,
+                  animation: `fusionFlash 1.2s ${i * 0.08}s ease-in-out infinite alternate`,
+                }}
+              >
+                {mod.name}
+              </span>
             ))}
           </div>
-          <div style={{ position: 'relative', zIndex: 1, marginTop: '24px', width: '200px', height: '2px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', background: 'linear-gradient(90deg, #8b5cf6, #ec4899)', animation: 'loading 1.2s ease-out forwards', borderRadius: '2px' }} />
+
+          <div style={{ position: 'relative', zIndex: 1, marginTop: '20px', width: isMobile ? '210px' : '250px', height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '999px', overflow: 'hidden', boxShadow: 'inset 0 0 18px rgba(255,255,255,0.04)' }}>
+            <div style={{ height: '100%', background: 'linear-gradient(90deg, #8b5cf6, #ec4899, #60a5fa)', animation: 'loading 1.25s ease-out forwards', borderRadius: '999px', boxShadow: '0 0 24px rgba(139,92,246,0.22)' }} />
           </div>
         </div>
       )}
@@ -2553,9 +2863,76 @@ Begin. — skillcl.one`;
                 <div style={{
                   position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)',
                   width: `${Math.min(Math.max(moduleCount * 130, 320), 1100)}px`, height: isMobile ? '208px' : '180px',
-                  background: `radial-gradient(ellipse 80% 70% at 50% 100%, rgba(139,92,246,0.06) 0%, transparent 70%)`,
+                  background: `radial-gradient(ellipse 82% 72% at 50% 100%, rgba(139,92,246,0.18) 0%, rgba(59,130,246,0.08) 34%, transparent 72%)`,
                   pointerEvents: 'none', transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
                 }} />
+                {moduleCount > 0 && (
+                  <>
+                    <div style={{
+                      position: 'absolute',
+                      left: '50%',
+                      bottom: isMobile ? '126px' : '120px',
+                      transform: 'translateX(-50%)',
+                      width: `${Math.min(Math.max(moduleCount * 110, isMobile ? 220 : 280), isMobile ? 340 : 760)}px`,
+                      height: isMobile ? '18px' : '20px',
+                      borderRadius: '999px',
+                      background: 'linear-gradient(90deg, transparent 0%, rgba(167,139,250,0.4) 20%, rgba(96,165,250,0.45) 50%, rgba(167,139,250,0.4) 80%, transparent 100%)',
+                      opacity: focusedHandCard ? 0.9 : 0.7,
+                      filter: 'blur(10px)',
+                      pointerEvents: 'none',
+                    }} />
+                    <div style={{
+                      position: 'absolute',
+                      left: '50%',
+                      bottom: isMobile ? '144px' : '138px',
+                      transform: 'translateX(-50%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: isMobile ? '8px 10px' : '9px 12px',
+                      borderRadius: '999px',
+                      background: 'rgba(10,10,16,0.72)',
+                      border: `1px solid ${focusedHandCard ? 'rgba(255,255,255,0.12)' : 'rgba(139,92,246,0.16)'}`,
+                      boxShadow: focusedHandCard
+                        ? '0 12px 32px rgba(0,0,0,0.35), 0 0 28px rgba(139,92,246,0.12)'
+                        : '0 10px 26px rgba(0,0,0,0.28), 0 0 22px rgba(139,92,246,0.08)',
+                      backdropFilter: 'blur(18px)',
+                      WebkitBackdropFilter: 'blur(18px)',
+                      pointerEvents: 'auto',
+                      zIndex: 230,
+                      transition: 'all 0.22s ease',
+                    }}>
+                      {focusedHandCard ? (
+                        <>
+                          <span style={{ fontSize: isMobile ? '10px' : '11px', fontWeight: 700, color: 'white', maxWidth: isMobile ? '110px' : '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {focusedHandCard.name}
+                          </span>
+                          <button
+                            onClick={() => setFocusedHandCard(null)}
+                            style={{ padding: isMobile ? '5px 8px' : '6px 10px', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.65)', fontSize: isMobile ? '10px' : '11px', fontWeight: 700, cursor: 'pointer' }}
+                          >
+                            Keep
+                          </button>
+                          <button
+                            onClick={removeFocusedHandCard}
+                            style={{ padding: isMobile ? '5px 9px' : '6px 11px', borderRadius: '999px', border: '1px solid rgba(255,94,106,0.22)', background: 'rgba(255,94,106,0.12)', color: '#ff8b96', fontSize: isMobile ? '10px' : '11px', fontWeight: 800, cursor: 'pointer' }}
+                          >
+                            Remove
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <span style={{ fontSize: isMobile ? '10px' : '11px', fontWeight: 800, color: '#c4b5fd', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                            Your Squad
+                          </span>
+                          <span style={{ fontSize: isMobile ? '10px' : '11px', color: 'rgba(255,255,255,0.52)' }}>
+                            {isMobile ? 'Tap a card to inspect' : 'Click a card to inspect'}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
 
                 {/* Fanned hand of cards */}
                 <div style={{
@@ -2578,6 +2955,11 @@ Begin. — skillcl.one`;
                     const cardW = isMobile ? 78 : 110;
                     const cardH = isMobile ? 112 : 154;
                     const overlap = total <= 3 ? (isMobile ? 4 : 4) : total <= 5 ? (isMobile ? -4 : -8) : total <= 7 ? (isMobile ? -10 : -20) : (isMobile ? -16 : -32);
+                    const isFocused = focusedHandCard?.id === mod.id;
+                    const focusedRotation = isFocused ? rotation * 0.22 : rotation;
+                    const focusLift = isFocused ? (isMobile ? 30 : 42) : 0;
+                    const focusScale = isFocused ? (isMobile ? 1.16 : 1.12) : 1;
+                    const baseTransform = `rotate(${focusedRotation}deg) translateY(${arcY - focusLift}px) scale(${focusScale})`;
                     const r = parseInt(cat.color.slice(1,3),16);
                     const g = parseInt(cat.color.slice(3,5),16);
                     const b = parseInt(cat.color.slice(5,7),16);
@@ -2585,38 +2967,38 @@ Begin. — skillcl.one`;
                       <div key={mod.id}
                         className="hand-card"
                         onClick={() => {
-                          setPoofingCards(prev => new Set(prev).add(mod.id));
-                          const neighborIds = new Set();
-                          if (i > 0) neighborIds.add(handSlice[i - 1].id);
-                          if (i < handSlice.length - 1) neighborIds.add(handSlice[i + 1].id);
-                          setWobblingCards(neighborIds);
-                          setTimeout(() => {
-                            setPoofingCards(prev => { const next = new Set(prev); next.delete(mod.id); return next; });
-                            setWobblingCards(new Set());
-                            toggleModule(catId, mod);
-                          }, 220);
+                          sounds.click();
+                          setFocusedHandCard({
+                            id: mod.id,
+                            catId,
+                            name: mod.name,
+                            leftId: i > 0 ? handSlice[i - 1].id : null,
+                            rightId: i < handSlice.length - 1 ? handSlice[i + 1].id : null,
+                          });
                         }}
                         style={{
                           width: `${cardW}px`, height: `${cardH}px`,
                           borderRadius: isMobile ? '7px' : '8px', position: 'relative', cursor: 'pointer', pointerEvents: 'auto', flexShrink: 0,
                           marginLeft: i === 0 ? 0 : `${overlap}px`,
-                          transform: `rotate(${rotation}deg) translateY(${arcY}px)`,
+                          transform: baseTransform,
                           transformOrigin: 'bottom center',
-                          zIndex: i + 1,
+                          zIndex: isFocused ? 110 : i + 1,
                           animation: poofingCards.has(mod.id)
                             ? 'cardPoof 0.22s ease-out forwards'
                             : wobblingCards.has(mod.id)
                             ? 'neighborWobble 0.18s ease-out'
                             : undefined,
-                          transition: 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease',
+                          transition: 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, filter 0.2s ease',
+                          filter: isFocused ? `drop-shadow(0 0 18px rgba(${r},${g},${b},0.28))` : 'none',
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = `rotate(${rotation * 0.2}deg) translateY(${arcY - (isMobile ? 24 : 44)}px) scale(1.06)`;
+                          if (isMobile) return;
+                          e.currentTarget.style.transform = `rotate(${focusedRotation * 0.14}deg) translateY(${arcY - focusLift - 28}px) scale(${isFocused ? 1.16 : 1.08})`;
                           e.currentTarget.style.zIndex = '100';
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = `rotate(${rotation}deg) translateY(${arcY}px)`;
-                          e.currentTarget.style.zIndex = `${i + 1}`;
+                          e.currentTarget.style.transform = baseTransform;
+                          e.currentTarget.style.zIndex = `${isFocused ? 110 : i + 1}`;
                         }}>
                         {/* MTG-style card frame */}
                         <div style={{
@@ -2712,7 +3094,9 @@ Begin. — skillcl.one`;
                         <div style={{
                           position: 'absolute', inset: '2px', top: '4px', borderRadius: 'inherit',
                           background: 'transparent', pointerEvents: 'none', zIndex: -1,
-                          boxShadow: `0 4px 10px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.35), 0 0 20px rgba(${r},${g},${b},0.1)`,
+                          boxShadow: isFocused
+                            ? `0 10px 18px rgba(0,0,0,0.52), 0 18px 38px rgba(0,0,0,0.34), 0 0 28px rgba(${r},${g},${b},0.24)`
+                            : `0 4px 10px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.35), 0 0 20px rgba(${r},${g},${b},0.1)`,
                         }} />
                       </div>
                     );
@@ -2929,6 +3313,36 @@ Begin. — skillcl.one`;
           0% { transform: scale(0.5); opacity: 1; }
           100% { transform: scale(3); opacity: 0; }
         }
+        @keyframes fusionHelixStage {
+          0%, 100% { transform: rotateX(10deg) rotateY(0deg) scale(1); }
+          50% { transform: rotateX(15deg) rotateY(-6deg) scale(1.02); }
+        }
+        @keyframes fusionHelixNodeA {
+          0% { transform: translate3d(calc(-50% - var(--node-span)), calc(-50% + var(--node-y)), calc(-1 * var(--node-depth))); opacity: 0.28; }
+          25% { transform: translate3d(calc(-50% - 18px), calc(-50% + var(--node-y)), -18px); opacity: 0.54; }
+          50% { transform: translate3d(calc(-50% + var(--node-span)), calc(-50% + var(--node-y)), var(--node-depth)) scale(1.14); opacity: 1; }
+          75% { transform: translate3d(calc(-50% + 18px), calc(-50% + var(--node-y)), 14px) scale(0.95); opacity: 0.64; }
+          100% { transform: translate3d(calc(-50% - var(--node-span)), calc(-50% + var(--node-y)), calc(-1 * var(--node-depth))); opacity: 0.28; }
+        }
+        @keyframes fusionHelixNodeB {
+          0% { transform: translate3d(calc(-50% + var(--node-span)), calc(-50% + var(--node-y)), var(--node-depth)) scale(1.14); opacity: 1; }
+          25% { transform: translate3d(calc(-50% + 18px), calc(-50% + var(--node-y)), 14px) scale(0.95); opacity: 0.64; }
+          50% { transform: translate3d(calc(-50% - var(--node-span)), calc(-50% + var(--node-y)), calc(-1 * var(--node-depth))); opacity: 0.28; }
+          75% { transform: translate3d(calc(-50% - 18px), calc(-50% + var(--node-y)), -18px); opacity: 0.54; }
+          100% { transform: translate3d(calc(-50% + var(--node-span)), calc(-50% + var(--node-y)), var(--node-depth)) scale(1.14); opacity: 1; }
+        }
+        @keyframes fusionRungGlow {
+          0%, 100% { opacity: 0.28; transform: translate(-50%, calc(-50% + var(--rung-y, 0px))) scaleX(0.92); }
+          50% { opacity: 0.82; transform: translate(-50%, calc(-50% + var(--rung-y, 0px))) scaleX(1.05); }
+        }
+        @keyframes fusionSparkBlink {
+          0%, 100% { opacity: 0.25; transform: scale(0.7); }
+          50% { opacity: 1; transform: scale(1.25); }
+        }
+        @keyframes fusionCorePulse {
+          0%, 100% { transform: translate(-50%, -50%) scale(1); }
+          50% { transform: translate(-50%, -50%) scale(1.08); }
+        }
         @keyframes fusionFlash {
           0% { opacity: 0; }
           50% { opacity: 1; }
@@ -2958,6 +3372,16 @@ Begin. — skillcl.one`;
         .fuse-btn:active { transform: translateY(0) scale(0.97); }
         .fuse-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 50%, transparent 100%); transform: translateX(-100%); animation: fuseShimmer 3.5s ease-in-out infinite; }
         @keyframes fuseShimmer { 0%, 100% { transform: translateX(-100%); } 50% { transform: translateX(100%); } }
+        .fusion-helix-stage { animation: fusionHelixStage 4.8s ease-in-out infinite; }
+        .fusion-helix-node { transform-style: preserve-3d; will-change: transform, opacity; }
+        .fusion-helix-node-a { animation: fusionHelixNodeA 2.45s linear infinite; }
+        .fusion-helix-node-b { animation: fusionHelixNodeB 2.45s linear infinite; }
+        .fusion-helix-rung { will-change: transform, opacity; animation: fusionRungGlow 2.45s ease-in-out infinite; }
+        .fusion-spark { will-change: transform, opacity; animation: fusionSparkBlink 1.8s ease-in-out infinite; }
+        .fusion-core-shell { will-change: transform; animation: fusionCorePulse 2.2s ease-in-out infinite; }
+        .fusion-core-ring { animation: orbRing 7.5s linear infinite; }
+        .fusion-core-ring-b { animation-direction: reverse; animation-duration: 9.5s; }
+        .fusion-core-ring-c { animation-duration: 6.2s; }
         /* Hand card interactions */
         .hand-card { transform-style: preserve-3d; }
         .hand-card:hover .hand-card-specs { opacity: 1 !important; }
