@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Machine Memory — SkillClone Background</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;overflow:hidden;background:#000}
+  canvas{position:fixed;top:0;left:0;width:100%;height:100%;display:block}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ── DEVICE TIER ────────────────────────────────────────────────────────────────
+const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||window.innerWidth<768;
+const isSmall=window.innerWidth<430;
+const TIER=isSmall?"mobile":isMobile?"tablet":"desktop";
+const CFG={
+  desktop:{NEB:6000,WSH:12000,FRM:24000,FIL:16000,FNE:14000,STR:7000,oct:3,maxPt:58},
+  tablet: {NEB:3000,WSH:6000, FRM:14000,FIL:8000, FNE:8000, STR:4000,oct:2,maxPt:46},
+  mobile: {NEB:1500,WSH:3000, FRM:7000, FIL:4000, FNE:4000, STR:2000,oct:2,maxPt:38},
+}[TIER];
+const LAYER_DEFS=[{n:CFG.NEB,v:0},{n:CFG.WSH,v:.20},{n:CFG.FRM,v:.40},{n:CFG.FIL,v:.60},{n:CFG.FNE,v:.80},{n:CFG.STR,v:1}];
+const N=LAYER_DEFS.reduce((s,l)=>s+l.n,0);
+
+// ── RENDERER ───────────────────────────────────────────────────────────────────
+let W=window.innerWidth,H=window.innerHeight;
+const renderer=new THREE.WebGLRenderer({canvas:document.getElementById("c"),antialias:false,powerPreference:"high-performance"});
+renderer.setSize(W,H,true);
+renderer.setPixelRatio(isMobile?Math.min(devicePixelRatio,1.2):Math.min(devicePixelRatio,1.8));
+renderer.setClearColor(0x000000,1);
+const HH=2.8;
+let HW=HH*(W/H);
+const cam=new THREE.OrthographicCamera(-HW,HW,HH,-HH,0,1);
+const scene=new THREE.Scene();
+
+// ── SHADERS ────────────────────────────────────────────────────────────────────
+const VERT=`
+  attribute float aSeed;
+  attribute float aLayer;
+  attribute float aSpeed;
+  uniform float uMaxPt;
+  varying float vSeed;varying float vSpeed;varying float vLayer;
+  void main(){
+    vSeed=aSeed;vSpeed=aSpeed;vLayer=aLayer;
+    vec4 mv=modelViewMatrix*vec4(position,1.0);
+    gl_Position=projectionMatrix*mv;
+    float ly=aLayer,sz;
+    if     (ly<.10) sz=min(uMaxPt,30.+aSeed*26.+aSpeed*5.);
+    else if(ly<.30) sz=min(uMaxPt,12.+aSeed*9. +aSpeed*9.);
+    else if(ly<.50) sz=2.6+aSeed*2.4+aSpeed*10.;
+    else if(ly<.70) sz=1.4+aSeed*1.0+aSpeed*8.;
+    else if(ly<.90) sz=0.8+aSeed*0.5+aSpeed*4.2;
+    else            sz=2.0+aSeed*3.5+aSpeed*14.;
+    gl_PointSize=max(0.5,sz);
+  }
+`;
+const FRAG=`
+  precision highp float;
+  uniform float uTime,uSeasonPct,uSeasonIdx;
+  varying float vSeed,vSpeed,vLayer;
+  vec3 pal(float t,vec3 a,vec3 b,vec3 c,vec3 d){return clamp(a+b*cos(6.28318*(c*t+d)),0.,1.);}
+  vec3 voidMatter(float t){return pal(t,vec3(.18,.08,.38),vec3(.36,.26,.46),vec3(.66,.38,.82),vec3(.30,.10,.52));}
+  vec3 darkNeural(float t){return pal(t,vec3(.06,.13,.40),vec3(.26,.28,.34),vec3(.52,.70,.46),vec3(.00,.16,.50));}
+  vec3 obsidFire(float t) {return pal(t,vec3(.30,.05,.36),vec3(.38,.20,.40),vec3(.70,.42,.78),vec3(.08,.02,.26));}
+  vec3 toneMap(vec3 c){float w=1.15;return(c*(1.+c/(w*w)))/(1.+c);}
+  void main(){
+    vec2 uv=gl_PointCoord-.5;float r=length(uv);if(r>.5)discard;
+    float ly=vLayer,alpha;
+    if     (ly<.10) alpha=exp(-r*r*2.0)*.0082+exp(-r*r*5.2)*.0040;
+    else if(ly<.30) alpha=exp(-r*r*2.3)*.010 +exp(-r*r*6.8)*.0052;
+    else if(ly<.50) alpha=exp(-r*r*15.)*.46  +exp(-r*r*4.4)*.040;
+    else if(ly<.70) alpha=exp(-r*r*26.)*.60  +exp(-r*r*7.8)*.030;
+    else if(ly<.90) alpha=exp(-r*r*65.)*.82  +exp(-r*r*12.)*.034;
+    else            alpha=exp(-r*r*100.)*.88+exp(-r*r*18.)*.36+exp(-r*r*4.2)*.060;
+    float ct=vSeed*.88+vSpeed*3.5+uTime*.015+ly*.20;
+    float edge=smoothstep(.72,1.,uSeasonPct);float si=uSeasonIdx;
+    vec3 cA,cB,col;
+    if(si<.5){cA=voidMatter(ct);cB=darkNeural(ct);}
+    else if(si<1.5){cA=darkNeural(ct);cB=obsidFire(ct);}
+    else{cA=obsidFire(ct);cB=voidMatter(ct);}
+    col=mix(cA,cB,edge);
+    float hot=clamp(vSpeed*5.,0.,.42);
+    col=mix(col,vec3(.70,.60,1.),hot*(1.-r*2.));
+    col=mix(col,vec3(.86,.82,1.),clamp(vSpeed*2.4-.34,0.,.13)*(1.-r*2.8));
+    if(ly>=.90){
+      float pulse=.68+sin(uTime*1.7+vSeed*6.28)*.32;
+      col=mix(col,vec3(.72,.58,1.)*pulse,exp(-r*r*140.)*.80);
+      col=mix(col,vec3(.45+sin(ct*2.1)*.14,.30+cos(ct*1.3)*.09,.88+sin(ct*.8)*.10),exp(-pow(r-.18,2.)*70.)*.26);
+    }
+    if(ly>=.30&&ly<.50){vec3 ir=vec3(.08+sin(ct*1.8)*.05,.07+cos(ct*1.4)*.04,.32+sin(ct*1.1)*.09);col=mix(col,col+ir*.16,smoothstep(.18,.42,r)*.36);}
+    if(ly<.10) col=mix(col,col*vec3(.88,.78,1.),smoothstep(.14,.44,r)*.28);
+    col=toneMap(col)*0.80;
+    gl_FragColor=vec4(col,alpha);
+  }
+`;
+
+// ── SAFE MATH ──────────────────────────────────────────────────────────────────
+// These guards are the core NaN fix — every random/math output is validated
+function sr(){const v=Math.random();return(isNaN(v)||!isFinite(v))?.5:v;}
+function randn(mu,sg){
+  const u1=Math.max(sr(),1e-7),u2=sr();
+  const z=Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
+  const v=mu+sg*z;
+  return(isNaN(v)||!isFinite(v))?mu:Math.max(mu-sg*4,Math.min(mu+sg*4,v));
+}
+function sp(v,lim){return(isNaN(v)||!isFinite(v))?0:Math.max(-lim,Math.min(lim,v));}
+
+// ── RIDGES + NODES ─────────────────────────────────────────────────────────────
+const RIDGES=[
+  {A:2.0,k:.42,ph:0.0,y: .0,s:.0055,w:.90,d: 1,dr:.028},
+  {A:1.8,k:.55,ph:2.2,y: .5,s:.0048,w:.80,d:-1,dr:.026},
+  {A:1.6,k:.38,ph:4.5,y:-.5,s:.0044,w:.75,d: 1,dr:.024},
+  {A:1.2,k:.88,ph:1.2,y: .8,s:.0040,w:.65,d:-1,dr:.032},
+  {A:1.0,k:1.1,ph:3.1,y:-.8,s:.0036,w:.58,d: 1,dr:.030},
+  {A:.65,k:1.6,ph:1.8,y: .2,s:.0030,w:.48,d:-1,dr:.036},
+  {A:.55,k:2.0,ph:3.8,y:-.2,s:.0026,w:.42,d: 1,dr:.038},
+  {A:1.4,k:.50,ph:0.8,y: .0,s:.0035,w:.60,d: 1,dr:.022},
+];
+const PHI=Math.PI*(3-Math.sqrt(5));
+const NODES=Array.from({length:7},(_,i)=>({
+  angle:i*PHI,radius:.65+(i%3)*.22,driftX:.035+(i%4)*.015,driftY:.028+(i%3)*.018,
+  pX:i*1.4,pY:i*.9,rotDir:i%2===0?1:-1,
+}));
+const CIRC=[{cx:0,cy:0,str:.0018,rad:2.5,dir:1},{cx:0,cy:0,str:.0008,rad:1.2,dir:-1}];
+
+// ── BUFFERS ────────────────────────────────────────────────────────────────────
+const pos=new Float32Array(N*3);
+const vel=new Float32Array(N*2);
+const seeds=new Float32Array(N);
+const lyrs=new Float32Array(N);
+const spBuf=new Float32Array(N);
+
+function initRidge(i,ri){
+  const R=RIDGES[ri%8];
+  const px=sp((sr()-.5)*HW*2.2,HW*2.1);
+  const py=sp(R.y+R.A*Math.sin(R.k*px+R.ph)+randn(0,.28),HH*2.1);
+  pos[i*3]=px;pos[i*3+1]=py;pos[i*3+2]=0;
+  const sl=R.A*R.k*Math.cos(R.k*px+R.ph);
+  const ln=Math.sqrt(1+sl*sl)||1;
+  const v=.006+sr()*.010;
+  vel[i*2]=(1/ln)*v*R.d;vel[i*2+1]=(sl/ln)*v*R.d;
+}
+function initFull(i){
+  pos[i*3]=sp((sr()-.5)*HW*2.2,HW*2.1);
+  pos[i*3+1]=sp((sr()-.5)*HH*2.2,HH*2.1);
+  pos[i*3+2]=0;
+  const a=sr()*Math.PI*2,v=.003+sr()*.008;
+  vel[i*2]=Math.cos(a)*v;vel[i*2+1]=Math.sin(a)*v;
+}
+function initStar(i){
+  const nd=NODES[i%7],a=nd.angle;
+  pos[i*3]=sp(Math.cos(a)*nd.radius*HW*.82+randn(0,.12),HW*.96);
+  pos[i*3+1]=sp(Math.sin(a)*nd.radius*HH*.82+randn(0,.12),HH*.96);
+  pos[i*3+2]=0;
+  const v=.005+sr()*.008;
+  vel[i*2]=-Math.sin(a)*v;vel[i*2+1]=Math.cos(a)*v;
+}
+
+let off=0;
+LAYER_DEFS.forEach((layer,li)=>{
+  for(let i=off;i<off+layer.n;i++){
+    lyrs[i]=layer.v;seeds[i]=sr();
+    const u=sr();
+    if(li===0)      initFull(i);
+    else if(li===1){u<.30?initRidge(i,i%8):initFull(i);}
+    else if(li===2){u<.80?initRidge(i,i%8):initFull(i);vel[i*2]+=(sr()-.5)*.005;vel[i*2+1]+=(sr()-.5)*.005;}
+    else if(li===3){u<.50?initRidge(i,i%8):initFull(i);}
+    else if(li===4){u<.20?initRidge(i,i%8):initFull(i);}
+    else            initStar(i);
+  }
+  off+=layer.n;
+});
+
+// Final sweep — kill any surviving NaN
+for(let i=0;i<N*3;i++) if(!isFinite(pos[i]))pos[i]=0;
+for(let i=0;i<N*2;i++) if(!isFinite(vel[i]))vel[i]=0;
+
+// ── GEOMETRY ───────────────────────────────────────────────────────────────────
+const geo=new THREE.BufferGeometry();
+const pA=new THREE.BufferAttribute(pos,3);  pA.usage=THREE.DynamicDrawUsage;
+const sA=new THREE.BufferAttribute(spBuf,1);sA.usage=THREE.DynamicDrawUsage;
+geo.setAttribute("position",pA);
+geo.setAttribute("aSpeed",  sA);
+geo.setAttribute("aSeed",   new THREE.BufferAttribute(seeds,1));
+geo.setAttribute("aLayer",  new THREE.BufferAttribute(lyrs, 1));
+
+// ── THE KEY FIX: override computeBoundingSphere ────────────────────────────────
+// Three.js tries to auto-compute a bounding sphere by iterating all positions.
+// If ANY position is NaN it propagates to radius=NaN and crashes the renderer.
+// We override the method entirely and provide a static sphere that covers our world.
+geo.computeBoundingSphere=function(){
+  if(!this.boundingSphere)this.boundingSphere=new THREE.Sphere();
+  this.boundingSphere.center.set(0,0,0);
+  this.boundingSphere.radius=Math.max(HW,HH)*2.0;
+};
+geo.computeBoundingSphere();
+
+const mat=new THREE.ShaderMaterial({
+  vertexShader:VERT,fragmentShader:FRAG,
+  uniforms:{uTime:{value:0},uSeasonPct:{value:0},uSeasonIdx:{value:0},uMaxPt:{value:CFG.maxPt}},
+  blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,
+});
+scene.add(new THREE.Points(geo,mat));
+
+// ── CURL NOISE ─────────────────────────────────────────────────────────────────
+const CFR=[.22,.75,1.80].slice(0,CFG.oct);
+const CST=[.0022,.0012,.0005].slice(0,CFG.oct);
+function phi(x,y,t,f){
+  const p=t*.18;
+  return Math.sin(x*f*1.8+p*1.05)*Math.cos(y*f*2.4+p*.88)
+        +Math.sin(x*f*3.2-y*f*2.+p*.72)*.56
+        +Math.cos(x*f*1. +y*f*4.3-p*.85)*.38
+        +Math.sin(x*f*5.8+y*f*.9 +p*.50)*.21;
+}
+function curl(x,y,t){
+  const e=.005;let vx=0,vy=0;
+  for(let i=0;i<CFG.oct;i++){
+    vx+=(phi(x,y+e,t,CFR[i])-phi(x,y-e,t,CFR[i]))/(2*e)*CST[i];
+    vy-=(phi(x+e,y,t,CFR[i])-phi(x-e,y,t,CFR[i]))/(2*e)*CST[i];
+  }
+  return[vx,vy];
+}
+function ridgeF(px,py,R,t,s){
+  const ph=R.ph+t*R.dr,ry=R.y+R.A*Math.sin(R.k*px+ph);
+  const dy=ry-py,d2=dy*dy+.001,fo=(R.w*R.w)/(d2+R.w*R.w);
+  const fy=dy/Math.sqrt(d2)*R.s*fo;
+  const sl=R.A*R.k*Math.cos(R.k*px+ph);
+  return[(sl/Math.sqrt(1+sl*sl))*R.d*R.s*.40*fo*s,fy*s];
+}
+
+// ── PHYSICS ────────────────────────────────────────────────────────────────────
+const PW=[
+  {c:.92,r:.04,a:.15,ci:1.20},{c:.80,r:.28,a:.32,ci:1.00},
+  {c:.30,r:.95,a:.60,ci:.70}, {c:.55,r:.60,a:.50,ci:.85},
+  {c:.78,r:.18,a:.28,ci:.90}, {c:.05,r:.10,a:1.30,ci:.50},
+];
+function gP(ly){if(ly<.10)return PW[0];if(ly<.30)return PW[1];if(ly<.50)return PW[2];if(ly<.70)return PW[3];if(ly<.90)return PW[4];return PW[5];}
+let BX=HW*1.10,BY=HH*1.10,prevT=0,lastNova=-999,globalRot=0;
+const mouse={x:0,y:0};
+
+function physics(t){
+  const dt=Math.min(t-prevT,.033);prevT=t;const s=dt*60;
+  globalRot+=.000042*s;
+  const ts=t-lastNova;if(ts>55)lastNova=t;
+  const nph=Math.max(0,1-ts/4);
+  const nstr=nph>0?(nph>.88?-(nph-1)*.18:nph*.08):0;
+  const nPos=NODES.map(n=>{
+    const a=n.angle+globalRot;
+    return{x:Math.cos(a)*n.radius*HW*.82+Math.sin(t*n.driftX+n.pX)*.35,
+           y:Math.sin(a)*n.radius*HH*.82+Math.cos(t*n.driftY+n.pY)*.30,dir:n.rotDir};
+  });
+  for(let i=0;i<N;i++){
+    const i3=i*3,i2=i*2;
+    let px=pos[i3],py=pos[i3+1],vx=vel[i2],vy=vel[i2+1];
+    if(!isFinite(px))px=0;if(!isFinite(py))py=0;
+    if(!isFinite(vx))vx=0;if(!isFinite(vy))vy=0;
+    const ly=lyrs[i],P=gP(ly);
+    const[cx,cy]=curl(px*.40,py*.40,t);
+    vx+=cx*P.c*s;vy+=cy*P.c*s;
+    if(P.r>.01)for(let r=0;r<8;r++){const[fx,fy]=ridgeF(px,py,RIDGES[r],t,s);vx+=fx*P.r;vy+=fy*P.r;}
+    if(P.a>.01)for(let n=0;n<7;n++){
+      const nd=nPos[n],dx=nd.x-px,dy=nd.y-py,d2=dx*dx+dy*dy+.001;
+      const fo=.25/(d2+.25),inv=1/Math.sqrt(d2);
+      vx+=dx*inv*.0028*P.a*fo*s;vy+=dy*inv*.0028*P.a*fo*s;
+      vx+=(-dy*inv)*nd.dir*.0014*P.a*fo*s;vy+=(dx*inv)*nd.dir*.0014*P.a*fo*s;
+    }
+    for(let c=0;c<2;c++){
+      const C=CIRC[c],dx=px-C.cx,dy=py-C.cy,d2=dx*dx+dy*dy+.001;
+      const fo=(C.rad*C.rad)/(d2+C.rad*C.rad),inv=1/Math.sqrt(d2);
+      vx+=(-dy*inv)*C.dir*C.str*fo*P.ci*s;vy+=(dx*inv)*C.dir*C.str*fo*P.ci*s;
+    }
+    {const dx=mouse.x-px,dy=mouse.y-py,d2=dx*dx+dy*dy+.001;
+     const fo=.81/(d2+.81),inv=1/Math.sqrt(d2),sw=Math.sin(t*.38)>0?1:-1,mm=ly<.10?.08:.40;
+     vx+=dx*inv*.0032*fo*s*mm;vy+=dy*inv*.0032*fo*s*mm;
+     vx+=(-dy*inv)*sw*.0013*fo*s*mm;vy+=(dx*inv)*sw*.0013*fo*s*mm;}
+    if(nstr!==0){const dx=-px,dy=-py,inv=1/Math.sqrt(dx*dx+dy*dy+.001);vx+=dx*inv*nstr*s;vy+=dy*inv*nstr*s;}
+    if(px>BX)vx-=(px-BX)*.018*s;if(px<-BX)vx-=(px+BX)*.018*s;
+    if(py>BY)vy-=(py-BY)*.018*s;if(py<-BY)vy-=(py+BY)*.018*s;
+    const damp=ly<.10?.9890:ly<.30?.9870:.9858;
+    vx*=damp;vy*=damp;
+    pos[i3  ]=isFinite(px+vx*s)?px+vx*s:0;
+    pos[i3+1]=isFinite(py+vy*s)?py+vy*s:0;
+    vel[i2  ]=isFinite(vx)?vx:0;
+    vel[i2+1]=isFinite(vy)?vy:0;
+    spBuf[i ]=isFinite(vx*vx+vy*vy)?Math.sqrt(vx*vx+vy*vy):0;
+  }
+  pA.needsUpdate=true;sA.needsUpdate=true;
+}
+
+// ── RENDER LOOP ────────────────────────────────────────────────────────────────
+let t=0,pf=0;
+(function tick(){
+  requestAnimationFrame(tick);
+  t+=.016;pf++;
+  const raw=t/92,si=Math.floor(raw%3),sp2=raw%1;
+  const sc=1+Math.max(0,1-t/30)*.08+Math.sin(t*.40)*.003;
+  scene.scale.set(sc,sc,1);
+  mat.uniforms.uTime.value=t;
+  mat.uniforms.uSeasonPct.value=sp2;
+  mat.uniforms.uSeasonIdx.value=si;
+  if(!isMobile||pf%2===0)physics(t);
+  renderer.render(scene,cam);
+})();
+
+// ── RESIZE ─────────────────────────────────────────────────────────────────────
+function onResize(){
+  W=window.innerWidth;H=window.innerHeight;
+  renderer.setSize(W,H,true);
+  HW=HH*(W/H);BX=HW*1.10;BY=HH*1.10;
+  cam.left=-HW;cam.right=HW;cam.updateProjectionMatrix();
+  geo.boundingSphere.radius=Math.max(HW,HH)*2.0;
+}
+window.addEventListener("resize",onResize);
+window.addEventListener("orientationchange",()=>setTimeout(onResize,250));
+
+// ── INPUT ──────────────────────────────────────────────────────────────────────
+window.addEventListener("mousemove",e=>{mouse.x=(e.clientX/W-.5)*HW*2;mouse.y=(e.clientY/H-.5)*(-HH*2);},{passive:true});
+window.addEventListener("touchmove",e=>{if(e.touches[0]){mouse.x=(e.touches[0].clientX/W-.5)*HW*2;mouse.y=(e.touches[0].clientY/H-.5)*(-HH*2);}},{passive:true});
+</script>
+</body>
+</html>

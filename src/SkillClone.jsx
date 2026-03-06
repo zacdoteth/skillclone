@@ -1045,13 +1045,16 @@ export default function SkillClone() {
     return () => { if (wikiSearchTimeout.current) clearTimeout(wikiSearchTimeout.current); };
   }, [searchQuery]);
 
-  // Dealing animation when entering building stage
+  // Dealing animation when entering building stage (ref guards against StrictMode double-fire)
+  const lastDealtStage = useRef(null);
   React.useEffect(() => {
-    if (stage === 'building') {
+    if (stage === 'building' && lastDealtStage.current !== 'building') {
+      lastDealtStage.current = 'building';
       setDealingIn(true);
       const timer = setTimeout(() => setDealingIn(false), 800);
       return () => clearTimeout(timer);
     }
+    if (stage !== 'building') lastDealtStage.current = null;
   }, [stage]);
 
   // Auto-suggest Wikipedia geniuses based on user intent when entering building stage
@@ -1190,18 +1193,23 @@ export default function SkillClone() {
     });
   }, [sounds]);
 
-  const removeFocusedHandCard = useCallback(() => {
-    if (!focusedHandCard) return;
-    const neighborIds = new Set([focusedHandCard.leftId, focusedHandCard.rightId].filter(Boolean));
-    setPoofingCards(prev => new Set(prev).add(focusedHandCard.id));
+  const removeHandCard = useCallback((cardId, catId, leftId, rightId) => {
+    const neighborIds = new Set([leftId, rightId].filter(Boolean));
+    setPoofingCards(prev => new Set(prev).add(cardId));
     setWobblingCards(neighborIds);
-    setFocusedHandCard(null);
+    if (focusedHandCard?.id === cardId) setFocusedHandCard(null);
     setTimeout(() => {
-      setPoofingCards(prev => { const next = new Set(prev); next.delete(focusedHandCard.id); return next; });
+      setPoofingCards(prev => { const next = new Set(prev); next.delete(cardId); return next; });
       setWobblingCards(new Set());
-      removeFromDeck(focusedHandCard.catId, focusedHandCard.id);
+      removeFromDeck(catId, cardId);
     }, 220);
   }, [focusedHandCard, removeFromDeck]);
+
+  // Keep old name for backward compat
+  const removeFocusedHandCard = useCallback(() => {
+    if (!focusedHandCard) return;
+    removeHandCard(focusedHandCard.id, focusedHandCard.catId, focusedHandCard.leftId, focusedHandCard.rightId);
+  }, [focusedHandCard, removeHandCard]);
 
   const isSelected = (catId, modId) => (selectedModules[catId] || []).some(m => m.id === modId);
 
@@ -1218,7 +1226,7 @@ export default function SkillClone() {
     const cardW = large ? (isMobile ? '90px' : '120px') : (isMobile ? '62px' : '86px');
     const cardH = large ? undefined : (isMobile ? '80px' : '108px');
     return (
-      <div key={mod.id} className="genius-tile"
+      <div key={mod.id} className={`genius-tile${sparklingCards.has(mod.id) ? ' select-burst' : ''}`}
         ref={(el) => {
           if (hoveredGenius?.mod?.id === mod.id) hoveredCardRef.current = el;
         }}
@@ -1227,16 +1235,17 @@ export default function SkillClone() {
           toggleModule(catId, mod);
           if (!sel) lastSelectedCardRef.current = document.querySelector(`[data-genius="${mod.id}"]`);
         }}
-        onMouseEnter={() => { setHoveredGenius({ catId, mod, cat }); if (!isMobile) sounds.hover(); }}
+        onMouseEnter={(e) => { const r = e.currentTarget.getBoundingClientRect(); setHoveredGenius({ catId, mod, cat, rect: { top: r.top, left: r.left, right: r.right, bottom: r.bottom, width: r.width, height: r.height } }); if (!isMobile) sounds.hover(); }}
         data-genius={mod.id}
+        data-selected={sel ? 'true' : 'false'}
         style={{
+          '--tile-glow': `rgba(${r},${g},${b},0.3)`,
           position: 'relative', cursor: 'pointer',
           width: cardW, flexShrink: 0,
           opacity: isProLocked ? 0.4 : 1,
           animation: dealingIn
             ? `dealCard 0.5s ${Math.min(index * 40, 600)}ms cubic-bezier(0.34, 1.4, 0.64, 1) both`
             : `cardFadeIn 0.25s ${Math.min(index * 25, 400)}ms ease-out both`,
-          transition: 'transform 0.25s cubic-bezier(0.34, 1.4, 0.64, 1), box-shadow 0.2s ease',
         }}
         onMouseMove={(e) => {
           if (isMobile) return;
@@ -1288,6 +1297,15 @@ export default function SkillClone() {
             {/* Foil shimmer on selected */}
             {sel && <div className="card-foil" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: `linear-gradient(115deg, transparent 20%, ${color}10 40%, rgba(255,255,255,0.08) 50%, ${color}10 60%, transparent 80%)`, backgroundSize: '200% 200%', pointerEvents: 'none', zIndex: 4 }} />}
 
+            {/* Card-back pattern (small tiles only) — subtle geometric border */}
+            {!large && !sel && (
+              <div style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', overflow: 'hidden', pointerEvents: 'none', zIndex: 1 }}>
+                {/* Corner filigree lines */}
+                <div style={{ position: 'absolute', inset: '4px', borderRadius: '2px', border: `1px solid rgba(${r},${g},${b},0.06)`, pointerEvents: 'none' }} />
+                <div style={{ position: 'absolute', inset: '7px', borderRadius: '1px', border: `1px solid rgba(${r},${g},${b},0.03)`, pointerEvents: 'none' }} />
+              </div>
+            )}
+
             {/* === NAME BANNER (large only) === */}
             {large && (
               <div style={{
@@ -1328,6 +1346,10 @@ export default function SkillClone() {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               <div style={{ position: 'absolute', inset: 0, opacity: 0.35, background: `radial-gradient(circle at 30% 25%, rgba(${r},${g},${b},0.2) 0%, transparent 50%), radial-gradient(circle at 70% 75%, rgba(${r},${g},${b},0.1) 0%, transparent 40%)`, pointerEvents: 'none' }} />
+              {/* Card-back center gem (small unselected only) */}
+              {!large && !sel && (
+                <div style={{ position: 'absolute', width: '28px', height: '28px', borderRadius: '4px', transform: 'rotate(45deg)', border: `1px solid rgba(${r},${g},${b},0.06)`, pointerEvents: 'none', zIndex: 0 }} />
+              )}
               <div style={{
                 position: 'relative', zIndex: 1,
                 filter: sel
@@ -1858,118 +1880,89 @@ Begin. — skillcl.one`;
         </div>
       )}
 
-      {/* UPGRADE MODAL */}
+      {/* UPGRADE MODAL — Apple / Levelsio tier */}
       {showUpgrade && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'radial-gradient(circle at 50% 18%, rgba(139,92,246,0.16) 0%, rgba(15,15,24,0.78) 34%, rgba(3,3,8,0.92) 100%)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '18px' : '24px' }}
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '16px' : '24px' }}
           onClick={() => setShowUpgrade(false)}>
           <div onClick={(e) => e.stopPropagation()}
-            style={{ position: 'relative', background: 'linear-gradient(180deg, rgba(16,16,26,0.95) 0%, rgba(10,10,18,0.98) 100%)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid rgba(129,140,248,0.18)', borderRadius: '22px', maxWidth: '440px', width: '100%', maxHeight: 'min(88vh, 760px)', overflowY: 'auto', boxShadow: '0 30px 90px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.02), inset 0 1px 0 rgba(255,255,255,0.06)', animation: 'fadeInUp 0.3s ease-out' }}>
+            style={{ position: 'relative', background: 'linear-gradient(180deg, rgba(18,18,30,0.98) 0%, rgba(8,8,14,0.99) 100%)', border: '1px solid rgba(139,92,246,0.15)', borderRadius: isMobile ? '20px' : '24px', maxWidth: '400px', width: '100%', overflow: 'hidden', boxShadow: '0 40px 100px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03)', animation: 'fadeInUp 0.35s cubic-bezier(0.22, 1.2, 0.36, 1)' }}>
 
-            <div style={{ position: 'absolute', inset: '0 0 auto 0', height: '1px', background: 'linear-gradient(90deg, transparent 0%, rgba(167,139,250,0.46) 22%, rgba(96,165,250,0.32) 52%, rgba(236,72,153,0.28) 82%, transparent 100%)' }} />
+            {/* ── Hero gradient banner ── */}
+            <div style={{ position: 'relative', padding: isMobile ? '28px 20px 24px' : '36px 28px 28px', background: 'linear-gradient(165deg, rgba(139,92,246,0.18) 0%, rgba(236,72,153,0.08) 50%, transparent 100%)', overflow: 'hidden' }}>
+              {/* Decorative orb */}
+              <div style={{ position: 'absolute', top: '-40px', right: '-20px', width: '160px', height: '160px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(139,92,246,0.15), transparent 70%)', filter: 'blur(40px)', pointerEvents: 'none' }} />
+              <div style={{ position: 'absolute', top: '-20px', left: '20%', width: '100px', height: '100px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(236,72,153,0.1), transparent 70%)', filter: 'blur(30px)', pointerEvents: 'none' }} />
 
-            <div style={{ padding: isMobile ? '20px 18px 18px' : '24px 24px 20px' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-                <div>
-                  <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.78)' }}>
-                    Pro Access
-                  </div>
-                  <h3 style={{ margin: '10px 0 0', fontSize: isMobile ? '24px' : '28px', lineHeight: 1.05, letterSpacing: '-0.03em', fontWeight: 700, color: 'rgba(255,255,255,0.96)' }}>
-                    Skillclone Pro
-                  </h3>
-                  <p style={{ margin: '10px 0 0', fontSize: isMobile ? '13px' : '14px', lineHeight: 1.45, color: 'rgba(255,255,255,0.56)', maxWidth: '320px' }}>
-                    Remove the cap. Build sharper councils, save winning squads, and export finished prompt systems faster.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowUpgrade(false)}
-                  aria-label="Close upgrade modal"
-                  style={{ width: '30px', height: '30px', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.46)', cursor: 'pointer', fontSize: '16px', lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-                >
-                  ×
-                </button>
+              {/* Close */}
+              <button onClick={() => setShowUpgrade(false)} aria-label="Close"
+                style={{ position: 'absolute', top: '14px', right: '14px', width: '28px', height: '28px', borderRadius: '999px', border: 'none', background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+
+              {/* PRO badge */}
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 12px 4px 8px', borderRadius: '999px', background: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(236,72,153,0.12))', border: '1px solid rgba(139,92,246,0.2)', marginBottom: '14px' }}>
+                <Sparkles size={12} style={{ color: '#a78bfa' }} />
+                <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#c4b5fd' }}>Pro</span>
               </div>
 
-              <div style={{ marginTop: '18px', padding: isMobile ? '16px' : '18px', borderRadius: '18px', border: '1px solid rgba(255,255,255,0.06)', background: 'linear-gradient(180deg, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0.02) 100%)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-                  <div>
-                    <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.34)' }}>
-                      Monthly
-                    </div>
-                    <div style={{ marginTop: '6px', fontSize: '13px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>
-                      Unlimited geniuses, squads, custom minds, and exports.
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <div style={{ fontSize: isMobile ? '40px' : '46px', lineHeight: 0.9, letterSpacing: '-0.06em', fontWeight: 800, color: 'white' }}>
-                      $8
-                    </div>
-                    <div style={{ marginTop: '4px', fontSize: '12px', color: 'rgba(255,255,255,0.42)', fontWeight: 600 }}>
-                      per month
-                    </div>
-                  </div>
-                </div>
+              <h3 style={{ margin: 0, fontSize: isMobile ? '26px' : '32px', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.05, color: 'white' }}>
+                Unlimited geniuses.<br />
+                <span style={{ background: 'linear-gradient(135deg, #a78bfa, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Unlimited power.</span>
+              </h3>
+              <p style={{ margin: '10px 0 0', fontSize: '14px', lineHeight: 1.5, color: 'rgba(255,255,255,0.5)', maxWidth: '300px' }}>
+                Build the exact council your mission needs. No cap, no limits.
+              </p>
+            </div>
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '14px' }}>
-                  {['Unlimited minds', 'Saved squads', 'Custom lore', 'Direct export'].map((tag) => (
-                    <span key={tag} style={{ padding: '6px 10px', borderRadius: '999px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', fontSize: '11px', color: 'rgba(255,255,255,0.56)', fontWeight: 600 }}>
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '10px', marginTop: '14px' }}>
-                {upgradeHighlights.map(({ icon: Icon, label, title, body }) => (
-                  <div key={title} style={{ padding: '14px 14px 15px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', background: 'linear-gradient(180deg, rgba(255,255,255,0.028) 0%, rgba(255,255,255,0.015) 100%)' }}>
-                    <div style={{ width: '28px', height: '28px', borderRadius: '999px', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c4b5fd' }}>
-                      <Icon size={14} strokeWidth={2.2} />
-                    </div>
-                    <div style={{ marginTop: '10px', fontSize: '10px', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.34)' }}>
-                      {label}
-                    </div>
-                    <div style={{ marginTop: '6px', fontSize: '14px', lineHeight: 1.2, fontWeight: 700, color: 'rgba(255,255,255,0.9)', letterSpacing: '-0.02em' }}>
-                      {title}
-                    </div>
-                    <div style={{ marginTop: '6px', fontSize: '12px', lineHeight: 1.45, color: 'rgba(255,255,255,0.5)' }}>
-                      {body}
-                    </div>
+            {/* ── Content ── */}
+            <div style={{ padding: isMobile ? '16px 20px 20px' : '20px 28px 28px' }}>
+              {/* Price + features compact */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', borderRadius: '14px', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ flexShrink: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                    <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.3)', textDecoration: 'line-through', fontWeight: 600 }}>$24</span>
+                    <span style={{ fontSize: '36px', fontWeight: 800, letterSpacing: '-0.04em', color: 'white', lineHeight: 1 }}>$12</span>
                   </div>
-                ))}
-              </div>
-
-              <div style={{ marginTop: '14px', padding: isMobile ? '14px' : '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.018)' }}>
-                <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.34)', marginBottom: '10px' }}>
-                  Included
+                  <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginTop: '2px' }}>/mo · launch price</div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: '9px 14px' }}>
-                  {upgradeChecklist.map((feature) => (
-                    <div key={feature} style={{ display: 'flex', alignItems: 'flex-start', gap: '9px' }}>
-                      <div style={{ width: '18px', height: '18px', borderRadius: '999px', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.24)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c4b5fd', flexShrink: 0, marginTop: '1px' }}>
-                        <Check size={11} strokeWidth={3} />
-                      </div>
-                      <div style={{ fontSize: '12px', lineHeight: 1.45, color: 'rgba(255,255,255,0.68)' }}>{feature}</div>
+                <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,0.06)' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+                  {['Unlimited genius selections', 'Custom minds with AI lore', 'Save & export squads', 'Wikipedia discovery'].map((f) => (
+                    <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                      <Check size={12} strokeWidth={3} style={{ color: '#a78bfa', flexShrink: 0 }} />
+                      <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.65)', lineHeight: 1.2 }}>{f}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div style={{ paddingTop: '16px' }}>
+              {/* CTA */}
               <a href={isCheckoutReady ? monthlyCheckoutUrl : undefined}
                 onClick={() => { if (isCheckoutReady) track('Upgrade Click', { plan: 'monthly' }); }}
                 aria-disabled={!isCheckoutReady}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', minHeight: '54px', padding: '14px 18px', fontSize: '15px', fontWeight: 800, background: isCheckoutReady ? 'linear-gradient(135deg, #7c3aed 0%, #6366f1 44%, #3b82f6 100%)' : 'linear-gradient(135deg, rgba(99,102,241,0.62), rgba(59,130,246,0.58))', border: 'none', borderRadius: '14px', color: 'white', cursor: isCheckoutReady ? 'pointer' : 'not-allowed', textDecoration: 'none', boxSizing: 'border-box', letterSpacing: '0.01em', opacity: isCheckoutReady ? 1 : 0.72, boxShadow: isCheckoutReady ? '0 16px 34px rgba(79,70,229,0.34), 0 0 28px rgba(96,165,250,0.12)' : 'none' }}>
-                {isCheckoutReady ? 'Unlock Pro — $8/mo' : 'Stripe Link Missing'}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', marginTop: '16px',
+                  padding: '16px 18px', fontSize: '15px', fontWeight: 800, letterSpacing: '-0.01em',
+                  background: isCheckoutReady ? 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 50%, #6366f1 100%)' : 'rgba(99,102,241,0.3)',
+                  border: 'none', borderRadius: '14px', color: 'white', cursor: isCheckoutReady ? 'pointer' : 'not-allowed',
+                  textDecoration: 'none', boxSizing: 'border-box',
+                  boxShadow: isCheckoutReady ? '0 12px 40px rgba(124,58,237,0.4), inset 0 1px 0 rgba(255,255,255,0.15)' : 'none',
+                  opacity: isCheckoutReady ? 1 : 0.6,
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                }}
+                onMouseEnter={(e) => { if (isCheckoutReady) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 16px 48px rgba(124,58,237,0.5), inset 0 1px 0 rgba(255,255,255,0.2)'; }}}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = isCheckoutReady ? '0 12px 40px rgba(124,58,237,0.4), inset 0 1px 0 rgba(255,255,255,0.15)' : 'none'; }}>
+                {isCheckoutReady ? 'Upgrade to Pro — $12/mo' : 'Stripe Link Missing'}
               </a>
+
               {!isCheckoutReady && (
-                <div style={{ marginTop: '10px', padding: '9px 12px', borderRadius: '12px', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.05)', fontSize: '11px', color: 'rgba(255,255,255,0.42)', textAlign: 'center' }}>
-                  Set <code style={{ color: 'rgba(255,255,255,0.68)', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>VITE_STRIPE_MONTHLY_URL</code> to enable checkout.
+                <div style={{ marginTop: '10px', padding: '8px 12px', borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', fontSize: '11px', color: 'rgba(255,255,255,0.35)', textAlign: 'center' }}>
+                  Set <code style={{ color: 'rgba(255,255,255,0.6)', fontFamily: 'ui-monospace, monospace' }}>VITE_STRIPE_MONTHLY_URL</code> to enable.
                 </div>
               )}
+
               <button onClick={() => setShowUpgrade(false)}
-                style={{ display: 'block', width: '100%', marginTop: '10px', padding: '8px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '12px', textAlign: 'center' }}>
-                {`Keep Free Plan (${FREE_LIMIT} geniuses)`}
+                style={{ display: 'block', width: '100%', marginTop: '10px', padding: '8px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.25)', cursor: 'pointer', fontSize: '12px', textAlign: 'center' }}>
+                Maybe later
               </button>
-              </div>
             </div>
           </div>
         </div>
@@ -1984,8 +1977,6 @@ Begin. — skillcl.one`;
 
             {/* Orb spacer */}
             <div ref={heroCardRef} style={{ height: isMobile ? '8px' : '24px' }} />
-
-            {/* Hero cards removed per direction to keep heading hierarchy clean */}
 
             <h1 style={{ fontSize: isMobile ? '48px' : '72px', fontWeight: 300, margin: 0, letterSpacing: isMobile ? '-1.8px' : '-2.6px', lineHeight: 1, animation: 'fadeInUp 0.6s ease-out' }}>
               <span style={{ color: 'rgba(255,255,255,0.95)' }}>skill</span>
@@ -2325,13 +2316,6 @@ Begin. — skillcl.one`;
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                     <div style={{ fontSize: '9px', fontWeight: 800, color: 'rgba(139,92,246,0.5)', textTransform: 'uppercase', letterSpacing: '3px' }}>MISSION</div>
                     <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.04)' }} />
-                    <button
-                      onClick={() => setEditingMission(true)}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 8px', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.38)', cursor: 'pointer', fontSize: '10px', fontWeight: 600, flexShrink: 0 }}
-                    >
-                      <Pencil size={10} strokeWidth={2.2} />
-                      {!isMobile && <span>Edit</span>}
-                    </button>
                     {moduleCount > 0 && (
                       <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)', fontWeight: 600 }}>
                         {moduleCount} selected {'\u00B7'} {totalPower} pw
@@ -2355,7 +2339,10 @@ Begin. — skillcl.one`;
                       style={{ width: '100%', margin: 0, padding: isMobile ? '0 0 2px' : '0 0 3px', fontSize: isMobile ? '22px' : '30px', fontWeight: 800, color: 'white', lineHeight: 1.1, letterSpacing: '-0.02em', background: 'transparent', border: 'none', outline: 'none', fontFamily: 'inherit' }}
                     />
                   ) : (
-                    <h1 style={{ margin: 0, fontSize: isMobile ? '22px' : '30px', fontWeight: 800, color: 'white', lineHeight: 1.1, letterSpacing: '-0.02em' }}>
+                    <h1 onClick={() => setEditingMission(true)}
+                      style={{ margin: 0, fontSize: isMobile ? '22px' : '30px', fontWeight: 800, color: 'white', lineHeight: 1.1, letterSpacing: '-0.02em', cursor: 'text', borderBottom: '1px solid transparent', transition: 'border-color 0.2s' }}
+                      onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'}
+                      onMouseLeave={(e) => e.currentTarget.style.borderColor = 'transparent'}>
                       {userIntent}
                     </h1>
                   )}
@@ -2606,34 +2593,52 @@ Begin. — skillcl.one`;
               );
             })()}
 
-            {/* Hover Detail Strip — desktop only */}
-            {!isMobile && hoveredGenius && (
-              <div style={{
-                marginTop: '12px', padding: '12px 16px',
-                background: `linear-gradient(135deg, ${hoveredGenius.cat.color}06, rgba(255,255,255,0.015))`,
-                border: `1px solid ${hoveredGenius.cat.color}20`,
-                borderRadius: '10px', display: 'flex', alignItems: 'flex-start', gap: '14px',
-                animation: 'cardFadeIn 0.12s ease-out',
-              }}>
-                <div style={{ flexShrink: 0, filter: `drop-shadow(0 0 6px ${hoveredGenius.cat.color}40)`, marginTop: '2px' }}>
-                  <CardIcon icon={CATEGORY_ICONS[hoveredGenius.catId === 'custom' ? (hoveredGenius.mod._source === 'wikipedia' ? 'discovered' : 'custom') : hoveredGenius.cat.icon] || Star} size={28} color={hoveredGenius.cat.color} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
-                    <span style={{ fontSize: '14px', fontWeight: 700, color: 'white' }}>{hoveredGenius.mod.name}</span>
-                    <span style={{ fontSize: '9px', padding: '2px 7px', background: `${hoveredGenius.cat.color}12`, border: `1px solid ${hoveredGenius.cat.color}25`, borderRadius: '8px', color: hoveredGenius.cat.color }}>{hoveredGenius.cat.name}</span>
-                    <span style={{ fontSize: '10px', color: hoveredGenius.cat.color, fontWeight: 700 }}>{hoveredGenius.mod.power} pw</span>
+            {/* Hover tooltip — floats near the hovered card, desktop only */}
+            {!isMobile && hoveredGenius && hoveredGenius.rect && (() => {
+              const rect = hoveredGenius.rect;
+              const hColor = hoveredGenius.cat.color;
+              const hr = parseInt(hColor.slice(1,3),16);
+              const hg = parseInt(hColor.slice(3,5),16);
+              const hb = parseInt(hColor.slice(5,7),16);
+              const inDeck = isSelected(hoveredGenius.catId, hoveredGenius.mod.id);
+              // Position: right of card if space, otherwise left
+              const spaceRight = window.innerWidth - rect.right;
+              const tooltipW = 260;
+              const posRight = spaceRight > tooltipW + 20;
+              const left = posRight ? rect.right + 12 : rect.left - tooltipW - 12;
+              const top = Math.max(8, Math.min(rect.top, window.innerHeight - 220));
+              return (
+                <div style={{
+                  position: 'fixed', left: `${left}px`, top: `${top}px`, width: `${tooltipW}px`,
+                  zIndex: 500, pointerEvents: 'none',
+                  background: 'rgba(12,12,18,0.95)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+                  border: `1px solid rgba(${hr},${hg},${hb},0.2)`,
+                  borderRadius: '12px', padding: '14px',
+                  boxShadow: `0 16px 48px rgba(0,0,0,0.5), 0 0 20px rgba(${hr},${hg},${hb},0.08)`,
+                  animation: 'cardFadeIn 0.12s ease-out',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <div style={{ filter: `drop-shadow(0 0 6px ${hColor}40)` }}>
+                      <CardIcon icon={CATEGORY_ICONS[hoveredGenius.catId === 'custom' ? (hoveredGenius.mod._source === 'wikipedia' ? 'discovered' : 'custom') : hoveredGenius.cat.icon] || Star} size={22} color={hColor} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: 'white', letterSpacing: '-0.2px' }}>{hoveredGenius.mod.name}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                        <span style={{ fontSize: '9px', padding: '1px 6px', background: `rgba(${hr},${hg},${hb},0.1)`, border: `1px solid rgba(${hr},${hg},${hb},0.2)`, borderRadius: '6px', color: hColor, fontWeight: 600 }}>{hoveredGenius.cat.name}</span>
+                        <span style={{ fontSize: '10px', color: hColor, fontWeight: 700 }}>{hoveredGenius.mod.power}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.3 }}>{hoveredGenius.mod.specs}</div>
-                  <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)', lineHeight: 1.4, marginTop: '4px', fontStyle: 'italic' }}>
+                  <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.35, marginBottom: '6px' }}>{hoveredGenius.mod.specs}</div>
+                  <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)', lineHeight: 1.4, fontStyle: 'italic', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '6px' }}>
                     {extractKeyQuotes(hoveredGenius.mod.prompt)}
                   </div>
+                  <div style={{ marginTop: '8px', fontSize: '9px', fontWeight: 600, color: inDeck ? hColor : 'rgba(255,255,255,0.25)', letterSpacing: '0.5px' }}>
+                    {inDeck ? '✓ In your deck' : 'Click to add'}
+                  </div>
                 </div>
-                <div style={{ flexShrink: 0, padding: '4px 10px', borderRadius: '6px', fontSize: '10px', fontWeight: 600, background: isSelected(hoveredGenius.catId, hoveredGenius.mod.id) ? `${hoveredGenius.cat.color}20` : 'rgba(255,255,255,0.04)', color: isSelected(hoveredGenius.catId, hoveredGenius.mod.id) ? hoveredGenius.cat.color : 'rgba(255,255,255,0.3)', border: `1px solid ${isSelected(hoveredGenius.catId, hoveredGenius.mod.id) ? hoveredGenius.cat.color + '30' : 'rgba(255,255,255,0.06)'}` }}>
-                  {isSelected(hoveredGenius.catId, hoveredGenius.mod.id) ? 'In deck' : 'Click to add'}
-                </div>
-              </div>
-            )}
+              );
+            })()}
 
             </div>
 
@@ -2855,103 +2860,141 @@ Begin. — skillcl.one`;
               </div>
             )}
             {fusePhase === 'revealed' && (
-              /* ===== FUSE LIGHTBOX — Balatro-style "played cards" ===== */
+              /* ===== FUSE REWARD SCREEN — inline with cards visible ===== */
               <div onClick={(e) => { if (e.target === e.currentTarget) setFusePhase(null); }}
-                style={{ position: 'fixed', inset: 0, zIndex: 900, background: 'rgba(6,6,10,0.88)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto', overflowX: 'hidden', padding: isMobile ? '30px 16px 60px' : '50px 24px 60px', animation: 'fadeInUp 0.3s ease-out' }}>
-                {/* Close button */}
-                <button onClick={() => setFusePhase(null)} style={{ position: 'fixed', top: '16px', right: '20px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50%', width: '36px', height: '36px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 910 }}>×</button>
-                {/* "Played" label */}
-                <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '3px', color: 'rgba(255,255,255,0.15)', textTransform: 'uppercase' }}>Played</span>
-                </div>
-                {/* Played tiles row — cards dealt from the hand */}
-                <div style={{ display: 'flex', justifyContent: 'center', gap: isMobile ? '6px' : '8px', flexWrap: 'wrap', marginBottom: '24px', perspective: '600px' }}>
+                style={{ position: 'fixed', inset: 0, zIndex: 900, background: 'rgba(4,4,8,0.92)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto', overflowX: 'hidden', padding: isMobile ? '20px 12px 80px' : '32px 24px 80px' }}>
+                {/* Close */}
+                <button onClick={() => setFusePhase(null)} style={{ position: 'fixed', top: '16px', right: '20px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50%', width: '36px', height: '36px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 910, transition: 'all 0.2s ease' }}>×</button>
+
+                {/* ── WINNING HAND — fanned cards with staggered reveal ── */}
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', marginBottom: isMobile ? '16px' : '20px', perspective: '800px', minHeight: isMobile ? '90px' : '110px' }}>
                   {allSelected.map((mod, i) => {
                     const catEntry = Object.entries(selectedModules).find(([, mods]) => mods.some(m => m.id === mod.id));
                     const catId = catEntry ? catEntry[0] : 'custom';
                     const cat = GENIUS_CATEGORIES[catId] || { color: mod._source === 'wikipedia' ? DISCOVERED_GENIUS_COLOR : CUSTOM_GENIUS_COLOR, icon: 'custom' };
                     const fuseIconKey = catId === 'custom' ? (mod._source === 'wikipedia' ? 'discovered' : 'custom') : cat.icon;
                     const FuseIcon = CATEGORY_ICONS[fuseIconKey] || Star;
+                    const n = allSelected.length;
+                    const fanAngle = n <= 1 ? 0 : -12 + (24 / (n - 1)) * i;
+                    const fanX = n <= 1 ? 0 : -((n - 1) * 14) + i * 28;
+                    const arcY = Math.abs(i - (n - 1) / 2) * 4;
+                    const cw = isMobile ? 58 : 72;
+                    const ch = isMobile ? 78 : 96;
+                    const cr = parseInt(cat.color.slice(1,3),16);
+                    const cg = parseInt(cat.color.slice(3,5),16);
+                    const cb = parseInt(cat.color.slice(5,7),16);
                     return (
-                      <div key={mod.id} className="genius-tile" style={{
-                        width: isMobile ? '52px' : '62px', aspectRatio: '5/6', borderRadius: '6px', position: 'relative',
-                        animation: `cardDealIn 0.5s ${i * 0.08}s cubic-bezier(0.34, 1.4, 0.64, 1) both`,
+                      <div key={mod.id} style={{
+                        width: `${cw}px`, height: `${ch}px`, position: 'relative', flexShrink: 0,
+                        marginLeft: i === 0 ? 0 : isMobile ? '-16px' : '-12px',
+                        transform: `rotate(${fanAngle}deg) translateX(${fanX * 0.2}px) translateY(${arcY}px)`,
+                        transformOrigin: 'bottom center',
+                        animation: `rewardCardFan 0.6s ${i * 0.1}s cubic-bezier(0.22, 1.2, 0.36, 1) both`,
+                        zIndex: i + 1,
                       }}>
                         <div style={{
-                          width: '100%', height: '100%', borderRadius: '6px',
-                          background: `linear-gradient(150deg, ${cat.color}30 0%, rgba(20,20,28,0.97) 50%, rgba(14,14,20,0.98) 100%)`,
-                          border: `1.5px solid ${cat.color}60`,
-                          borderTop: `1.5px solid ${cat.color}80`,
-                          borderBottom: `1.5px solid ${cat.color}25`,
-                          boxShadow: `0 1px 0 ${cat.color}40, 0 2px 0 rgba(0,0,0,0.3), 0 3px 0 rgba(0,0,0,0.2), 0 5px 10px rgba(0,0,0,0.5), 0 0 12px ${cat.color}25`,
-                          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                          gap: '2px', padding: '3px',
+                          width: '100%', height: '100%', borderRadius: '8px', overflow: 'hidden', position: 'relative',
+                          background: `linear-gradient(180deg, ${cat.color}40 0%, rgba(${cr},${cg},${cb},0.2) 10%, rgba(18,18,26,0.98) 20%, rgba(14,14,20,0.99) 85%, rgba(${cr},${cg},${cb},0.2) 95%, ${cat.color}40 100%)`,
+                          padding: '2px',
+                          boxShadow: `0 4px 20px rgba(0,0,0,0.6), 0 0 18px ${cat.color}20`,
                         }}>
-                          <div style={{ lineHeight: 1, filter: `drop-shadow(0 0 6px ${cat.color}60)` }}>
-                            <CardIcon icon={FuseIcon} size={isMobile ? 18 : 22} color={cat.color} />
+                          <div style={{
+                            width: '100%', height: '100%', borderRadius: '6px', overflow: 'hidden',
+                            background: `linear-gradient(180deg, rgba(${cr},${cg},${cb},0.08), rgba(10,10,16,0.99))`,
+                            display: 'flex', flexDirection: 'column', alignItems: 'center',
+                          }}>
+                            {/* Name banner */}
+                            <div style={{
+                              width: '100%', padding: '4px 5px 3px', textAlign: 'center',
+                              background: `linear-gradient(180deg, rgba(${cr},${cg},${cb},0.15), transparent)`,
+                              borderBottom: `1px solid rgba(${cr},${cg},${cb},0.12)`,
+                            }}>
+                              <div style={{ fontSize: '7px', fontWeight: 800, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: '-0.1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{mod.name}</div>
+                            </div>
+                            {/* Art box */}
+                            <div style={{
+                              flex: 1, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              background: `radial-gradient(circle at 50% 40%, rgba(${cr},${cg},${cb},0.12), transparent 70%)`,
+                            }}>
+                              <div style={{ filter: `drop-shadow(0 0 8px ${cat.color}60)` }}>
+                                <CardIcon icon={FuseIcon} size={isMobile ? 22 : 28} color={cat.color} />
+                              </div>
+                            </div>
+                            {/* Power footer */}
+                            <div style={{ padding: '3px', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                              <Zap size={8} style={{ color: cat.color, opacity: 0.7 }} />
+                              <span style={{ fontSize: '8px', fontWeight: 900, color: cat.color, opacity: 0.8 }}>{mod.power}</span>
+                            </div>
                           </div>
-                          <div style={{ fontSize: '7px', fontWeight: 800, color: 'rgba(255,255,255,0.7)', textAlign: 'center', lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%', padding: '0 2px' }}>{mod.name}</div>
-                          <div style={{ fontSize: '7px', fontWeight: 700, color: cat.color, opacity: 0.7, display: 'flex', alignItems: 'center', gap: '2px' }}><Zap size={7} />{mod.power}</div>
                         </div>
                       </div>
                     );
                   })}
                 </div>
 
-                {/* Score display — Balatro chips × mult style */}
-                <div style={{ textAlign: 'center', marginBottom: '24px', animation: `fadeInUp 0.5s ${Math.min(allSelected.length * 0.08 + 0.3, 1.2)}s ease-out both` }}>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '16px', padding: '10px 28px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(139,92,246,0.15)', borderRadius: '50px' }}>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: '8px', fontWeight: 700, color: 'rgba(139,92,246,0.5)', letterSpacing: '1.5px', marginBottom: '2px' }}>MINDS</div>
-                      <div style={{ fontSize: '22px', fontWeight: 900, color: '#a78bfa' }}>{moduleCount}</div>
-                    </div>
-                    <div style={{ fontSize: '18px', color: 'rgba(255,255,255,0.1)', fontWeight: 300 }}>×</div>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: '8px', fontWeight: 700, color: 'rgba(236,72,153,0.5)', letterSpacing: '1.5px', marginBottom: '2px' }}>POWER</div>
-                      <div style={{ fontSize: '22px', fontWeight: 900, color: '#ec4899' }}>⚡{totalPower}</div>
-                    </div>
+                {/* ── SCORE BADGE — compact pill ── */}
+                <div style={{ textAlign: 'center', marginBottom: isMobile ? '16px' : '20px', animation: `fadeInUp 0.5s ${Math.min(allSelected.length * 0.1 + 0.3, 1.0)}s ease-out both` }}>
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '12px', padding: '8px 24px',
+                    background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(236,72,153,0.06))',
+                    border: '1px solid rgba(139,92,246,0.12)', borderRadius: '50px',
+                  }}>
+                    <span style={{ fontSize: '11px', fontWeight: 800, color: '#a78bfa', letterSpacing: '-0.3px' }}>{moduleCount} minds</span>
+                    <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.08)' }}>×</span>
+                    <span style={{ fontSize: '11px', fontWeight: 800, color: '#ec4899', letterSpacing: '-0.3px' }}>⚡{totalPower}</span>
                   </div>
                 </div>
 
-                {/* Prompt card — glass with gradient border */}
+                {/* ── PROMPT — premium container with gradient border ── */}
                 <div style={{
-                  position: 'relative', borderRadius: '14px', padding: '1px',
-                  background: copied ? 'linear-gradient(135deg, rgba(34,197,94,0.4), rgba(34,197,94,0.1))' : 'linear-gradient(135deg, rgba(139,92,246,0.3), rgba(236,72,153,0.15), rgba(99,102,241,0.2))',
-                  marginBottom: '16px', maxWidth: '640px', marginLeft: 'auto', marginRight: 'auto',
-                  animation: `fadeInUp 0.6s ${Math.min(allSelected.length * 0.08 + 0.5, 1.5)}s ease-out both`,
+                  width: '100%', maxWidth: '680px',
+                  animation: `fadeInUp 0.6s ${Math.min(allSelected.length * 0.1 + 0.5, 1.2)}s ease-out both`,
                 }}>
-                  <div style={{ padding: '16px', background: copied ? 'rgba(22,22,32,0.97)' : 'rgba(15,15,20,0.98)', borderRadius: '13px', maxHeight: '280px', overflowY: 'auto', backdropFilter: 'blur(10px)' }}>
-                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace', fontSize: '11px', lineHeight: 1.6, color: 'rgba(255,255,255,0.8)', letterSpacing: '0.1px' }}>{generatedPrompt}</pre>
+                  {/* Section header */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', padding: '0 4px' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '2px', color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase' }}>Your Fused Prompt</span>
+                    <button onClick={async () => { await navigator.clipboard.writeText(generatedPrompt); sounds.copy(); setCopied(true); setTimeout(() => setCopied(false), 2000); track('Copy Prompt'); }}
+                      className="btn-glow"
+                      style={{ padding: '5px 14px', fontSize: '11px', fontWeight: 600, background: copied ? '#22c55e' : 'rgba(255,255,255,0.06)', border: `1px solid ${copied ? '#22c55e' : 'rgba(255,255,255,0.1)'}`, borderRadius: '50px', color: copied ? 'white' : 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
+                      {copied ? '✓ Copied' : 'Copy'}
+                    </button>
+                  </div>
+                  {/* Prompt card */}
+                  <div style={{
+                    position: 'relative', borderRadius: '14px', padding: '1px',
+                    background: copied ? 'linear-gradient(135deg, rgba(34,197,94,0.35), rgba(34,197,94,0.08))' : 'linear-gradient(135deg, rgba(139,92,246,0.25), rgba(236,72,153,0.12), rgba(99,102,241,0.18))',
+                  }}>
+                    <div style={{
+                      padding: isMobile ? '14px' : '20px', background: 'rgba(10,10,14,0.98)', borderRadius: '13px',
+                      maxHeight: isMobile ? '240px' : '320px', overflowY: 'auto',
+                    }}>
+                      <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace', fontSize: isMobile ? '10.5px' : '12px', lineHeight: 1.65, color: 'rgba(255,255,255,0.82)', letterSpacing: '0.1px' }}>{generatedPrompt}</pre>
+                    </div>
                   </div>
                 </div>
 
-                {/* Primary actions */}
-                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', animation: `fadeInUp 0.5s ${Math.min(allSelected.length * 0.08 + 0.7, 1.8)}s ease-out both` }}>
-                  <button onClick={async () => { await navigator.clipboard.writeText(generatedPrompt); sounds.copy(); setCopied(true); setTimeout(() => setCopied(false), 2000); track('Copy Prompt'); }}
-                    className="btn-glow"
-                    style={{ padding: '11px 24px', fontSize: '13px', fontWeight: 600, background: copied ? '#22c55e' : 'white', border: 'none', borderRadius: '50px', color: copied ? 'white' : '#09090b', cursor: 'pointer' }}>
-                    {copied ? '✓ Copied!' : '📋 Copy Prompt'}
-                  </button>
+                {/* ── ACTIONS — use it buttons ── */}
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginTop: isMobile ? '16px' : '20px', animation: `fadeInUp 0.5s ${Math.min(allSelected.length * 0.1 + 0.7, 1.5)}s ease-out both` }}>
                   <a href={`https://chatgpt.com/?q=${encodeURIComponent(generatedPrompt.slice(0, 4000))}`} target="_blank" rel="noopener noreferrer"
                     className="btn-glow"
-                    style={{ padding: '11px 20px', fontSize: '13px', fontWeight: 600, background: 'linear-gradient(135deg, #10a37f, #1a7f64)', border: 'none', borderRadius: '50px', color: 'white', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    style={{ padding: '11px 22px', fontSize: '13px', fontWeight: 600, background: 'linear-gradient(135deg, #10a37f, #1a7f64)', border: 'none', borderRadius: '50px', color: 'white', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
                     Use in ChatGPT →
                   </a>
                   <a href={`https://claude.ai/new?q=${encodeURIComponent(generatedPrompt.slice(0, 4000))}`} target="_blank" rel="noopener noreferrer"
                     className="btn-glow"
-                    style={{ padding: '11px 20px', fontSize: '13px', fontWeight: 600, background: 'linear-gradient(135deg, #d4a27f, #c4856c)', border: 'none', borderRadius: '50px', color: 'white', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    style={{ padding: '11px 22px', fontSize: '13px', fontWeight: 600, background: 'linear-gradient(135deg, #d4a27f, #c4856c)', border: 'none', borderRadius: '50px', color: 'white', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
                     Use in Claude →
                   </a>
                 </div>
 
-                {/* Share + back */}
-                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '10px', flexWrap: 'wrap', animation: `fadeInUp 0.5s ${Math.min(allSelected.length * 0.08 + 0.9, 2.0)}s ease-out both` }}>
-                  <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`I fused ${allSelected.map(m => m.name).join(' + ')} into one AI prompt\n\n⚡${totalPower} power • ${moduleCount} minds\n\nBuild yours free → skillcl.one 🧬`)}`}
+                {/* ── SECONDARY — share + navigate ── */}
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '10px', flexWrap: 'wrap', animation: `fadeInUp 0.5s ${Math.min(allSelected.length * 0.1 + 0.9, 1.8)}s ease-out both` }}>
+                  <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`I fused ${allSelected.map(m => m.name).join(' + ')} into one AI prompt\n\n⚡${totalPower} power • ${moduleCount} minds\n\nBuild yours free → skillcl.one`)}`}
                     target="_blank" rel="noopener noreferrer"
-                    style={{ padding: '8px 16px', fontSize: '12px', fontWeight: 500, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                    style={{ padding: '8px 16px', fontSize: '12px', fontWeight: 500, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
                     𝕏 Share
                   </a>
-                  <button onClick={() => setFusePhase(null)} style={{ padding: '8px 16px', fontSize: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
+                  <button onClick={() => setFusePhase(null)} style={{ padding: '8px 16px', fontSize: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>
                     ← Edit Squad
                   </button>
                   <button onClick={() => { setFusePhase(null); setStage('landing'); setUserIntent(''); setSelectedModules({}); }}
@@ -3034,7 +3077,7 @@ Begin. — skillcl.one`;
                 <div style={{
                   position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)',
                   width: `${Math.min(Math.max(moduleCount * 130, 320), 1100)}px`, height: isMobile ? '208px' : '180px',
-                  background: `radial-gradient(ellipse 82% 72% at 50% 100%, rgba(139,92,246,0.18) 0%, rgba(59,130,246,0.08) 34%, transparent 72%)`,
+                  background: `radial-gradient(ellipse 82% 72% at 50% 100%, rgba(139,92,246,0.1) 0%, rgba(59,130,246,0.04) 34%, transparent 72%)`,
                   pointerEvents: 'none', transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
                 }} />
                 {moduleCount > 0 && (
@@ -3047,8 +3090,8 @@ Begin. — skillcl.one`;
                       width: `${Math.min(Math.max(moduleCount * 110, isMobile ? 220 : 280), isMobile ? 340 : 760)}px`,
                       height: isMobile ? '18px' : '20px',
                       borderRadius: '999px',
-                      background: 'linear-gradient(90deg, transparent 0%, rgba(167,139,250,0.4) 20%, rgba(96,165,250,0.45) 50%, rgba(167,139,250,0.4) 80%, transparent 100%)',
-                      opacity: focusedHandCard ? 0.9 : 0.7,
+                      background: 'linear-gradient(90deg, transparent 0%, rgba(167,139,250,0.18) 20%, rgba(96,165,250,0.2) 50%, rgba(167,139,250,0.18) 80%, transparent 100%)',
+                      opacity: focusedHandCard ? 0.6 : 0.4,
                       filter: 'blur(10px)',
                       pointerEvents: 'none',
                     }} />
@@ -3072,10 +3115,12 @@ Begin. — skillcl.one`;
                     const cat = GENIUS_CATEGORIES[catId] || { color: mod._source === 'wikipedia' ? DISCOVERED_GENIUS_COLOR : CUSTOM_GENIUS_COLOR, icon: 'custom' };
                     const handIconKey = catId === 'custom' ? (mod._source === 'wikipedia' ? 'discovered' : 'custom') : cat.icon;
                     const HandIcon = CATEGORY_ICONS[handIconKey] || Star;
-                    // Real playing card size
-                    const cardW = isMobile ? 78 : 110;
-                    const cardH = isMobile ? 112 : 154;
-                    const overlap = total <= 3 ? (isMobile ? 4 : 4) : total <= 5 ? (isMobile ? -4 : -8) : total <= 7 ? (isMobile ? -10 : -20) : (isMobile ? -16 : -32);
+                    // Card size scales with hand count — fewer cards = bigger presence
+                    const cardW = isMobile
+                      ? (total <= 3 ? 88 : total <= 5 ? 80 : 72)
+                      : (total <= 3 ? 140 : total <= 5 ? 124 : total <= 7 ? 112 : 100);
+                    const cardH = Math.round(cardW * 1.4);
+                    const overlap = total <= 3 ? (isMobile ? 6 : 8) : total <= 5 ? (isMobile ? -2 : -6) : total <= 7 ? (isMobile ? -10 : -18) : (isMobile ? -16 : -30);
                     const isFocused = focusedHandCard?.id === mod.id;
                     const focusedRotation = isFocused ? rotation * 0.22 : rotation;
                     const focusLift = isFocused ? (isMobile ? 30 : 42) : 0;
@@ -3102,8 +3147,9 @@ Begin. — skillcl.one`;
                           });
                         }}
                         style={{
+                          '--hand-glow': `rgba(${r},${g},${b},0.2)`,
                           width: `${cardW}px`, height: `${cardH}px`,
-                          borderRadius: isMobile ? '7px' : '8px', position: 'relative', cursor: 'pointer', pointerEvents: 'auto', flexShrink: 0,
+                          borderRadius: isMobile ? '7px' : '8px', position: 'relative', cursor: 'pointer', pointerEvents: 'auto', flexShrink: 0, overflow: 'visible',
                           marginLeft: i === 0 ? 0 : `${overlap}px`,
                           transform: baseTransform,
                           transformOrigin: 'bottom center',
@@ -3113,54 +3159,60 @@ Begin. — skillcl.one`;
                             : wobblingCards.has(mod.id)
                             ? 'neighborWobble 0.18s ease-out'
                             : undefined,
-                          transition: 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, filter 0.2s ease',
-                          filter: isFocused ? `drop-shadow(0 0 18px rgba(${r},${g},${b},0.28))` : 'none',
                         }}
-                        onMouseEnter={(e) => {
+                        onMouseOver={(e) => {
                           if (isMobile) return;
-                          e.currentTarget.style.transform = `rotate(${focusedRotation * 0.14}deg) translateY(${arcY - focusLift - 28}px) scale(${isFocused ? 1.16 : 1.08})`;
-                          e.currentTarget.style.zIndex = '100';
+                          const card = e.currentTarget;
+                          const hoverLift = isFocused ? 36 : 28;
+                          const hoverScale = isFocused ? 1.18 : 1.1;
+                          card.style.transform = `rotate(${focusedRotation * 0.12}deg) translateY(${arcY - focusLift - hoverLift}px) scale(${hoverScale})`;
+                          card.style.zIndex = '120';
                         }}
-                        onMouseLeave={(e) => {
+                        onMouseOut={(e) => {
+                          if (isMobile) return;
+                          if (e.currentTarget.contains(e.relatedTarget)) return;
                           e.currentTarget.style.transform = baseTransform;
                           e.currentTarget.style.zIndex = `${isFocused ? 110 : i + 1}`;
                         }}>
-                        {isFocused && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeFocusedHandCard();
-                            }}
-                            aria-label={`Remove ${mod.name}`}
-                            title={`Remove ${mod.name}`}
-                            style={{
-                              position: 'absolute',
-                              top: isMobile ? '-9px' : '-10px',
-                              right: isMobile ? '-4px' : '-5px',
-                              width: isMobile ? '20px' : '22px',
-                              height: isMobile ? '20px' : '22px',
-                              borderRadius: '999px',
-                              border: '1px solid rgba(255,255,255,0.14)',
-                              background: 'rgba(10,10,16,0.58)',
-                              color: 'rgba(255,255,255,0.88)',
-                              boxShadow: '0 6px 18px rgba(0,0,0,0.28)',
-                              backdropFilter: 'blur(12px)',
-                              WebkitBackdropFilter: 'blur(12px)',
-                              zIndex: 240,
-                              pointerEvents: 'auto',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: isMobile ? '12px' : '13px',
-                              fontWeight: 300,
-                              lineHeight: 1,
-                              padding: 0,
-                            }}
-                          >
-                            ×
-                          </button>
-                        )}
+                        {/* Remove button — visible on hover, inside card top-right */}
+                        <button
+                          className="hand-card-remove"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const leftId = i > 0 ? handSlice[i - 1].id : null;
+                            const rightId = i < handSlice.length - 1 ? handSlice[i + 1].id : null;
+                            removeHandCard(mod.id, catId, leftId, rightId);
+                          }}
+                          aria-label={`Remove ${mod.name}`}
+                          title={`Remove ${mod.name}`}
+                          style={{
+                            position: 'absolute',
+                            top: isMobile ? '3px' : '4px',
+                            right: isMobile ? '3px' : '4px',
+                            width: isMobile ? '18px' : '20px',
+                            height: isMobile ? '18px' : '20px',
+                            borderRadius: '999px',
+                            border: 'none',
+                            background: 'rgba(0,0,0,0.6)',
+                            color: 'rgba(255,255,255,0.8)',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                            zIndex: 240,
+                            pointerEvents: 'auto',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: isMobile ? '10px' : '11px',
+                            fontWeight: 400,
+                            lineHeight: 1,
+                            padding: 0,
+                            opacity: (isMobile && isFocused) ? 1 : 0,
+                            transform: (isMobile && isFocused) ? 'scale(1)' : 'scale(0.6)',
+                            transition: 'opacity 0.15s ease, transform 0.2s cubic-bezier(0.22, 1.2, 0.36, 1), background 0.15s ease',
+                          }}
+                        >
+                          ×
+                        </button>
                         {/* MTG-style card frame */}
                         <div style={{
                           position: 'absolute', inset: 0, borderRadius: 'inherit', overflow: 'hidden',
@@ -3543,10 +3595,45 @@ Begin. — skillcl.one`;
         .fusion-core-ring { animation: orbRing 7.5s linear infinite; }
         .fusion-core-ring-b { animation-direction: reverse; animation-duration: 9.5s; }
         .fusion-core-ring-c { animation-duration: 6.2s; }
-        /* Hand card interactions */
-        .hand-card { transform-style: preserve-3d; }
+        /* Hand card interactions — Miyamoto-level polish */
+        .hand-card {
+          transform-style: preserve-3d;
+          transition: transform 0.45s cubic-bezier(0.22, 1.2, 0.36, 1), filter 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+          will-change: transform, filter;
+        }
         .hand-card:hover .hand-card-specs { opacity: 1 !important; }
-        .hand-card:hover .hand-card-foil { opacity: 1 !important; animation: handFoilSweep 1.5s ease-in-out infinite; }
+        .hand-card:hover {
+          filter: brightness(1.12) saturate(1.08) drop-shadow(0 0 8px var(--hand-glow, rgba(139,92,246,0.15)));
+        }
+        .hand-card:hover .hand-card-remove {
+          opacity: 1 !important;
+          transform: scale(1) !important;
+        }
+        .hand-card-remove:hover {
+          background: rgba(239,68,68,0.7) !important;
+          border-color: rgba(239,68,68,0.5) !important;
+          color: white !important;
+        }
+        .hand-card::after {
+          content: '';
+          position: absolute;
+          inset: -1.5px;
+          border-radius: inherit;
+          opacity: 0;
+          pointer-events: none;
+          z-index: 0;
+          border: 1px solid var(--hand-glow, rgba(139,92,246,0.15));
+          box-shadow: 0 0 10px var(--hand-glow, rgba(139,92,246,0.1)), inset 0 0 8px var(--hand-glow, rgba(139,92,246,0.04));
+          transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+          filter: blur(0.5px);
+        }
+        .hand-card:hover::after { opacity: 0.7; }
+        .hand-card:active {
+          transform: scale(0.95) translateY(4px) !important;
+          filter: brightness(0.9) !important;
+          transition: transform 0.08s ease, filter 0.08s ease !important;
+        }
+        .hand-card:hover .hand-card-foil { opacity: 1 !important; animation: handFoilSweep 1.8s ease-in-out infinite; }
         .add-genius-card:hover { background: rgba(139,92,246,0.08) !important; border-color: rgba(139,92,246,0.4) !important; transform: translateY(-4px); }
         @keyframes handFoilSweep { 0% { background-position: -100% -100%; } 100% { background-position: 200% 200%; } }
         .glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.06); }
@@ -3585,6 +3672,12 @@ Begin. — skillcl.one`;
           75% { transform: scale(1.04) translateY(1px) rotate(0.5deg); opacity: 1; filter: brightness(1); }
           100% { transform: scale(1) translateY(0) rotate(0deg); opacity: 1; filter: brightness(1); }
         }
+        /* Reward screen — cards fan in with spring bounce */
+        @keyframes rewardCardFan {
+          0% { opacity: 0; filter: brightness(1.6); }
+          40% { opacity: 1; filter: brightness(1.15); }
+          100% { opacity: 1; filter: brightness(1); }
+        }
         /* Card exits hand — scale down with slight upward drift */
         @keyframes cardPoof {
           0% { transform: scale(1) rotate(0deg) translateY(0); opacity: 1; }
@@ -3604,32 +3697,69 @@ Begin. — skillcl.one`;
           100% { transform: translate(var(--sx, 20px), var(--sy, -20px)) scale(0.3); opacity: 0; }
         }
         .genius-tile {
-          transition: transform 0.25s cubic-bezier(0.34, 1.4, 0.64, 1), filter 0.18s ease, box-shadow 0.2s ease;
+          transition: transform 0.4s cubic-bezier(0.22, 1.2, 0.36, 1), filter 0.35s ease, box-shadow 0.4s ease;
           transform-style: preserve-3d;
+          will-change: transform, filter;
         }
-        /* Enhancement #1: Light-spot overlay follows cursor via CSS custom props */
+        /* Light-spot cursor follower */
         .genius-tile::before {
           content: '';
           position: absolute;
           inset: 0;
           border-radius: inherit;
-          background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.15), transparent 60%);
+          background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.2), transparent 50%);
           pointer-events: none;
           opacity: 0;
-          transition: opacity 0.2s;
-          z-index: 2;
+          transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+          z-index: 5;
+        }
+        /* Edge glow ring — blooms in on hover */
+        .genius-tile::after {
+          content: '';
+          position: absolute;
+          inset: -2px;
+          border-radius: inherit;
+          opacity: 0;
+          pointer-events: none;
+          z-index: 0;
+          border: 1.5px solid var(--tile-glow, rgba(139,92,246,0.25));
+          box-shadow: 0 0 16px var(--tile-glow, rgba(139,92,246,0.12)), inset 0 0 16px var(--tile-glow, rgba(139,92,246,0.06));
+          transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.5s ease;
+          filter: blur(0.5px);
         }
         .genius-tile:hover::before { opacity: 1; }
+        .genius-tile:hover::after { opacity: 1; }
         .genius-tile:hover {
           z-index: 10;
-          filter: brightness(1.1);
+          filter: brightness(1.15) saturate(1.12);
         }
-        .genius-tile:hover > div {
-          box-shadow: 0 6px 24px rgba(0,0,0,0.5), 0 0 20px var(--tile-glow, rgba(139,92,246,0.15)) !important;
+        .genius-tile:hover > div:first-child {
+          box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 28px var(--tile-glow, rgba(139,92,246,0.2)) !important;
+          transition: box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1) !important;
         }
         .genius-tile:active {
-          transform: translateY(0px) scale(0.97) !important;
-          filter: brightness(0.92);
+          transform: translateY(0px) scale(0.94) !important;
+          filter: brightness(0.88);
+          transition: transform 0.08s ease, filter 0.08s ease !important;
+        }
+        /* Selected card: breathing glow aura */
+        .genius-tile[data-selected="true"]::after {
+          opacity: 1;
+          animation: selectedRingBreath 2.8s ease-in-out infinite;
+        }
+        @keyframes selectedRingBreath {
+          0%, 100% { box-shadow: 0 0 14px var(--tile-glow, rgba(139,92,246,0.15)), inset 0 0 14px var(--tile-glow, rgba(139,92,246,0.06)); border-color: var(--tile-glow, rgba(139,92,246,0.25)); }
+          50% { box-shadow: 0 0 24px var(--tile-glow, rgba(139,92,246,0.28)), inset 0 0 20px var(--tile-glow, rgba(139,92,246,0.1)); border-color: var(--tile-glow, rgba(139,92,246,0.4)); }
+        }
+        /* Select burst — one-shot pop */
+        @keyframes selectPop {
+          0% { transform: scale(0.9); filter: brightness(1.5) saturate(1.4); }
+          35% { transform: scale(1.08); filter: brightness(1.2) saturate(1.15); }
+          65% { transform: scale(0.97); filter: brightness(1.05) saturate(1.05); }
+          100% { transform: scale(1); filter: brightness(1) saturate(1); }
+        }
+        .genius-tile.select-burst {
+          animation: selectPop 0.5s cubic-bezier(0.22, 1.2, 0.36, 1) !important;
         }
         /* Enhancement #7: Holographic foil shimmer — smooth position sweep + hue shift */
         @keyframes cardFoilShimmer {

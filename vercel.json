@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/3d", "destination": "/index.html" },
+    { "source": "/((?!api|assets|.*\\..*).*)", "destination": "/index.html" }
+  ]
+}
