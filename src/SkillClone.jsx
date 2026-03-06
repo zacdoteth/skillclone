@@ -1215,8 +1215,8 @@ export default function SkillClone() {
     const r = parseInt(color.slice(1,3),16);
     const g = parseInt(color.slice(3,5),16);
     const b = parseInt(color.slice(5,7),16);
-    const cardW = large ? (isMobile ? '90px' : '120px') : (isMobile ? '62px' : '80px');
-    const cardH = large ? undefined : (isMobile ? '80px' : '100px');
+    const cardW = large ? (isMobile ? '90px' : '120px') : (isMobile ? '62px' : '86px');
+    const cardH = large ? undefined : (isMobile ? '80px' : '108px');
     return (
       <div key={mod.id} className="genius-tile"
         ref={(el) => {
@@ -1994,9 +1994,10 @@ Begin. — skillcl.one`;
                       <div style={{ fontSize: isMobile ? '12px' : '13px', color: 'rgba(255,255,255,0.48)', marginTop: '2px', fontWeight: 400 }}>{combo.sub}</div>
                       <div style={{ fontSize: isMobile ? '11px' : '12px', color: 'rgba(255,255,255,0.3)', marginTop: '3px', fontWeight: 500 }}>{combo.geniuses.join(' · ')}</div>
                     </div>
-                    <div style={{ flexShrink: 0, textAlign: 'right' }}>
-                      <div style={{ fontSize: isMobile ? '16px' : '20px', fontWeight: 900, color: combo.color, lineHeight: 1, letterSpacing: '-0.5px' }}>{combo.power}</div>
-                      <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.15)', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', marginTop: '2px' }}>power</div>
+                    <div style={{ flexShrink: 0, textAlign: 'right', minWidth: isMobile ? '46px' : '54px' }}>
+                      <div style={{ fontSize: isMobile ? '16px' : '20px', fontWeight: 900, color: combo.color, lineHeight: 1, letterSpacing: '-0.5px', textShadow: `0 0 16px ${combo.color}18` }}>
+                        {combo.power}
+                      </div>
                     </div>
                   </button>
                 ))}
@@ -2380,8 +2381,8 @@ Begin. — skillcl.one`;
               return (
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(200px, 1fr))',
-                  gap: isMobile ? '10px' : '20px',
+                  gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(184px, 1fr))',
+                  gap: isMobile ? '10px' : '16px',
                   overflowX: 'visible',
                   padding: '0 4px',
                 }}>
@@ -2407,15 +2408,15 @@ Begin. — skillcl.one`;
                           WebkitOverflowScrolling: 'touch',
                         } : {
                           display: 'grid',
-                          gridTemplateColumns: `repeat(auto-fill, minmax(76px, 1fr))`,
-                          gap: '8px',
+                          gridTemplateColumns: `repeat(auto-fill, minmax(86px, 1fr))`,
+                          gap: '7px',
                         }}>
                           {mods.map(mod => renderGlassCard({ catId, mod, cat }, globalIdx++))}
                           {/* + tile */}
                           <div
                             onClick={() => { setShowCustomForm(true); sounds.click(); }}
                             style={{
-                              width: isMobile ? '52px' : '76px', minWidth: isMobile ? '52px' : undefined, height: isMobile ? '72px' : '96px',
+                              width: isMobile ? '52px' : '86px', minWidth: isMobile ? '52px' : undefined, height: isMobile ? '72px' : '104px',
                               borderRadius: '6px', cursor: 'pointer',
                               border: '1px dashed rgba(139,92,246,0.2)',
                               background: 'rgba(139,92,246,0.02)',
@@ -2881,36 +2882,6 @@ Begin. — skillcl.one`;
                       filter: 'blur(10px)',
                       pointerEvents: 'none',
                     }} />
-                    {!focusedHandCard && (
-                      <div style={{
-                        position: 'absolute',
-                        left: '50%',
-                        bottom: isMobile ? '144px' : '138px',
-                        transform: 'translateX(-50%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: isMobile ? '8px 10px' : '9px 12px',
-                        borderRadius: '999px',
-                        background: 'rgba(10,10,16,0.72)',
-                        border: '1px solid rgba(139,92,246,0.16)',
-                        boxShadow: '0 10px 26px rgba(0,0,0,0.28), 0 0 22px rgba(139,92,246,0.08)',
-                        backdropFilter: 'blur(18px)',
-                        WebkitBackdropFilter: 'blur(18px)',
-                        pointerEvents: 'auto',
-                        zIndex: 230,
-                        transition: 'all 0.22s ease',
-                      }}>
-                        <>
-                          <span style={{ fontSize: isMobile ? '10px' : '11px', fontWeight: 800, color: '#c4b5fd', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                            Your Squad
-                          </span>
-                          <span style={{ fontSize: isMobile ? '10px' : '11px', color: 'rgba(255,255,255,0.52)' }}>
-                            {isMobile ? 'Tap a card to inspect' : 'Click a card to inspect'}
-                          </span>
-                        </>
-                      </div>
-                    )}
                   </>
                 )}
 
