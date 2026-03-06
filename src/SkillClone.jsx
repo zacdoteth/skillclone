@@ -2881,46 +2881,26 @@ Begin. — skillcl.one`;
                       filter: 'blur(10px)',
                       pointerEvents: 'none',
                     }} />
-                    <div style={{
-                      position: 'absolute',
-                      left: '50%',
-                      bottom: isMobile ? '144px' : '138px',
-                      transform: 'translateX(-50%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: isMobile ? '8px 10px' : '9px 12px',
-                      borderRadius: '999px',
-                      background: 'rgba(10,10,16,0.72)',
-                      border: `1px solid ${focusedHandCard ? 'rgba(255,255,255,0.12)' : 'rgba(139,92,246,0.16)'}`,
-                      boxShadow: focusedHandCard
-                        ? '0 12px 32px rgba(0,0,0,0.35), 0 0 28px rgba(139,92,246,0.12)'
-                        : '0 10px 26px rgba(0,0,0,0.28), 0 0 22px rgba(139,92,246,0.08)',
-                      backdropFilter: 'blur(18px)',
-                      WebkitBackdropFilter: 'blur(18px)',
-                      pointerEvents: 'auto',
-                      zIndex: 230,
-                      transition: 'all 0.22s ease',
-                    }}>
-                      {focusedHandCard ? (
-                        <>
-                          <span style={{ fontSize: isMobile ? '10px' : '11px', fontWeight: 700, color: 'white', maxWidth: isMobile ? '110px' : '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {focusedHandCard.name}
-                          </span>
-                          <button
-                            onClick={() => setFocusedHandCard(null)}
-                            style={{ padding: isMobile ? '5px 8px' : '6px 10px', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.65)', fontSize: isMobile ? '10px' : '11px', fontWeight: 700, cursor: 'pointer' }}
-                          >
-                            Keep
-                          </button>
-                          <button
-                            onClick={removeFocusedHandCard}
-                            style={{ padding: isMobile ? '5px 9px' : '6px 11px', borderRadius: '999px', border: '1px solid rgba(255,94,106,0.22)', background: 'rgba(255,94,106,0.12)', color: '#ff8b96', fontSize: isMobile ? '10px' : '11px', fontWeight: 800, cursor: 'pointer' }}
-                          >
-                            Remove
-                          </button>
-                        </>
-                      ) : (
+                    {!focusedHandCard && (
+                      <div style={{
+                        position: 'absolute',
+                        left: '50%',
+                        bottom: isMobile ? '144px' : '138px',
+                        transform: 'translateX(-50%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: isMobile ? '8px 10px' : '9px 12px',
+                        borderRadius: '999px',
+                        background: 'rgba(10,10,16,0.72)',
+                        border: '1px solid rgba(139,92,246,0.16)',
+                        boxShadow: '0 10px 26px rgba(0,0,0,0.28), 0 0 22px rgba(139,92,246,0.08)',
+                        backdropFilter: 'blur(18px)',
+                        WebkitBackdropFilter: 'blur(18px)',
+                        pointerEvents: 'auto',
+                        zIndex: 230,
+                        transition: 'all 0.22s ease',
+                      }}>
                         <>
                           <span style={{ fontSize: isMobile ? '10px' : '11px', fontWeight: 800, color: '#c4b5fd', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                             Your Squad
@@ -2929,8 +2909,8 @@ Begin. — skillcl.one`;
                             {isMobile ? 'Tap a card to inspect' : 'Click a card to inspect'}
                           </span>
                         </>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </>
                 )}
 
@@ -2968,7 +2948,7 @@ Begin. — skillcl.one`;
                         className="hand-card"
                         onClick={() => {
                           sounds.click();
-                          setFocusedHandCard({
+                          setFocusedHandCard(prev => prev?.id === mod.id ? null : {
                             id: mod.id,
                             catId,
                             name: mod.name,
@@ -3000,6 +2980,42 @@ Begin. — skillcl.one`;
                           e.currentTarget.style.transform = baseTransform;
                           e.currentTarget.style.zIndex = `${isFocused ? 110 : i + 1}`;
                         }}>
+                        {isFocused && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFocusedHandCard();
+                            }}
+                            aria-label={`Remove ${mod.name}`}
+                            title={`Remove ${mod.name}`}
+                            style={{
+                              position: 'absolute',
+                              top: isMobile ? '-9px' : '-10px',
+                              right: isMobile ? '-4px' : '-5px',
+                              width: isMobile ? '20px' : '22px',
+                              height: isMobile ? '20px' : '22px',
+                              borderRadius: '999px',
+                              border: '1px solid rgba(255,255,255,0.14)',
+                              background: 'rgba(10,10,16,0.58)',
+                              color: 'rgba(255,255,255,0.88)',
+                              boxShadow: '0 6px 18px rgba(0,0,0,0.28)',
+                              backdropFilter: 'blur(12px)',
+                              WebkitBackdropFilter: 'blur(12px)',
+                              zIndex: 240,
+                              pointerEvents: 'auto',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: isMobile ? '12px' : '13px',
+                              fontWeight: 300,
+                              lineHeight: 1,
+                              padding: 0,
+                            }}
+                          >
+                            ×
+                          </button>
+                        )}
                         {/* MTG-style card frame */}
                         <div style={{
                           position: 'absolute', inset: 0, borderRadius: 'inherit', overflow: 'hidden',

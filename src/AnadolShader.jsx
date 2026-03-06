@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 
 // ============================================
 // REFIK ANADOL-INSPIRED GLSL SHADER
@@ -438,6 +438,7 @@ export default function AnadolShader({ style = {}, showOrb = true, cardRef = nul
   const canvasRef = useRef(null);
   const glRef = useRef(null);
   const frameRef = useRef(0);
+  const hasPaintedRef = useRef(false);
   const mouseRef = useRef([0.5, 0.5]);
   const prevMouseRef = useRef([0.5, 0.5]);
   const mouseDeltaRef = useRef([0, 0]);
@@ -450,6 +451,7 @@ export default function AnadolShader({ style = {}, showOrb = true, cardRef = nul
   const card2OnRef = useRef(0);
   const brightnessRef = useRef(brightness);
   const brightCurrentRef = useRef(brightness);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => { showOrbRef.current = showOrb; }, [showOrb]);
   useEffect(() => { brightnessRef.current = brightness; }, [brightness]);
@@ -490,6 +492,8 @@ export default function AnadolShader({ style = {}, showOrb = true, cardRef = nul
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    hasPaintedRef.current = false;
+    setIsReady(false);
 
     const gl = canvas.getContext('webgl', {
       alpha: false,
@@ -748,6 +752,11 @@ export default function AnadolShader({ style = {}, showOrb = true, cardRef = nul
       gl.vertexAttribPointer(displayPosLoc, 2, gl.FLOAT, false, 0, 0);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
+      if (!hasPaintedRef.current) {
+        hasPaintedRef.current = true;
+        setIsReady(true);
+      }
+
       // Clear mouse delta each frame (prevents stale splats)
       mouseDeltaRef.current = [0, 0];
 
@@ -777,6 +786,8 @@ export default function AnadolShader({ style = {}, showOrb = true, cardRef = nul
         height: '100%',
         zIndex: 0,
         pointerEvents: 'none',
+        opacity: isReady ? 1 : 0,
+        transition: 'opacity 520ms ease',
         ...style,
       }}
     />
