@@ -1719,6 +1719,36 @@ Begin. — skillcl.one`;
     track('Fusion', { geniuses: moduleCount, power: totalPower, aiAdapted: !!userIntent.trim() && modules.length >= 2 });
   };
 
+  const upgradeHighlights = [
+    {
+      icon: Sparkles,
+      label: 'Compose',
+      title: 'Unlimited genius decks',
+      body: 'Build the exact council your brief needs instead of stopping at the free cap.',
+    },
+    {
+      icon: Brain,
+      label: 'Train',
+      title: 'Custom genius creation',
+      body: 'Turn niche operators, references, and private taste into reusable cards with lore.',
+    },
+    {
+      icon: Globe,
+      label: 'Ship',
+      title: 'Save and export',
+      body: 'Keep winning squads, pull from Wikipedia, and send the finished fusion straight into your tool.',
+    },
+  ];
+
+  const upgradeChecklist = [
+    'Unlimited genius selections',
+    'Unlimited squad saves',
+    'Custom genius creation with AI lore',
+    'Unlimited Wikipedia discovery',
+    'One-click export to ChatGPT, Claude, and Cursor',
+    'All future genius categories',
+  ];
+
   return (
     <div style={{ minHeight: '100vh', background: 'transparent', color: 'white', fontFamily: "'Inter', system-ui, -apple-system, sans-serif", position: 'relative', overflow: 'hidden' }}>
       {/* Anadol-inspired GLSL shader background — permanent on all stages */}
@@ -1823,66 +1853,116 @@ Begin. — skillcl.one`;
 
       {/* UPGRADE MODAL */}
       {showUpgrade && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'radial-gradient(circle at 50% 18%, rgba(139,92,246,0.16) 0%, rgba(15,15,24,0.78) 34%, rgba(3,3,8,0.92) 100%)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '18px' : '24px' }}
           onClick={() => setShowUpgrade(false)}>
           <div onClick={(e) => e.stopPropagation()}
-            style={{ background: 'rgba(22,22,32,0.95)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '16px', maxWidth: '400px', width: '100%', overflow: 'hidden', boxShadow: '0 25px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,92,246,0.1)', animation: 'fadeInUp 0.3s ease-out' }}>
+            style={{ position: 'relative', background: 'linear-gradient(180deg, rgba(16,16,26,0.95) 0%, rgba(10,10,18,0.98) 100%)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid rgba(129,140,248,0.18)', borderRadius: '22px', maxWidth: '440px', width: '100%', maxHeight: 'min(88vh, 760px)', overflowY: 'auto', boxShadow: '0 30px 90px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.02), inset 0 1px 0 rgba(255,255,255,0.06)', animation: 'fadeInUp 0.3s ease-out' }}>
 
-            {/* Header */}
-            <div style={{ padding: '24px 28px 0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'white' }}>Skillclone Pro</h3>
-                <button onClick={() => setShowUpgrade(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '18px', padding: '0 2px' }}>×</button>
-              </div>
-              <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>Unlimited geniuses. Unlimited power.</p>
-            </div>
+            <div style={{ position: 'absolute', inset: '0 0 auto 0', height: '1px', background: 'linear-gradient(90deg, transparent 0%, rgba(167,139,250,0.46) 22%, rgba(96,165,250,0.32) 52%, rgba(236,72,153,0.28) 82%, transparent 100%)' }} />
 
-            {/* Feature card */}
-            <div style={{ margin: '0 16px', padding: '20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px' }}>
-              {/* Price header */}
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', paddingBottom: '14px', marginBottom: '14px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                <span style={{ fontSize: '15px', fontWeight: 600, color: 'white' }}>Go Pro</span>
+            <div style={{ padding: isMobile ? '20px 18px 18px' : '24px 24px 20px' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
                 <div>
-                  <span style={{ fontSize: '28px', fontWeight: 800, color: 'white' }}>$8</span>
-                  <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.35)', marginLeft: '2px' }}>/mo</span>
+                  <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(167,139,250,0.78)' }}>
+                    Pro Access
+                  </div>
+                  <h3 style={{ margin: '10px 0 0', fontSize: isMobile ? '24px' : '28px', lineHeight: 1.05, letterSpacing: '-0.03em', fontWeight: 700, color: 'rgba(255,255,255,0.96)' }}>
+                    Skillclone Pro
+                  </h3>
+                  <p style={{ margin: '10px 0 0', fontSize: isMobile ? '13px' : '14px', lineHeight: 1.45, color: 'rgba(255,255,255,0.56)', maxWidth: '320px' }}>
+                    Remove the cap. Build sharper councils, save winning squads, and export finished prompt systems faster.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowUpgrade(false)}
+                  aria-label="Close upgrade modal"
+                  style={{ width: '30px', height: '30px', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.46)', cursor: 'pointer', fontSize: '16px', lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div style={{ marginTop: '18px', padding: isMobile ? '16px' : '18px', borderRadius: '18px', border: '1px solid rgba(255,255,255,0.06)', background: 'linear-gradient(180deg, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0.02) 100%)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                  <div>
+                    <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.34)' }}>
+                      Monthly
+                    </div>
+                    <div style={{ marginTop: '6px', fontSize: '13px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>
+                      Unlimited geniuses, squads, custom minds, and exports.
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{ fontSize: isMobile ? '40px' : '46px', lineHeight: 0.9, letterSpacing: '-0.06em', fontWeight: 800, color: 'white' }}>
+                      $8
+                    </div>
+                    <div style={{ marginTop: '4px', fontSize: '12px', color: 'rgba(255,255,255,0.42)', fontWeight: 600 }}>
+                      per month
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '14px' }}>
+                  {['Unlimited minds', 'Saved squads', 'Custom lore', 'Direct export'].map((tag) => (
+                    <span key={tag} style={{ padding: '6px 10px', borderRadius: '999px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', fontSize: '11px', color: 'rgba(255,255,255,0.56)', fontWeight: 600 }}>
+                      {tag}
+                    </span>
+                  ))}
                 </div>
               </div>
-              <p style={{ margin: '0 0 12px', fontSize: '12px', color: 'rgba(255,255,255,0.35)', lineHeight: 1.4 }}>Less than a coffee a week for superhuman AI outputs</p>
 
-              {/* Features checklist */}
-              {[
-                'Unlimited genius selections',
-                'Fuse 10, 20, 50+ minds at once',
-                'Custom genius creation with AI lore',
-                'Unlimited Wikipedia genius discovery',
-                'Unlimited squad saves',
-                'All future geniuses & categories',
-                'One-click export to ChatGPT & Claude',
-              ].map((feature, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 0' }}>
-                  <span style={{ fontSize: '13px', color: '#8b5cf6' }}>&#10003;</span>
-                  <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.75)' }}>{feature}</span>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '10px', marginTop: '14px' }}>
+                {upgradeHighlights.map(({ icon: Icon, label, title, body }) => (
+                  <div key={title} style={{ padding: '14px 14px 15px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', background: 'linear-gradient(180deg, rgba(255,255,255,0.028) 0%, rgba(255,255,255,0.015) 100%)' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '999px', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c4b5fd' }}>
+                      <Icon size={14} strokeWidth={2.2} />
+                    </div>
+                    <div style={{ marginTop: '10px', fontSize: '10px', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.34)' }}>
+                      {label}
+                    </div>
+                    <div style={{ marginTop: '6px', fontSize: '14px', lineHeight: 1.2, fontWeight: 700, color: 'rgba(255,255,255,0.9)', letterSpacing: '-0.02em' }}>
+                      {title}
+                    </div>
+                    <div style={{ marginTop: '6px', fontSize: '12px', lineHeight: 1.45, color: 'rgba(255,255,255,0.5)' }}>
+                      {body}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ marginTop: '14px', padding: isMobile ? '14px' : '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.018)' }}>
+                <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.34)', marginBottom: '10px' }}>
+                  Included
                 </div>
-              ))}
-            </div>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: '9px 14px' }}>
+                  {upgradeChecklist.map((feature) => (
+                    <div key={feature} style={{ display: 'flex', alignItems: 'flex-start', gap: '9px' }}>
+                      <div style={{ width: '18px', height: '18px', borderRadius: '999px', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.24)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c4b5fd', flexShrink: 0, marginTop: '1px' }}>
+                        <Check size={11} strokeWidth={3} />
+                      </div>
+                      <div style={{ fontSize: '12px', lineHeight: 1.45, color: 'rgba(255,255,255,0.68)' }}>{feature}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-            {/* CTA buttons */}
-            <div style={{ padding: '16px' }}>
+              <div style={{ paddingTop: '16px' }}>
               <a href={isCheckoutReady ? monthlyCheckoutUrl : undefined}
                 onClick={() => { if (isCheckoutReady) track('Upgrade Click', { plan: 'monthly' }); }}
                 aria-disabled={!isCheckoutReady}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', padding: '14px', fontSize: '15px', fontWeight: 700, background: 'linear-gradient(135deg, #7c3aed, #6366f1, #3b82f6)', border: 'none', borderRadius: '10px', color: 'white', cursor: isCheckoutReady ? 'pointer' : 'not-allowed', textDecoration: 'none', boxSizing: 'border-box', letterSpacing: '0.2px', opacity: isCheckoutReady ? 1 : 0.55 }}>
-                {isCheckoutReady ? 'Go Pro — $8/mo' : 'Checkout not configured'}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', minHeight: '54px', padding: '14px 18px', fontSize: '15px', fontWeight: 800, background: isCheckoutReady ? 'linear-gradient(135deg, #7c3aed 0%, #6366f1 44%, #3b82f6 100%)' : 'linear-gradient(135deg, rgba(99,102,241,0.62), rgba(59,130,246,0.58))', border: 'none', borderRadius: '14px', color: 'white', cursor: isCheckoutReady ? 'pointer' : 'not-allowed', textDecoration: 'none', boxSizing: 'border-box', letterSpacing: '0.01em', opacity: isCheckoutReady ? 1 : 0.72, boxShadow: isCheckoutReady ? '0 16px 34px rgba(79,70,229,0.34), 0 0 28px rgba(96,165,250,0.12)' : 'none' }}>
+                {isCheckoutReady ? 'Unlock Pro — $8/mo' : 'Stripe Link Missing'}
               </a>
               {!isCheckoutReady && (
-                <p style={{ margin: '10px 0 0 0', fontSize: '11px', color: 'rgba(255,255,255,0.35)', textAlign: 'center' }}>
-                  Set <code>VITE_STRIPE_MONTHLY_URL</code> to enable checkout.
-                </p>
+                <div style={{ marginTop: '10px', padding: '9px 12px', borderRadius: '12px', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.05)', fontSize: '11px', color: 'rgba(255,255,255,0.42)', textAlign: 'center' }}>
+                  Set <code style={{ color: 'rgba(255,255,255,0.68)', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>VITE_STRIPE_MONTHLY_URL</code> to enable checkout.
+                </div>
               )}
               <button onClick={() => setShowUpgrade(false)}
-                style={{ display: 'block', width: '100%', marginTop: '10px', padding: '8px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.25)', cursor: 'pointer', fontSize: '12px', textAlign: 'center' }}>
-                {`Stay on Free (${FREE_LIMIT} geniuses)`}
+                style={{ display: 'block', width: '100%', marginTop: '10px', padding: '8px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '12px', textAlign: 'center' }}>
+                {`Keep Free Plan (${FREE_LIMIT} geniuses)`}
               </button>
+              </div>
             </div>
           </div>
         </div>
