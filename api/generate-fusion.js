@@ -247,10 +247,27 @@ const CATEGORY_ROLE_WEIGHTS = {
   },
 };
 
+const ROLE_PRIORITY = {
+  governor: 0,
+  builder: 1,
+  operator: 2,
+  specialist: 3,
+};
+
 function cleanText(value) {
   return String(value || '')
     .replace(/\s+/g, ' ')
     .replace(/\s+([,.;:!?])/g, '$1')
+    .trim();
+}
+
+function tidyMultiline(value) {
+  return String(value || '')
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map(line => line.trimEnd())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
 
@@ -568,6 +585,10 @@ function compileCouncilPlan(geniuses, brief) {
       capabilities: capabilitySeedsForCategory(category),
       source: genius.source || 'preset',
     };
+  }).sort((a, b) => {
+    const roleDelta = (ROLE_PRIORITY[a.role] ?? 99) - (ROLE_PRIORITY[b.role] ?? 99);
+    if (roleDelta !== 0) return roleDelta;
+    return (b.power || 0) - (a.power || 0);
   });
 }
 
@@ -696,6 +717,23 @@ Default aggressively. Do not ask questions. Choose the smallest credible v1 that
 Treat the selected geniuses as signal for what kind of output will matter, but do not let them distort the product brief into roleplay.
 </task>
 
+<examples>
+<example>
+mission: "3D landing page for an AI devtool"
+good_artifact_type: landing_page
+good_output_mode: landing_page
+good_core_job: explain the product fast, create desire, and drive one primary conversion
+good_v1_boundary: one page, one CTA, one conversion event, no fake product surface area
+</example>
+<example>
+mission: "AI tutor app for med students"
+good_artifact_type: web_app
+good_output_mode: web_app
+good_core_job: help med students study, quiz themselves, and retain material with clear feedback
+good_stack_bias: Next.js + Supabase + auth + payments, unless the mission explicitly says otherwise
+</example>
+</examples>
+
 <rules>
 - Keep every field concrete.
 - Prefer one decisive default over several options.
@@ -742,6 +780,18 @@ The final rendered prompt must fit comfortably under 3600 characters, so every f
 No roleplay mush. No celebrity fanfiction. No vague inspiration.
 </task>
 
+<style_examples>
+<example_identity>
+You are a fused product-and-build intelligence. Their pattern recognition is your operating system, not a costume.
+</example_identity>
+<example_expert_block>
+Use Dieter Rams to delete anything that muddies the first user action; treat extra interface chrome as noise unless it earns trust.
+</example_expert_block>
+<example_activation>
+scope cuts, hierarchy, component pruning
+</example_activation>
+</style_examples>
+
 <rules>
 - identity_block: 1-2 sentences. Explain the fused intelligence and that this is not roleplay.
 - mission_context: 1-2 sentences. Frame the real job and where most builders fail.
@@ -756,6 +806,43 @@ No roleplay mush. No celebrity fanfiction. No vague inspiration.
 </rules>`;
 }
 
+function normalizeComposition(rawComposition, council, mission, brief) {
+  const fallback = buildFallbackComposition(mission, brief, council);
+  const byName = new Map((rawComposition?.expert_sections || []).map(section => [cleanText(section.name).toLowerCase(), section]));
+  const expert_sections = council.map(member => {
+    const picked = byName.get(member.name.toLowerCase());
+    if (!picked) {
+      return fallback.expert_sections.find(section => section.name === member.name)
+        || {
+          name: member.name,
+          role: member.role_label,
+          block: `${member.name} owns ${member.authority}. Apply that to ${member.capabilities.slice(0, 2).join(' and ')}.`,
+          activation: member.capabilities.slice(0, 2).join(' / '),
+        };
+    }
+    return {
+      name: member.name,
+      role: cleanText(picked.role) || member.role_label,
+      block: cleanText(picked.block) || `${member.name} owns ${member.authority}.`,
+      activation: cleanText(picked.activation) || member.capabilities.slice(0, 2).join(' / '),
+    };
+  });
+
+  const qualityScore = Number(rawComposition?.quality_score);
+
+  return {
+    identity_block: cleanText(rawComposition?.identity_block) || fallback.identity_block,
+    mission_context: cleanText(rawComposition?.mission_context) || fallback.mission_context,
+    fusion_philosophy: cleanText(rawComposition?.fusion_philosophy) || fallback.fusion_philosophy,
+    expert_sections,
+    execution_rules: uniq(rawComposition?.execution_rules || fallback.execution_rules).slice(0, 5),
+    output_focus: uniq(rawComposition?.output_focus || fallback.output_focus).slice(0, 5),
+    quality_bar: uniq(rawComposition?.quality_bar || fallback.quality_bar).slice(0, 4),
+    quality_score: Number.isFinite(qualityScore) ? Math.max(0, Math.min(10, qualityScore)) : fallback.quality_score,
+    remaining_risks: uniq(rawComposition?.remaining_risks || fallback.remaining_risks).slice(0, 3),
+  };
+}
+
 function extractText(data) {
   if (!data?.content) return '';
   return data.content
@@ -766,7 +853,7 @@ function extractText(data) {
 }
 
 function safeJsonParse(text) {
-  const cleaned = cleanText(text)
+  const cleaned = String(text || '')
     .replace(/^```json/i, '')
     .replace(/^```/, '')
     .replace(/```$/, '')
@@ -915,40 +1002,48 @@ function buildFallbackComposition(mission, brief, council) {
 
 function renderOneShotPrompt({ mission, brief, council, composition, compact = false }) {
   const contract = (brief.output_contract || [])
-    .map(([title, instruction], index) => `${index + 1}. ${title} - ${compact ? truncate(instruction, 42) : instruction}`)
+    .map(([title, instruction], index) => `${index + 1}. ${title} - ${compact ? truncate(instruction, 28) : instruction}`)
     .join('\n');
 
   const expertSections = composition.expert_sections
     .map(section => {
       const member = council.find(item => item.name === section.name);
       const power = member?.power ? ` [${member.power}]` : '';
-      const block = compact ? truncate(section.block, 180) : section.block;
-      const activation = compact ? truncate(section.activation, 58) : section.activation;
+      const block = compact ? truncate(section.block, 118) : section.block;
+      const activation = compact ? truncate(section.activation, 34) : section.activation;
       return `- ${section.name}${power} / ${section.role}: ${block} Activate for ${activation}.`;
     })
     .join('\n');
 
   const executionRules = composition.execution_rules
-    .slice(0, compact ? 4 : 5)
+    .slice(0, compact ? 3 : 5)
     .map(rule => `- ${compact ? truncate(rule, 90) : rule}`)
     .join('\n');
 
   const outputFocus = composition.output_focus
-    .slice(0, compact ? 4 : 5)
+    .slice(0, compact ? 3 : 5)
     .map(rule => `- ${compact ? truncate(rule, 90) : rule}`)
     .join('\n');
 
   const qualityBar = composition.quality_bar
-    .slice(0, compact ? 3 : 4)
+    .slice(0, compact ? 2 : 4)
     .map(rule => `- ${compact ? truncate(rule, 78) : rule}`)
     .join('\n');
 
-  const assumptionsLine = brief.assumptions.slice(0, compact ? 2 : 3).join(' | ');
-  const constraintsLine = brief.constraints.slice(0, compact ? 2 : 3).join(' | ');
+  const assumptionsLine = brief.assumptions.slice(0, compact ? 1 : 3).join(' | ');
+  const constraintsLine = brief.constraints.slice(0, compact ? 1 : 3).join(' | ');
   const integrationsLine = brief.default_integrations.slice(0, compact ? 2 : 3).join(', ');
   const hiddenReqsLine = brief.hidden_requirements.slice(0, compact ? 3 : 4).join(', ');
+  const missionContext = compact ? truncate(composition.mission_context, 150) : composition.mission_context;
+  const fusionPhilosophy = compact ? truncate(composition.fusion_philosophy, 135) : composition.fusion_philosophy;
+  const stackLine = compact
+    ? `Stack: ${brief.stack.frontend}; ${brief.stack.data}; ${brief.stack.auth}; ${brief.stack.ai}; ${brief.stack.payments}; ${brief.stack.deployment}`
+    : `Stack: FE ${brief.stack.frontend}; BE ${brief.stack.backend}; Data ${brief.stack.data}; Auth ${brief.stack.auth}; AI ${brief.stack.ai}; Pay ${brief.stack.payments}; Deploy ${brief.stack.deployment}`;
+  const responseRules = compact
+    ? `- Do not ask follow-up questions; make strong defaults explicit.\n- Return one reply that follows the Output Contract and is ready for Claude, Cursor, or a human builder today.`
+    : `- Do not ask follow-up questions unless missing data makes the answer unsafe or impossible.\n- Fill gaps with strong defaults and make them explicit in Assumptions.\n- Return the full package in one reply following the Output Contract exactly.\n- Make the result directly useful for Claude, Cursor, or a human builder starting today.`;
 
-  return cleanText(`
+  return tidyMultiline(`
 ━━━ SKILLCLONE ONE-SHOT SYSTEM ━━━
 
 IDENTITY
@@ -967,20 +1062,20 @@ Business model: ${brief.business_model}
 Success metric: ${brief.success_metric}
 Ship first: ${brief.first_release_goal}
 Boundary: ${brief.v1_boundary}
-Stack: FE ${brief.stack.frontend}; BE ${brief.stack.backend}; Data ${brief.stack.data}; Auth ${brief.stack.auth}; AI ${brief.stack.ai}; Pay ${brief.stack.payments}; Deploy ${brief.stack.deployment}
+${stackLine}
 Assumptions: ${assumptionsLine}
 Constraints: ${constraintsLine}
-Hidden requirements: ${hiddenReqsLine}
-Default integrations: ${integrationsLine}
+${compact ? '' : `Hidden requirements: ${hiddenReqsLine}`}
+${compact ? '' : `Default integrations: ${integrationsLine}`}
 
 MISSION CONTEXT
-${composition.mission_context}
+${missionContext}
 
 EXPERTISE COUNCIL
 ${expertSections}
 
 FUSION PHILOSOPHY
-${composition.fusion_philosophy}
+${fusionPhilosophy}
 
 EXECUTION RULES
 ${executionRules}
@@ -995,10 +1090,7 @@ QUALITY BAR
 ${qualityBar}
 
 When you respond:
-- Do not ask follow-up questions unless missing data makes the answer unsafe or impossible.
-- Fill gaps with strong defaults and make them explicit in Assumptions.
-- Return the full package in one reply following the Output Contract exactly.
-- Make the result directly useful for Claude, Cursor, or a human builder starting today.
+${responseRules}
 
 Begin.
 
@@ -1013,7 +1105,12 @@ function fitPromptToBudget(payload) {
   const compact = renderOneShotPrompt({ ...payload, compact: true });
   if (compact.length <= PROMPT_CHAR_BUDGET) return compact;
 
-  return truncate(compact, PROMPT_CHAR_BUDGET - 24) + '\n\n— forged at skillcl.one';
+  const suffix = '\n\n— forged at skillcl.one';
+  const head = compact
+    .replace(/\n\n— forged at skillcl\.one$/, '')
+    .slice(0, Math.max(0, PROMPT_CHAR_BUDGET - suffix.length - 3))
+    .trimEnd();
+  return `${head}...${suffix}`;
 }
 
 export default async function handler(req, res) {
@@ -1079,9 +1176,7 @@ export default async function handler(req, res) {
       composition = buildFallbackComposition(normalizedMission, refinedBrief, council);
     }
 
-    if (!composition?.expert_sections?.length) {
-      composition = buildFallbackComposition(normalizedMission, refinedBrief, council);
-    }
+    composition = normalizeComposition(composition, council, normalizedMission, refinedBrief);
 
     const finalPrompt = fitPromptToBudget({
       mission: normalizedMission,
