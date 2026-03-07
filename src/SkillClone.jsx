@@ -1,10 +1,15 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import Tilt from 'react-parallax-tilt';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
 import AnadolShader from './AnadolShader';
+
+gsap.registerPlugin(useGSAP);
 import {
   Clapperboard, Gem, PenTool, Crown, Smartphone, BookOpen,
   Terminal, Palette, Frame, TrendingUp, Zap, Globe, Star,
   Film, Swords, Monitor, Brush, BarChart3, Bot,
-  Lock, Check, Sparkles, Brain, Pencil,
+  Lock, Check, Sparkles, Brain, Pencil, Search,
 } from 'lucide-react';
 
 // ============================================
@@ -465,8 +470,8 @@ const FusionHelixLoader = React.memo(function FusionHelixLoader({ deck = [], isM
           height: isMobile ? '232px' : '280px',
           transform: 'translate(-50%, -50%)',
           borderRadius: '999px',
-          background: 'linear-gradient(180deg, rgba(196,181,253,0.05) 0%, rgba(96,165,250,0.28) 20%, rgba(255,255,255,0.78) 50%, rgba(167,139,250,0.24) 78%, rgba(196,181,253,0.04) 100%)',
-          boxShadow: '0 0 20px rgba(96,165,250,0.14), 0 0 50px rgba(139,92,246,0.12)',
+          background: 'linear-gradient(180deg, rgba(196,181,253,0.05) 0%, rgba(167,139,250,0.28) 20%, rgba(255,255,255,0.78) 50%, rgba(167,139,250,0.24) 78%, rgba(196,181,253,0.04) 100%)',
+          boxShadow: '0 0 20px rgba(167,139,250,0.14), 0 0 50px rgba(139,92,246,0.12)',
           opacity: 0.9,
         }} />
 
@@ -499,7 +504,7 @@ const FusionHelixLoader = React.memo(function FusionHelixLoader({ deck = [], isM
               height: '2px',
               '--rung-y': `${step.y}px`,
               borderRadius: '999px',
-              background: 'linear-gradient(90deg, rgba(196,181,253,0.0) 0%, rgba(196,181,253,0.65) 18%, rgba(96,165,250,0.82) 50%, rgba(196,181,253,0.65) 82%, rgba(196,181,253,0.0) 100%)',
+              background: 'linear-gradient(90deg, rgba(196,181,253,0.0) 0%, rgba(196,181,253,0.65) 18%, rgba(167,139,250,0.82) 50%, rgba(196,181,253,0.65) 82%, rgba(196,181,253,0.0) 100%)',
               boxShadow: '0 0 12px rgba(139,92,246,0.14)',
               animationDelay: `${-step.delay}s`,
             }}
@@ -590,7 +595,7 @@ const FusionHelixLoader = React.memo(function FusionHelixLoader({ deck = [], isM
           boxShadow: '0 0 34px rgba(139,92,246,0.22), 0 0 90px rgba(99,102,241,0.18)',
         }}>
           <div className="fusion-core-ring" style={{ position: 'absolute', inset: isMobile ? '-8px' : '-10px', borderRadius: '50%', border: '1px solid rgba(196,181,253,0.18)' }} />
-          <div className="fusion-core-ring fusion-core-ring-b" style={{ position: 'absolute', inset: isMobile ? '10px' : '12px', borderRadius: '50%', border: '1px solid rgba(96,165,250,0.18)' }} />
+          <div className="fusion-core-ring fusion-core-ring-b" style={{ position: 'absolute', inset: isMobile ? '10px' : '12px', borderRadius: '50%', border: '1px solid rgba(167,139,250,0.18)' }} />
           <div className="fusion-core-ring fusion-core-ring-c" style={{ position: 'absolute', inset: isMobile ? '24px' : '30px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.24)' }} />
         </div>
       </div>
@@ -713,6 +718,7 @@ const useSound = () => {
   };
 };
 
+
 // Stripe Payment Links — set these in your environment
 const STRIPE_LINKS = {
   monthly: (import.meta.env.VITE_STRIPE_MONTHLY_URL || '').trim(),
@@ -755,17 +761,24 @@ export default function SkillClone() {
   const [fusePhase, setFusePhase] = useState(null); // null | 'revealed'
   const [fuseHover, setFuseHover] = useState(false);
   const [dealingIn, setDealingIn] = useState(false); // Balatro-style deal animation on stage enter
+  const [deckDealing, setDeckDealing] = useState(false); // deck tap: cards spreading from deck
+  const [deckDealt, setDeckDealt] = useState(false); // deal complete, ready to transition
   const [flyingCards, setFlyingCards] = useState(new Set()); // cards animating to hand
   const [sparklingCards, setSparklingCards] = useState(new Set()); // sparkle burst on select
   const [poofingCards, setPoofingCards] = useState(new Set()); // poof spiral on deselect from hand
   const [wobblingCards, setWobblingCards] = useState(new Set()); // neighbor wobble on deselect
   const [focusedHandCard, setFocusedHandCard] = useState(null);
+  const [inspectedCard, setInspectedCard] = useState(null); // { catId, mod, cat } — Miyamoto-style enlarged card
+  const [flippedCardId, setFlippedCardId] = useState(null); // which genius tile is flipped to front face
+  const flippedCardIdRef = useRef(null);
+  useEffect(() => { flippedCardIdRef.current = flippedCardId; }, [flippedCardId]);
   const wikiSearchTimeout = useRef(null);
   const heroCardRef = useRef(null);
   const searchInputRef = useRef(null);
   const hoveredCardRef = useRef(null);
   const lastSelectedCardRef = useRef(null);
   const focusedHandCardRef = useRef(null);
+  const inspectedCardRef = useRef(null);
   const missionInputRef = useRef(null);
   const FREE_WIKI_LIMIT = 1;
 
@@ -1045,17 +1058,288 @@ export default function SkillClone() {
     return () => { if (wikiSearchTimeout.current) clearTimeout(wikiSearchTimeout.current); };
   }, [searchQuery]);
 
-  // Dealing animation when entering building stage (ref guards against StrictMode double-fire)
+  // GSAP pack rip → cards burst → overlay dissolves
+  React.useEffect(() => {
+    if (!deckDealing || stage !== 'landing') return;
+
+    let raf1, raf2;
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        const deckEl = deckStackRef.current;
+        const cardStack = dealContainerRef.current;
+        if (!deckEl) return;
+
+        // Pack elements
+        const packFull = deckEl.querySelector('.pack-full');
+        const packTop = deckEl.querySelector('.pack-top');
+        const packBottom = deckEl.querySelector('.pack-bottom');
+        const tearGlow = deckEl.querySelector('.pack-tear-glow');
+        const tearBloom = deckEl.querySelector('.pack-tear-bloom');
+        const burst = deckEl.querySelector('.pack-burst');
+        const sparks = deckEl.querySelectorAll('.pack-spark');
+        const slashBlade = deckEl.querySelector('.pack-slash');
+        const slashTrail = deckEl.querySelector('.pack-slash-trail');
+        const slashFlash = deckEl.querySelector('.pack-slash-flash');
+        const overlay = document.querySelector('.landing-overlay');
+        const scrim = overlay?.querySelector('.landing-scrim');
+        const buildingView = buildingViewRef.current;
+        const dealCards = cardStack ? Array.from(cardStack.querySelectorAll('.deal-card')) : [];
+
+        // Position all cards stacked inside the pack
+        const pw = isMobile ? 195 : 270;
+        dealCards.forEach((card, i) => {
+          gsap.set(card, {
+            x: (i - dealCards.length / 2) * 0.15,
+            y: (i - dealCards.length / 2) * 0.1,
+            rotation: 0,
+            scale: pw / (isMobile ? 160 : 220),
+            opacity: 0,
+            rotateY: 0,
+            transformPerspective: 1200,
+          });
+        });
+
+        // Measure grid positions BEFORE animation starts
+        const gridTiles = document.querySelectorAll('.genius-tile[data-genius]');
+        const gridPositions = {};
+        gridTiles.forEach(tile => {
+          const id = tile.getAttribute('data-genius');
+          const rect = tile.getBoundingClientRect();
+          gridPositions[id] = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, w: rect.width, h: rect.height };
+        });
+
+        const tl = gsap.timeline({
+          onComplete: () => {
+            setStage('building');
+            setDeckDealing(false);
+          },
+        });
+
+        // ═══ ACT 1: THE SLASH — diagonal energy blade slices the top off ═══
+
+        // 1a. Anticipation — pack tenses up
+        tl.to(deckEl, {
+          scaleX: 0.96, scaleY: 1.03,
+          duration: 0.2,
+          ease: 'power2.in',
+        });
+
+        // 1b. ⚡ THE SLASH — blade sweeps across at high speed
+        // Blade appears from left, streaks across the pack
+        tl.to(slashBlade, {
+          opacity: 1,
+          x: '120%',
+          duration: 0.12,
+          ease: 'power4.in',
+        });
+        // Trail follows slightly behind
+        tl.to(slashTrail, {
+          opacity: 1,
+          x: '120%',
+          duration: 0.14,
+          ease: 'power4.in',
+        }, '<+=0.02');
+
+        // 1c. IMPACT — the moment the slash completes
+        // White flash at the cut line
+        tl.to(slashFlash, {
+          opacity: 1,
+          duration: 0.04,
+          ease: 'none',
+        }, '-=0.04');
+        // Hide full pack, reveal the sliced halves
+        tl.to(packFull, { opacity: 0, duration: 0.03 }, '<');
+        // Pack snaps back from anticipation squeeze
+        tl.to(deckEl, {
+          scaleX: 1.02, scaleY: 0.98,
+          duration: 0.08,
+          ease: 'power3.out',
+        }, '<');
+        // Tear glow along the diagonal cut
+        tl.to(tearGlow, { opacity: 1, duration: 0.06, ease: 'power4.out' }, '<');
+        // Energy burst from the cut
+        tl.to(burst, {
+          opacity: 0.8, scale: 1.3,
+          duration: 0.15, ease: 'power2.out',
+        }, '<');
+
+        // 1d. THE SEPARATION — sliced top flies off
+        // Top flap launches upward and to the right (following slash direction)
+        tl.to(packTop, {
+          y: isMobile ? -150 : -210,
+          x: isMobile ? 30 : 45,
+          rotation: -12,
+          opacity: 0,
+          duration: 0.5,
+          ease: 'power3.out',
+        }, '-=0.06');
+        // Pack body recoils from the cut
+        tl.to(packBottom, {
+          y: isMobile ? 5 : 7,
+          duration: 0.1,
+          ease: 'power2.out',
+        }, '<');
+        tl.to(packBottom, {
+          y: 0,
+          duration: 0.15,
+          ease: 'elastic.out(1, 0.5)',
+        });
+        // Normalize pack scale
+        tl.to(deckEl, {
+          scaleX: 1, scaleY: 1,
+          duration: 0.15,
+          ease: 'power2.out',
+        }, '<');
+
+        // 1e. AFTERMATH — slash fades, sparks shower
+        // Blade and trail fade
+        tl.to(slashBlade, { opacity: 0, duration: 0.15 }, '-=0.4');
+        tl.to(slashTrail, { opacity: 0, duration: 0.25 }, '-=0.35');
+        tl.to(slashFlash, { opacity: 0, duration: 0.2 }, '-=0.4');
+
+        // Bloom pulse
+        tl.to(tearBloom, { opacity: 1, duration: 0.08, ease: 'power2.out' }, '-=0.45');
+        tl.to(tearBloom, { opacity: 0, scaleY: 2, duration: 0.35, ease: 'power2.out' }, '-=0.3');
+
+        // Sparks shower — burst along the diagonal cut line, biased upward
+        sparks.forEach((spark, i) => {
+          const t = i / (sparks.length - 1); // 0→1 along the cut
+          const angle = -160 + t * 60 + (Math.random() - 0.5) * 40; // fan upward
+          const dist = 35 + Math.random() * 80;
+          const rad = (angle * Math.PI) / 180;
+          tl.to(spark, { opacity: 1, duration: 0.03 }, '-=0.42');
+          tl.to(spark, {
+            x: Math.sin(rad) * dist,
+            y: -Math.abs(Math.cos(rad) * dist) - Math.random() * 20,
+            opacity: 0,
+            scale: i % 4 === 0 ? 3.5 : i % 3 === 0 ? 2.5 : 1.5,
+            duration: 0.2 + Math.random() * 0.2,
+            ease: 'power2.out',
+          }, '-=0.4');
+        });
+
+        // Glow/burst fade
+        tl.to(tearGlow, { opacity: 0, duration: 0.2 }, '-=0.15');
+        tl.to(burst, { opacity: 0, scale: 2.5, duration: 0.3, ease: 'power2.out' }, '-=0.25');
+
+        // ═══ ACT 2: CARDS EMERGE — rise from the open pack showing front face ═══
+
+        // Show top ~8 cards rising from pack opening (front face visible)
+        const previewCount = Math.min(8, dealCards.length);
+        const emergeStart = tl.duration();
+        for (let i = 0; i < previewCount; i++) {
+          tl.to(dealCards[i], {
+            opacity: 1,
+            y: -(isMobile ? 140 : 200) - i * (isMobile ? 5 : 8),
+            x: (i - previewCount / 2) * (isMobile ? 4 : 6),
+            rotation: (i - previewCount / 2) * 1.2,
+            scale: isMobile ? 0.82 : 0.88,
+            duration: 0.3,
+            ease: 'back.out(1.6)',
+          }, emergeStart + i * 0.03);
+        }
+
+        // Pause to admire the cards
+        tl.to({}, { duration: 0.5 });
+
+        // ═══ ACT 3: THE DEAL — cards scatter to grid in random order with visible stagger ═══
+
+        // Scrim starts fading, building view fades in (with [+] placeholders)
+        if (scrim) tl.to(scrim, { opacity: 0, duration: 0.6, ease: 'power2.inOut' });
+        if (buildingView) tl.to(buildingView, { opacity: 1, duration: 0.5, ease: 'power2.inOut' }, '<');
+        // Pack body fades down
+        tl.to(packBottom, {
+          y: isMobile ? 45 : 60,
+          opacity: 0,
+          duration: 0.35,
+          ease: 'power2.in',
+        }, '<');
+
+        // Shuffle for random cross-category order
+        const shuffled = [...dealCards].sort(() => Math.random() - 0.5);
+        const flyStart = tl.duration();
+        const stagger = isMobile ? 0.03 : 0.035; // visible per-card delay
+
+        shuffled.forEach((card, i) => {
+          const geniusId = card.getAttribute('data-deal-genius');
+          const target = gridPositions[geniusId];
+
+          if (target) {
+            const cardRect = card.getBoundingClientRect();
+            const curX = gsap.getProperty(card, 'x');
+            const curY = gsap.getProperty(card, 'y');
+            const finalX = target.x - (cardRect.left + cardRect.width / 2 - curX);
+            const finalY = target.y - (cardRect.top + cardRect.height / 2 - curY);
+            const targetScale = target.w / pw;
+
+            // Make hidden cards visible as they launch
+            const cardDelay = flyStart + i * stagger;
+            if (i >= previewCount) {
+              tl.to(card, {
+                opacity: 1,
+                duration: 0.08,
+              }, cardDelay);
+            }
+
+            tl.to(card, {
+              x: finalX, y: finalY,
+              rotation: 0,
+              scale: targetScale,
+              rotateY: 180,
+              duration: 0.4 + Math.random() * 0.1,
+              ease: 'power3.out',
+              onStart: () => { if (i % 4 === 0) sounds.hover(); },
+            }, cardDelay);
+          } else {
+            // No grid target — fade out
+            tl.to(card, {
+              opacity: 0, scale: 0.1,
+              duration: 0.15, ease: 'power2.in',
+            }, flyStart + i * stagger);
+          }
+        });
+
+        // ═══ ACT 4: SEAMLESS HANDOFF ═══
+
+        // Reveal real grid cards BEFORE deal cards fade — overlap for zero flash
+        tl.call(() => {
+          setDeckDealt(true);
+        }, [], `>${-0.06}`);
+
+        // Deal cards fade as real cards appear underneath
+        tl.to(dealCards, {
+          opacity: 0,
+          duration: 0.2,
+        }, '<+=0.04');
+
+        // Overlay fully gone
+        tl.to(overlay, {
+          opacity: 0,
+          duration: 0.25,
+          ease: 'power2.inOut',
+        }, '-=0.15');
+      });
+    });
+
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, [deckDealing, stage]);
+
+  // Normal deal-in when entering building from other paths (not from deck)
   const lastDealtStage = useRef(null);
   React.useEffect(() => {
     if (stage === 'building' && lastDealtStage.current !== 'building') {
       lastDealtStage.current = 'building';
+      // If coming from deck deal, cards are already in position — skip animation
+      if (deckDealt) return;
       setDealingIn(true);
       const timer = setTimeout(() => setDealingIn(false), 800);
       return () => clearTimeout(timer);
     }
     if (stage !== 'building') lastDealtStage.current = null;
-  }, [stage]);
+  }, [stage, deckDealt]);
 
   // Auto-suggest Wikipedia geniuses based on user intent when entering building stage
   React.useEffect(() => {
@@ -1087,6 +1371,121 @@ export default function SkillClone() {
   const moduleCount = allSelected.length;
   const maxGeniuses = isPro ? PRO_LIMIT : FREE_LIMIT;
 
+  // All genius cards for the landing deck — one flat list with category info
+  const allGeniusCards = React.useMemo(() => {
+    const cards = [];
+    CATEGORY_ORDER.forEach(catId => {
+      const cat = GENIUS_CATEGORIES[catId];
+      if (!cat) return;
+      cat.modules.forEach(mod => cards.push({ catId, mod, cat }));
+    });
+    return cards;
+  }, []);
+
+  // Solitaire deal — deck stays, cards spread from under it. No stage switch until done.
+  const deckStackRef = useRef(null);
+  const dealContainerRef = useRef(null);
+  const buildingViewRef = useRef(null);
+  const startDeckDeal = useCallback(() => {
+    if (deckDealing) return;
+    sounds.click();
+    setDeckDealing(true);
+  }, [deckDealing, sounds]);
+
+  // ═══ SWIPE-TO-SLICE interaction ═══
+  const sliceActive = useRef(false);
+  const sliceStartX = useRef(0);
+  const slicePackRect = useRef(null);
+  const sliceTapTime = useRef(null);
+  const sliceTapPos = useRef(null);
+
+  const handleSliceStart = useCallback((clientX, clientY) => {
+    if (deckDealing) return false;
+    const el = deckStackRef.current;
+    if (!el) return false;
+    const rect = el.getBoundingClientRect();
+    // Start tracking from anywhere on the pack — slice zone is generous
+    sliceActive.current = true;
+    sliceStartX.current = clientX;
+    slicePackRect.current = rect;
+    // Show the blade at starting position based on where they pressed
+    const startPct = Math.max(0, (clientX - rect.left) / rect.width);
+    const blade = el.querySelector('.pack-slash');
+    const trail = el.querySelector('.pack-slash-trail');
+    if (blade) { blade.style.opacity = '0.25'; blade.style.transform = `rotate(-3deg) translateX(${startPct * 120}%)`; blade.style.transition = 'none'; }
+    if (trail) { trail.style.opacity = '0.1'; trail.style.transform = `rotate(-3deg) translateX(${Math.max(0, startPct * 120 - 8)}%) translateY(-4.5px)`; trail.style.transition = 'none'; }
+    return true;
+  }, [deckDealing]);
+
+  const handleSliceMove = useCallback((clientX) => {
+    if (!sliceActive.current || !slicePackRect.current) return;
+    const rect = slicePackRect.current;
+    const progress = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const el = deckStackRef.current;
+    if (!el) return;
+    const blade = el.querySelector('.pack-slash');
+    const trail = el.querySelector('.pack-slash-trail');
+    const pct = progress * 120; // blade overshoots slightly
+    const opacity = 0.3 + progress * 0.7;
+    if (blade) { blade.style.opacity = `${opacity}`; blade.style.transform = `rotate(-3deg) translateX(${pct}%)`; }
+    if (trail) { trail.style.opacity = `${opacity * 0.5}`; trail.style.transform = `rotate(-3deg) translateX(${Math.max(0, pct - 8)}%) translateY(-4.5px)`; }
+    // Slight pack-top lift as they progress
+    const top = el.querySelector('.pack-top');
+    if (top && progress > 0.3) {
+      const lift = (progress - 0.3) * 8;
+      top.style.transform = `translateY(${-lift}px) rotate(${-lift * 0.3}deg)`;
+      top.style.transition = 'none';
+    }
+    // Trigger on completion!
+    if (progress > 0.75) {
+      sliceActive.current = false;
+      // Reset direct DOM styles — GSAP will take over
+      if (blade) { blade.style.opacity = ''; blade.style.transform = ''; blade.style.transition = ''; }
+      if (trail) { trail.style.opacity = ''; trail.style.transform = ''; trail.style.transition = ''; }
+      if (top) { top.style.transform = ''; top.style.transition = ''; }
+      startDeckDeal();
+    }
+  }, [startDeckDeal]);
+
+  const handleSliceEnd = useCallback(() => {
+    if (!sliceActive.current) return;
+    sliceActive.current = false;
+    // Snap back — swipe wasn't completed
+    const el = deckStackRef.current;
+    if (!el) return;
+    const blade = el.querySelector('.pack-slash');
+    const trail = el.querySelector('.pack-slash-trail');
+    const top = el.querySelector('.pack-top');
+    if (blade) { blade.style.transition = 'opacity 0.3s ease, transform 0.3s ease'; blade.style.opacity = '0'; blade.style.transform = ''; }
+    if (trail) { trail.style.transition = 'opacity 0.3s ease, transform 0.3s ease'; trail.style.opacity = '0'; trail.style.transform = ''; }
+    if (top) { top.style.transition = 'transform 0.3s ease'; top.style.transform = ''; }
+    setTimeout(() => {
+      if (blade) blade.style.transition = '';
+      if (trail) trail.style.transition = '';
+      if (top) top.style.transition = '';
+    }, 350);
+  }, []);
+
+  // Document-level listeners for swipe tracking
+  React.useEffect(() => {
+    if (stage !== 'landing') return;
+    const onMove = (e) => {
+      const touch = e.touches?.[0];
+      handleSliceMove(touch ? touch.clientX : e.clientX);
+    };
+    const onEnd = () => handleSliceEnd();
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('touchmove', onMove, { passive: true });
+    document.addEventListener('touchend', onEnd);
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onEnd);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+    };
+  }, [stage, handleSliceMove, handleSliceEnd]);
+
   React.useEffect(() => {
     if (!focusedHandCard) return;
     const stillExists = (selectedModules[focusedHandCard.catId] || []).some((mod) => mod.id === focusedHandCard.id);
@@ -1096,6 +1495,19 @@ export default function SkillClone() {
   React.useEffect(() => {
     if (stage !== 'building' || mobileCartOpen) setFocusedHandCard(null);
   }, [mobileCartOpen, stage]);
+
+  // Dismiss inspected card / flipped card on Escape
+  React.useEffect(() => {
+    if (!inspectedCard && !flippedCardId) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        if (flippedCardId) setFlippedCardId(null);
+        if (inspectedCard) setInspectedCard(null);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [inspectedCard, flippedCardId]);
 
   const enforcePlanLimits = useCallback((draftSelection = {}) => {
     if (isPro) {
@@ -1214,28 +1626,74 @@ export default function SkillClone() {
   const isSelected = (catId, modId) => (selectedModules[catId] || []).some(m => m.id === modId);
 
   const renderGlassCard = ({ catId, mod, cat }, index, { large = false } = {}) => {
-    const sel = isSelected(catId, mod.id);
-    const isProLocked = PRO_GENIUSES.has(mod.id) && !isPro;
-    const isCustom = catId === 'custom';
-    const iconKey = isCustom ? (mod._source === 'wikipedia' ? 'discovered' : 'custom') : cat.icon;
-    const IconComp = CATEGORY_ICONS[iconKey] || Star;
     const color = cat.color;
     const r = parseInt(color.slice(1,3),16);
     const g = parseInt(color.slice(3,5),16);
     const b = parseInt(color.slice(5,7),16);
     const cardW = large ? (isMobile ? '90px' : '120px') : (isMobile ? '62px' : '86px');
     const cardH = large ? undefined : (isMobile ? '80px' : '108px');
+
+    // Before deal completes: show empty [+] placeholder slot (same size for measurement)
+    if (!deckDealt && !dealingIn) {
+      return (
+        <div key={mod.id} className="genius-tile" data-genius={mod.id} style={{
+          width: cardW, flexShrink: 0,
+          height: cardH || undefined,
+          aspectRatio: large ? '3 / 4' : undefined,
+          borderRadius: large ? '10px' : '6px',
+          border: `1px dashed rgba(${r},${g},${b},0.15)`,
+          background: `rgba(${r},${g},${b},0.03)`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <span style={{ fontSize: large ? '20px' : '14px', color: `rgba(${r},${g},${b},0.2)`, fontWeight: 300, lineHeight: 1 }}>+</span>
+        </div>
+      );
+    }
+
+    const sel = isSelected(catId, mod.id);
+    const isProLocked = PRO_GENIUSES.has(mod.id) && !isPro;
+    const isCustom = catId === 'custom';
+    const iconKey = isCustom ? (mod._source === 'wikipedia' ? 'discovered' : 'custom') : cat.icon;
+    const IconComp = CATEGORY_ICONS[iconKey] || Star;
+    const isFlipped = flippedCardId === mod.id;
+    // Flipped front face renders at hand-card dimensions (not scaled-up table card)
+    const flipW = isMobile ? 82 : 130;
+    const flipH = Math.round(flipW * 1.4);
     return (
-      <div key={mod.id} className={`genius-tile${sparklingCards.has(mod.id) ? ' select-burst' : ''}`}
+      <div key={mod.id} className={`genius-tile${sparklingCards.has(mod.id) ? ' select-burst' : ''}${isFlipped ? ' is-flipped' : ''}${large ? ' is-large' : ''}`}
         ref={(el) => {
           if (hoveredGenius?.mod?.id === mod.id) hoveredCardRef.current = el;
         }}
-        onClick={() => {
+        onClick={(e) => {
           if (isProLocked) { setShowUpgrade(true); return; }
-          toggleModule(catId, mod);
-          if (!sel) lastSelectedCardRef.current = document.querySelector(`[data-genius="${mod.id}"]`);
+          sounds.click();
+          if (large) {
+            setInspectedCard({ catId, mod, cat });
+          } else if (isMobile) {
+            // Mobile: first tap flips to show details, second tap (while flipped) adds/removes
+            if (isFlipped) {
+              toggleModule(catId, mod);
+              if (!sel) lastSelectedCardRef.current = e.currentTarget;
+            } else {
+              setFlippedCardId(mod.id);
+            }
+          } else {
+            // Desktop: click adds/removes (hover already flips)
+            toggleModule(catId, mod);
+            if (!sel) lastSelectedCardRef.current = e.currentTarget;
+          }
         }}
-        onMouseEnter={(e) => { const r = e.currentTarget.getBoundingClientRect(); setHoveredGenius({ catId, mod, cat, rect: { top: r.top, left: r.left, right: r.right, bottom: r.bottom, width: r.width, height: r.height } }); if (!isMobile) sounds.hover(); }}
+        onMouseEnter={(e) => {
+          const el = e.currentTarget;
+          const rect = el.getBoundingClientRect();
+          el._hoverRect = rect;
+          el._hoverFrame = 0;
+          el.style.transition = 'none';
+          setHoveredGenius({ catId, mod, cat });
+          if (!isMobile) {
+            sounds.hover();
+          }
+        }}
         data-genius={mod.id}
         data-selected={sel ? 'true' : 'false'}
         style={{
@@ -1243,25 +1701,39 @@ export default function SkillClone() {
           position: 'relative', cursor: 'pointer',
           width: cardW, flexShrink: 0,
           opacity: isProLocked ? 0.4 : 1,
-          animation: dealingIn
-            ? `dealCard 0.5s ${Math.min(index * 40, 600)}ms cubic-bezier(0.34, 1.4, 0.64, 1) both`
+          perspective: '900px',
+          animation: (dealingIn || deckDealt || stage === 'landing')
+            ? 'none'
             : `cardFadeIn 0.25s ${Math.min(index * 25, 400)}ms ease-out both`,
+          zIndex: isFlipped ? 50 : undefined,
         }}
         onMouseMove={(e) => {
           if (isMobile) return;
-          const rect = e.currentTarget.getBoundingClientRect();
-          const x = (e.clientX - rect.left) / rect.width;
-          const y = (e.clientY - rect.top) / rect.height;
-          const tilt = large ? 10 : 5;
-          e.currentTarget.style.transform = `perspective(800px) rotateX(${-(y - 0.5) * tilt}deg) rotateY(${(x - 0.5) * tilt}deg) scale(1.08) translateY(-5px)`;
-          e.currentTarget.style.setProperty('--mx', `${x * 100}%`);
-          e.currentTarget.style.setProperty('--my', `${y * 100}%`);
+          const el = e.currentTarget;
+          el._hoverClientX = e.clientX;
+          el._hoverClientY = e.clientY;
+          if (el._hoverFrame) return;
+          el._hoverFrame = requestAnimationFrame(() => {
+            const rect = el._hoverRect || el.getBoundingClientRect();
+            const x = (el._hoverClientX - rect.left) / rect.width;
+            const y = (el._hoverClientY - rect.top) / rect.height;
+            const tilt = large ? 8 : 4;
+            el.style.transform = `perspective(800px) rotateX(${-(y - 0.5) * tilt}deg) rotateY(${(x - 0.5) * tilt}deg) scale(${large ? 1.05 : 1.045}) translateY(${large ? '-4px' : '-3px'})`;
+            el.style.setProperty('--mx', `${x * 100}%`);
+            el.style.setProperty('--my', `${y * 100}%`);
+            el._hoverFrame = 0;
+          });
         }}
         onMouseLeave={(e) => {
+          if (e.currentTarget.contains(e.relatedTarget)) return;
+          const el = e.currentTarget;
+          if (el._hoverFrame) cancelAnimationFrame(el._hoverFrame);
+          el._hoverFrame = 0;
+          el._hoverRect = null;
           setHoveredGenius(null); hoveredCardRef.current = null;
-          e.currentTarget.style.transform = '';
-          e.currentTarget.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.4, 0.64, 1)';
-          setTimeout(() => { try { e.currentTarget.style.transition = ''; } catch(ex) {} }, 400);
+          el.style.transform = '';
+          el.style.transition = 'transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), filter 0.18s ease';
+          setTimeout(() => { try { el.style.transition = ''; } catch(ex) {} }, 180);
         }}>
         {sel && (
           <div style={{
@@ -1275,9 +1747,27 @@ export default function SkillClone() {
             zIndex: 0,
           }} />
         )}
-        {/* MTG-style card frame */}
-        <div style={{
-          width: '100%', aspectRatio: large ? '3 / 4' : undefined, height: large ? undefined : cardH, position: 'relative',
+
+        {/* ═══ 3D FLIP CONTAINER ═══ */}
+        <div className="card-flipper" style={{
+          width: '100%',
+          height: large ? undefined : cardH,
+          aspectRatio: large ? '3 / 4' : undefined,
+          position: 'relative',
+          transformStyle: 'preserve-3d',
+          transition: isFlipped
+            ? `transform ${sel ? '0.8s' : '0.4s'} cubic-bezier(0.34, 1.56, 0.64, 1)`
+            : 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+          transform: isFlipped
+            ? 'rotateY(180deg)'
+            : 'rotateY(0deg) scale(1)',
+        }}>
+
+        {/* ═══ BACK FACE (default view) ═══ */}
+        <div className="card-back-face" style={{
+          position: 'absolute', inset: 0,
+          backfaceVisibility: 'hidden',
+          WebkitBackfaceVisibility: 'hidden',
           borderRadius: large ? '10px' : '6px',
           overflow: 'hidden',
           background: sel
@@ -1287,7 +1777,6 @@ export default function SkillClone() {
           boxShadow: sel
             ? `0 4px 20px rgba(0,0,0,0.4), 0 0 20px rgba(${r},${g},${b},0.2), 0 0 40px rgba(${r},${g},${b},0.1)`
             : '0 4px 12px rgba(0,0,0,0.3)',
-          transition: 'box-shadow 0.2s ease',
         }}>
           <div style={{
             width: '100%', height: '100%', borderRadius: 'inherit', overflow: 'hidden', position: 'relative',
@@ -1300,7 +1789,6 @@ export default function SkillClone() {
             {/* Card-back pattern (small tiles only) — subtle geometric border */}
             {!large && !sel && (
               <div style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', overflow: 'hidden', pointerEvents: 'none', zIndex: 1 }}>
-                {/* Corner filigree lines */}
                 <div style={{ position: 'absolute', inset: '4px', borderRadius: '2px', border: `1px solid rgba(${r},${g},${b},0.06)`, pointerEvents: 'none' }} />
                 <div style={{ position: 'absolute', inset: '7px', borderRadius: '1px', border: `1px solid rgba(${r},${g},${b},0.03)`, pointerEvents: 'none' }} />
               </div>
@@ -1412,7 +1900,7 @@ export default function SkillClone() {
                 <div style={{
                   fontSize: '6px', fontWeight: 600, color: `rgba(${r},${g},${b},0.5)`,
                   letterSpacing: '0.3px', textTransform: 'uppercase',
-                }}>{catId}</div>
+                }}>{cat.name || catId}</div>
               </div>
             )}
 
@@ -1425,15 +1913,122 @@ export default function SkillClone() {
                 <div style={{
                   fontSize: '7px', color: 'rgba(255,255,255,0.4)', lineHeight: 1.3,
                   overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                }}>{mod.specs.split('•')[0].trim()}</div>
+                }}>{mod.specs}</div>
               </div>
             )}
 
           </div>
         </div>
+        {/* ═══ END BACK FACE ═══ */}
+
+        {/* ═══ FRONT FACE (revealed on flip) — rendered at hand-card dimensions ═══ */}
+        {!large && (
+          <div className="card-front-face" style={{
+            position: 'absolute',
+            top: '50%', left: '50%',
+            width: `${flipW}px`, height: `${flipH}px`,
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
+            transform: `translate(-50%, -50%) rotateY(180deg)`,
+            borderRadius: isMobile ? '7px' : '8px',
+            overflow: 'hidden',
+            background: `linear-gradient(180deg, ${color}50 0%, rgba(${r},${g},${b},0.25) 8%, rgba(22,22,30,0.98) 15%, rgba(18,18,26,0.99) 85%, rgba(${r},${g},${b},0.25) 92%, ${color}50 100%)`,
+            padding: isMobile ? '2px' : '2.5px',
+            boxShadow: `0 8px 32px rgba(0,0,0,0.5), 0 0 30px rgba(${r},${g},${b},0.2), 0 0 60px rgba(${r},${g},${b},0.08)`,
+          }}>
+            <div style={{
+              width: '100%', height: '100%', borderRadius: isMobile ? '4px' : '6px', overflow: 'hidden', position: 'relative',
+              background: `linear-gradient(180deg, rgba(${r},${g},${b},0.08) 0%, rgba(10,10,16,0.99) 100%)`,
+              display: 'flex', flexDirection: 'column',
+            }}>
+              {/* Foil shimmer */}
+              <div className="card-foil" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: `linear-gradient(115deg, transparent 25%, rgba(255,255,255,0.06) 42%, rgba(${r},${g},${b},0.08) 50%, rgba(255,255,255,0.04) 58%, transparent 75%)`, backgroundSize: '200% 200%', pointerEvents: 'none', zIndex: 4 }} />
+
+              {/* === NAME BANNER — matches hand card exactly === */}
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: isMobile ? '4px 6px 3px' : '5px 7px 3px',
+                background: `linear-gradient(180deg, rgba(${r},${g},${b},0.18) 0%, rgba(${r},${g},${b},0.06) 100%)`,
+                borderBottom: `1px solid rgba(${r},${g},${b},0.15)`,
+                minHeight: 0, zIndex: 2,
+              }}>
+                <div style={{
+                  fontSize: isMobile ? '8px' : '10px', fontWeight: 800, color: 'rgba(255,255,255,0.92)',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  flex: 1, letterSpacing: '-0.2px', textTransform: 'uppercase',
+                  textShadow: '0 1px 2px rgba(0,0,0,0.6)',
+                }}>{mod.name}</div>
+                <div style={{
+                  fontSize: isMobile ? '8px' : '9px', fontWeight: 900, color: color,
+                  fontFamily: 'ui-monospace, monospace', lineHeight: 1, flexShrink: 0, marginLeft: '4px',
+                  textShadow: `0 0 6px rgba(${r},${g},${b},0.5)`,
+                }}>{mod.power}</div>
+              </div>
+
+              {/* === ART BOX — icon with atmospheric background === */}
+              <div style={{
+                flex: '1 1 auto', position: 'relative',
+                margin: isMobile ? '3px 4px' : '3px 5px',
+                borderRadius: '3px',
+                background: `radial-gradient(ellipse at 50% 40%, rgba(${r},${g},${b},0.15) 0%, rgba(${r},${g},${b},0.04) 50%, rgba(8,8,14,0.95) 100%)`,
+                border: `1px solid rgba(${r},${g},${b},0.1)`,
+                overflow: 'hidden',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <div style={{ position: 'absolute', inset: 0, opacity: 0.3, background: `radial-gradient(circle at 30% 20%, rgba(${r},${g},${b},0.2) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(${r},${g},${b},0.1) 0%, transparent 40%)`, pointerEvents: 'none' }} />
+                <div style={{
+                  filter: `drop-shadow(0 0 ${isMobile ? '8px' : '14px'} rgba(${r},${g},${b},0.4)) drop-shadow(0 2px 4px rgba(0,0,0,0.6))`,
+                  position: 'relative', zIndex: 1,
+                }}>
+                  <CardIcon icon={IconComp} size={isMobile ? 28 : 38} color={color} />
+                </div>
+                {sel && (
+                  <div style={{ position: 'absolute', top: '3px', left: '3px', width: isMobile ? '11px' : '13px', height: isMobile ? '11px' : '13px', borderRadius: '50%', background: color, border: '1px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3, boxShadow: `0 0 8px ${color}60` }}>
+                    <Check size={isMobile ? 6 : 7} color="white" strokeWidth={3} />
+                  </div>
+                )}
+              </div>
+
+              {/* === TYPE LINE — category bar === */}
+              <div style={{
+                padding: isMobile ? '3px 6px' : '2px 7px',
+                background: `linear-gradient(180deg, rgba(${r},${g},${b},0.1) 0%, rgba(${r},${g},${b},0.04) 100%)`,
+                borderTop: `1px solid rgba(${r},${g},${b},0.1)`,
+                borderBottom: `1px solid rgba(${r},${g},${b},0.1)`,
+                display: 'flex', alignItems: 'center', gap: '3px', zIndex: 2,
+              }}>
+                <CardIcon icon={IconComp} size={isMobile ? 8 : 9} color={color} />
+                <div style={{
+                  fontSize: isMobile ? '6.5px' : '7px', fontWeight: 600, color: `rgba(${r},${g},${b},0.68)`,
+                  letterSpacing: '0.3px', textTransform: 'uppercase',
+                }}>{cat.name}</div>
+              </div>
+
+              {/* === TEXT BOX — specs/flavor === */}
+              <div style={{
+                padding: isMobile ? '4px 6px 5px' : '4px 7px 6px',
+                flex: '0 0 auto', minHeight: isMobile ? '24px' : '30px', zIndex: 2,
+                display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: '2px',
+              }}>
+                <div style={{
+                  fontSize: isMobile ? '6.5px' : '7.5px', color: 'rgba(255,255,255,0.64)',
+                  lineHeight: 1.25, overflow: 'hidden',
+                  display: '-webkit-box', WebkitLineClamp: isMobile ? 2 : 3, WebkitBoxOrient: 'vertical',
+                }}>{mod.specs}</div>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* ═══ END FRONT FACE ═══ */}
+
+        </div>
+        {/* ═══ END FLIPPER ═══ */}
+
+        {/* Click on card adds/removes — no separate button needed */}
+
         {isCustom && (
           <button onClick={(e) => { e.stopPropagation(); removeCustomModule(mod.id); }}
-            style={{ position: 'absolute', bottom: '4px', right: '5px', background: 'rgba(0,0,0,0.5)', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '9px', padding: '2px 4px', zIndex: 5, lineHeight: 1, borderRadius: '4px' }}>×</button>
+            style={{ position: 'absolute', bottom: '4px', right: '5px', background: 'rgba(0,0,0,0.5)', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '9px', padding: '2px 4px', zIndex: 55, lineHeight: 1, borderRadius: '4px' }}>×</button>
         )}
         {/* Sparkle burst on selection */}
         {sparklingCards.has(mod.id) && Array.from({length: 8}, (_, i) => (
@@ -1780,14 +2375,14 @@ Begin. — skillcl.one`;
 
   return (
     <div style={{ minHeight: '100vh', background: 'transparent', color: 'white', fontFamily: "'Inter', system-ui, -apple-system, sans-serif", position: 'relative', overflow: 'hidden' }}>
-      {/* Anadol-inspired GLSL shader background — permanent on all stages */}
+      {/* Background — AnadolShader liquid */}
       <AnadolShader
         showOrb={stage === 'landing' && !isMobile}
         cardRef={stage === 'landing' ? null : hoveredCardRef}
-        card2Ref={stage === 'building' ? (focusedHandCard ? focusedHandCardRef : lastSelectedCardRef) : null}
+        card2Ref={inspectedCard ? inspectedCardRef : stage === 'building' ? (focusedHandCard ? focusedHandCardRef : lastSelectedCardRef) : null}
         brightness={1.0}
       />
-      
+
       {/* FUSION */}
       {showFusion && (
         <div style={{
@@ -1823,7 +2418,7 @@ Begin. — skillcl.one`;
             fontSize: isMobile ? '15px' : '17px',
             fontWeight: 800,
             letterSpacing: isMobile ? '0.24em' : '0.32em',
-            background: 'linear-gradient(90deg, #a78bfa, #f472b6, #60a5fa, #a78bfa)',
+            background: 'linear-gradient(90deg, #a78bfa, #f472b6, #c084fc, #a78bfa)',
             backgroundSize: '220% 100%',
             animation: 'shimmer 2.1s linear infinite',
             WebkitBackgroundClip: 'text',
@@ -1875,7 +2470,7 @@ Begin. — skillcl.one`;
           </div>
 
           <div style={{ position: 'relative', zIndex: 1, marginTop: '20px', width: isMobile ? '210px' : '250px', height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '999px', overflow: 'hidden', boxShadow: 'inset 0 0 18px rgba(255,255,255,0.04)' }}>
-            <div style={{ height: '100%', background: 'linear-gradient(90deg, #8b5cf6, #ec4899, #60a5fa)', animation: 'loading 1.25s ease-out forwards', borderRadius: '999px', boxShadow: '0 0 24px rgba(139,92,246,0.22)' }} />
+            <div style={{ height: '100%', background: 'linear-gradient(90deg, #8b5cf6, #ec4899, #c084fc)', animation: 'loading 1.25s ease-out forwards', borderRadius: '999px', boxShadow: '0 0 24px rgba(139,92,246,0.22)' }} />
           </div>
         </div>
       )}
@@ -1968,197 +2563,548 @@ Begin. — skillcl.one`;
         </div>
       )}
 
-      {/* LANDING */}
+      {/* LANDING — Fullscreen overlay on top of building view */}
       {stage === 'landing' && (
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '100vh', padding: isMobile ? '40px 20px 40px' : '0 20px 60px', justifyContent: 'center' }}>
+        <div className="landing-overlay" style={{ position: 'fixed', inset: 0, zIndex: 100, overflow: 'hidden',
+          background: 'transparent',
+        }}>
+          {/* SVG filter for jagged torn-paper edge on pack rip */}
+          <svg style={{ position: 'absolute', width: 0, height: 0 }} aria-hidden="true">
+            <defs>
+              <filter id="tearEdge" x="-5%" y="-5%" width="110%" height="110%">
+                <feTurbulence type="turbulence" baseFrequency="0.04 0.15" numOctaves="4" seed="2" result="turbulence" />
+                <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="12" xChannelSelector="R" yChannelSelector="G" />
+              </filter>
+            </defs>
+          </svg>
+          <div ref={heroCardRef} style={{ height: '1px' }} />
 
-          {/* HERO — tight vertical flow */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '720px' }}>
+          {/* Scrim — light veil for text readability, shader visible through */}
+          <div className="landing-scrim" style={{
+            position: 'absolute', inset: 0,
+            background: 'radial-gradient(ellipse at 50% 45%, rgba(7,5,13,0.4) 0%, rgba(5,4,10,0.55) 50%, rgba(3,2,7,0.7) 100%)',
+            pointerEvents: 'none',
+          }} />
 
-            {/* Orb spacer */}
-            <div ref={heroCardRef} style={{ height: isMobile ? '8px' : '24px' }} />
-
-            <h1 style={{ fontSize: isMobile ? '48px' : '72px', fontWeight: 300, margin: 0, letterSpacing: isMobile ? '-1.8px' : '-2.6px', lineHeight: 1, animation: 'fadeInUp 0.6s ease-out' }}>
-              <span style={{ color: 'rgba(255,255,255,0.95)' }}>skill</span>
-              <span style={{ display: 'inline-block', paddingRight: isMobile ? '0.045em' : '0.03em', background: 'linear-gradient(135deg, #818cf8, #a78bfa, #c084fc)', backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 300 }}>clone</span>
-            </h1>
-
-            <p style={{ color: 'rgba(255,255,255,0.72)', fontSize: isMobile ? '16px' : '21px', marginTop: '14px', textAlign: 'center', maxWidth: '520px', lineHeight: 1.35, fontWeight: 400, letterSpacing: '-0.2px', animation: 'fadeInUp 0.6s 0.1s ease-out both' }}>
-              Build a deck of genius minds.<br />
-              <span style={{ color: 'rgba(255,255,255,0.5)', fontWeight: 350 }}>Generate superhuman AI prompts.</span>
-            </p>
-
-            {/* Input */}
-            <div style={{ width: '100%', maxWidth: '560px', marginTop: isMobile ? '22px' : '30px', animation: 'fadeInUp 0.6s 0.2s ease-out both' }}>
-              <div style={{ position: 'relative' }}>
-                <textarea
-                  value={userIntent}
-                  onChange={(e) => setUserIntent(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey && userIntent.trim()) {
-                      e.preventDefault();
-                      autoDealAndBuild();
-                    }
-                  }}
-                  placeholder="Describe the app, stack, aesthetic, and constraints..."
-                  className="glow-input"
-                  rows={isMobile ? 2 : 3}
-                  style={{
-                    width: '100%',
-                    minHeight: isMobile ? '88px' : '104px',
-                    padding: isMobile ? '15px 18px 64px' : '17px 20px 68px',
-                    fontSize: isMobile ? '16px' : '16px',
-                    lineHeight: 1.45,
-                    fontFamily: 'inherit',
-                    fontWeight: 400,
-                    letterSpacing: '-0.01em',
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    borderRadius: '16px',
-                    color: 'white',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                    transition: 'border-color 0.2s, box-shadow 0.2s',
-                    resize: 'none',
-                    overflow: 'auto',
-                  }}
-                />
-                {userIntent.trim() && (
-                  <button onClick={() => autoDealAndBuild()}
-                    className="btn-glow"
-                    style={{
-                      position: 'absolute',
-                      right: '12px',
-                      bottom: '12px',
-                      minWidth: isMobile ? '132px' : '140px',
-                      padding: isMobile ? '12px 18px' : '12px 20px',
-                      fontSize: '15px',
-                      fontWeight: 700,
-                      background: 'linear-gradient(135deg, rgba(109,88,255,0.98) 0%, rgba(139,92,246,0.98) 58%, rgba(196,132,252,0.94) 100%)',
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      borderRadius: '14px',
-                      color: 'white',
-                      cursor: 'pointer',
-                      letterSpacing: '-0.01em',
-                      boxShadow: '0 14px 28px rgba(109,88,255,0.32), 0 0 0 1px rgba(255,255,255,0.04) inset',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                    }}>
-                    Build Deck
-                  </button>
-                )}
-              </div>
-              <div style={{ marginTop: '10px', fontSize: '12px', color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
-                Be specific: outcome + stack + aesthetic + constraints. <span style={{ color: 'rgba(255,255,255,0.26)' }}>Shift+Enter for a new line.</span>
+          {/* ═══ LANDING CONTENT — centered pack + title ═══ */}
+          <div style={{
+            position: 'relative',
+            zIndex: 10,
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '100vh',
+            padding: isMobile ? '40px 16px' : '0 20px',
+            pointerEvents: deckDealing ? 'none' : undefined,
+          }}>
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              gap: isMobile ? '32px' : '44px',
+            }}>
+              {/* Title — fades out when dealing starts */}
+              <div style={{
+                textAlign: 'center', animation: 'fadeInUp 0.6s ease-out',
+                opacity: deckDealing ? 0 : 1,
+                transform: deckDealing ? 'translateY(-30px) scale(0.95)' : 'translateY(0) scale(1)',
+                transition: 'opacity 0.5s ease, transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}>
+                <h1 style={{ fontSize: isMobile ? '52px' : '80px', fontWeight: 300, margin: 0, letterSpacing: isMobile ? '-2px' : '-3px', lineHeight: 1 }}>
+                  <span style={{ color: 'rgba(255,255,255,0.95)' }}>skill</span>
+                  <span style={{ display: 'inline-block', paddingRight: '0.03em', background: 'linear-gradient(135deg, #818cf8, #a78bfa, #c084fc)', backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 300 }}>clone</span>
+                </h1>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: isMobile ? '16px' : '20px', marginTop: '14px', fontWeight: 400, letterSpacing: '-0.3px' }}>
+                  Clone the masters. Become yourself.
+                </p>
               </div>
 
-              {/* Quick-start missions */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginTop: '14px' }}>
-                {LANDING_EXAMPLES.map((label) => (
-                  <button key={label}
-                    onClick={() => autoDealAndBuild(label)}
-                    className="mission-card"
-                    style={{ padding: '10px 14px', fontSize: '12px', lineHeight: 1.25, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '18px', color: 'rgba(255,255,255,0.62)', cursor: 'pointer', transition: 'all 0.2s ease', whiteSpace: 'normal', textAlign: 'center', maxWidth: isMobile ? '164px' : '180px', minHeight: isMobile ? '48px' : '52px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
+              {/* THE PACK — holographic booster pack, swipe to slice open */}
+              <div
+                ref={deckStackRef}
+                className="landing-deck-stack"
+                onMouseDown={(e) => {
+                  sliceTapTime.current = Date.now();
+                  sliceTapPos.current = { x: e.clientX, y: e.clientY };
+                  handleSliceStart(e.clientX, e.clientY);
+                }}
+                onMouseUp={(e) => {
+                  // Quick tap fallback — if no significant movement and short press
+                  if (!sliceActive.current && sliceTapTime.current && Date.now() - sliceTapTime.current < 300) {
+                    const dx = Math.abs(e.clientX - (sliceTapPos.current?.x || 0));
+                    if (dx < 10) startDeckDeal();
+                  }
+                  sliceTapTime.current = null;
+                }}
+                onTouchStart={(e) => {
+                  const t = e.touches[0];
+                  sliceTapTime.current = Date.now();
+                  sliceTapPos.current = { x: t.clientX, y: t.clientY };
+                  handleSliceStart(t.clientX, t.clientY);
+                }}
+                onTouchEnd={(e) => {
+                  const t = e.changedTouches?.[0];
+                  if (!sliceActive.current && sliceTapTime.current && Date.now() - sliceTapTime.current < 300) {
+                    const dx = Math.abs((t?.clientX || 0) - (sliceTapPos.current?.x || 0));
+                    if (dx < 10) startDeckDeal();
+                  }
+                  sliceTapTime.current = null;
+                }}
+                style={{
+                  position: 'relative',
+                  width: isMobile ? '240px' : '330px',
+                  aspectRatio: '377 / 661',
+                  cursor: deckDealing ? 'default' : `url("data:image/svg+xml,${encodeURIComponent('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'32\' height=\'32\' viewBox=\'0 0 32 32\'><line x1=\'4\' y1=\'28\' x2=\'28\' y2=\'4\' stroke=\'rgba(200,180,255,0.9)\' stroke-width=\'2\' stroke-linecap=\'round\'/><line x1=\'4\' y1=\'28\' x2=\'28\' y2=\'4\' stroke=\'white\' stroke-width=\'1\' stroke-linecap=\'round\'/><circle cx=\'28\' cy=\'4\' r=\'2\' fill=\'white\'/><line x1=\'26\' y1=\'3\' x2=\'22\' y2=\'7\' stroke=\'rgba(167,139,250,0.6)\' stroke-width=\'1\'/><line x1=\'29\' y1=\'6\' x2=\'25\' y2=\'10\' stroke=\'rgba(167,139,250,0.6)\' stroke-width=\'1\'/></svg>')}") 4 28, crosshair`,
+                  animation: 'fadeInUp 0.8s 0.15s ease-out both',
+                  pointerEvents: deckDealing ? 'none' : undefined,
+                  zIndex: 20,
+                  userSelect: 'none', WebkitUserSelect: 'none',
+                  touchAction: 'none',
+                  overflow: 'visible',
+                }}>
+                {/* Extended hit area — catches clicks/touches beyond the pack edges for slice start */}
+                <div style={{
+                  position: 'absolute',
+                  left: '-25%', right: '-25%',
+                  top: '5%', height: '30%',
+                  zIndex: 16,
+                  cursor: 'inherit',
+                }} />
 
-            {/* POPULAR DECKS — brutalist bold */}
-            <div style={{ width: '100%', marginTop: isMobile ? '32px' : '44px', animation: 'fadeInUp 0.6s 0.35s ease-out both' }}>
-              <div style={{ marginBottom: isMobile ? '14px' : '18px', padding: '0 2px' }}>
-                <div style={{ fontSize: isMobile ? '12px' : '13px', fontWeight: 800, color: 'rgba(255,255,255,0.34)', letterSpacing: '2.6px', textTransform: 'uppercase' }}>Popular Decks</div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: isMobile ? '10px' : '12px' }}>
-                {[
-                  { label: 'Viral Content Machine', sub: 'Scripts that break the algorithm', moduleIds: [['film', 'mrbeast'], ['copy', 'hormozi'], ['content', 'tiktok']], geniuses: ['MrBeast', 'Hormozi', 'TikTok'], intent: 'Viral YouTube script', power: 286, color: '#ef4444' },
-                  { label: 'Startup Weapon', sub: 'From zero to shipped this weekend', moduleIds: [['strategy', 'thiel'], ['product', 'jobs'], ['engineering', 'levelsio']], geniuses: ['Thiel', 'Jobs', 'Levelsio'], intent: 'Ship a SaaS this weekend', power: 292, color: '#8b5cf6' },
-                  { label: 'Copy That Converts', sub: 'Words that print money', moduleIds: [['copy', 'ogilvy'], ['copy', 'schwartz'], ['copy', 'wiebe']], geniuses: ['Ogilvy', 'Schwartz', 'Wiebe'], intent: 'Landing page that converts', power: 285, color: '#f59e0b' },
-                  { label: 'Design God Mode', sub: 'Pixel-perfect everything', moduleIds: [['product', 'ive'], ['design', 'rams'], ['design', 'awwwards']], geniuses: ['Ive', 'Rams', 'Awwwards'], intent: 'Awwwards-level site design', power: 290, color: '#22c55e' },
-                  { label: 'Growth Engine', sub: '0 to 1K users on autopilot', moduleIds: [['copy', 'hormozi'], ['strategy', 'thiel'], ['growth', 'ads']], geniuses: ['Hormozi', 'Thiel', 'Meta Ads'], intent: 'Launch to 1K users', power: 278, color: '#ec4899' },
-                  { label: 'AI Product Builder', sub: 'Ship AI apps like a founder', moduleIds: [['engineering', 'ai-eng'], ['product', 'jobs'], ['engineering', 'levelsio']], geniuses: ['AI Engineer', 'Jobs', 'Levelsio'], intent: 'Build an AI-powered product', power: 295, color: '#06b6d4' },
-                  { label: 'Storytelling Arsenal', sub: 'Stories people can\'t stop reading', moduleIds: [['film', 'spielberg'], ['writing', 'king'], ['film', 'tarantino']], geniuses: ['Spielberg', 'King', 'Tarantino'], intent: 'Write a compelling story', power: 280, color: '#f97316' },
-                  { label: 'Business Strategist', sub: 'Think like a billionaire founder', moduleIds: [['strategy', 'thiel'], ['strategy', 'pg'], ['copy', 'hormozi']], geniuses: ['Thiel', 'Paul Graham', 'Hormozi'], intent: 'Business plan + strategy', power: 288, color: '#a855f7' },
-                ].map((combo, i) => (
-                  <button key={i} onClick={() => {
-                    setUserIntent(combo.intent);
-                    const newSelected = {};
-                    combo.moduleIds.forEach(([catId, modId]) => {
-                      const cat = GENIUS_CATEGORIES[catId];
-                      if (!cat) return;
-                      const mod = cat.modules.find(m => m.id === modId);
-                      if (!mod) return;
-                      if (!newSelected[catId]) newSelected[catId] = [];
-                      newSelected[catId].push(mod);
-                    });
-                    applyPlanFilteredSelection(newSelected);
-                    sounds.click();
-                    setStage('building');
-                  }}
-                    className="fusion-preset"
-                    style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '12px' : '16px', width: '100%', padding: isMobile ? '14px 14px' : '18px 20px', background: 'rgba(255,255,255,0.02)', border: `1px solid ${combo.color}18`, borderRadius: '14px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s ease', borderLeft: `3px solid ${combo.color}60` }}>
-                    {/* Mini fanned hand */}
-                    <div style={{ position: 'relative', width: isMobile ? '52px' : '64px', height: isMobile ? '40px' : '48px', flexShrink: 0 }}>
-                      {combo.geniuses.map((g, gi) => {
-                        const fanTotal = combo.geniuses.length;
-                        const fanSpread = isMobile ? 14 : 16;
-                        const fanRot = (gi - (fanTotal - 1) / 2) * fanSpread;
-                        const cW = isMobile ? '22px' : '28px';
-                        const cH = isMobile ? '30px' : '38px';
-                        return (
-                          <div key={gi} style={{
-                            width: cW, height: cH, borderRadius: '4px',
-                            background: `linear-gradient(150deg, ${combo.color}35, rgba(14,14,20,0.95))`,
-                            border: `1px solid ${combo.color}40`,
-                            position: 'absolute', left: '50%', bottom: 0,
-                            marginLeft: isMobile ? '-11px' : '-14px',
-                            transform: `rotate(${fanRot}deg)`,
-                            transformOrigin: `center ${isMobile ? '60px' : '76px'}`,
-                            zIndex: fanTotal - Math.abs(gi - (fanTotal - 1) / 2),
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: isMobile ? '7px' : '8px', fontWeight: 800, color: combo.color,
-                            boxShadow: `0 2px 6px rgba(0,0,0,0.4)`,
-                          }}>{g.split(' ').pop().slice(0, 3)}</div>
-                        );
-                      })}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: 700, color: 'rgba(255,255,255,0.92)', letterSpacing: '-0.2px', lineHeight: 1.2 }}>{combo.label}</div>
-                      <div style={{ fontSize: isMobile ? '12px' : '13px', color: 'rgba(255,255,255,0.48)', marginTop: '2px', fontWeight: 400 }}>{combo.sub}</div>
-                      <div style={{ fontSize: isMobile ? '11px' : '12px', color: 'rgba(255,255,255,0.3)', marginTop: '3px', fontWeight: 500 }}>{combo.geniuses.join(' · ')}</div>
-                    </div>
-                    <div style={{ flexShrink: 0, textAlign: 'right', minWidth: isMobile ? '46px' : '54px' }}>
-                      <div style={{ fontSize: isMobile ? '16px' : '20px', fontWeight: 900, color: combo.color, lineHeight: 1, letterSpacing: '-0.5px', textShadow: `0 0 16px ${combo.color}18` }}>
-                        {combo.power}
+                {/* ═══ SLICE HERE — interactive cut guide with animated hint ═══ */}
+                <div className="slice-here-line" style={{
+                  position: 'absolute',
+                  left: '-12%', right: '-12%',
+                  top: '19%',
+                  transform: 'rotate(-3deg)',
+                  height: '1px',
+                  zIndex: 15,
+                  pointerEvents: 'none',
+                  opacity: deckDealing ? 0 : 1,
+                  transition: 'opacity 0.3s ease',
+                }}>
+                  {/* Dashed cut line */}
+                  <div style={{
+                    width: '100%', height: '100%',
+                    background: 'repeating-linear-gradient(90deg, rgba(167,139,250,0.4) 0px, rgba(167,139,250,0.4) 5px, transparent 5px, transparent 11px)',
+                    animation: 'sliceLinePulse 2.5s ease-in-out infinite',
+                  }} />
+                  {/* Animated sliding glow orb — traces the cut path like a finger guide */}
+                  <div style={{
+                    position: 'absolute', top: '50%', left: '-4%',
+                    width: '24px', height: '24px',
+                    transform: 'translate(-50%, -50%)',
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(167,139,250,0.6) 30%, rgba(139,92,246,0.2) 60%, transparent 80%)',
+                    boxShadow: '0 0 12px 4px rgba(167,139,250,0.4), 0 0 24px 8px rgba(139,92,246,0.15)',
+                    animation: 'sliceOrbSlide 2.8s ease-in-out infinite',
+                  }} />
+                  {/* Trailing shimmer behind the orb */}
+                  <div style={{
+                    position: 'absolute', top: '50%', left: '-4%',
+                    width: '60px', height: '4px',
+                    transform: 'translateY(-50%)',
+                    background: 'linear-gradient(90deg, transparent, rgba(167,139,250,0.3) 40%, rgba(255,255,255,0.15) 100%)',
+                    filter: 'blur(2px)',
+                    animation: 'sliceOrbSlide 2.8s ease-in-out infinite',
+                    opacity: 0.7,
+                  }} />
+                  {/* Soft glow bed behind the full line */}
+                  <div style={{
+                    position: 'absolute', inset: '-8px 0',
+                    background: 'linear-gradient(90deg, transparent 5%, rgba(139,92,246,0.06) 25%, rgba(167,139,250,0.1) 50%, rgba(139,92,246,0.06) 75%, transparent 95%)',
+                    filter: 'blur(6px)',
+                    animation: 'sliceLinePulse 2.5s ease-in-out infinite',
+                  }} />
+                </div>
+
+                {/* Pack shadow */}
+                <div style={{
+                  position: 'absolute', bottom: '-14px', left: '50%', transform: 'translateX(-50%)',
+                  width: '85%', height: '24px',
+                  background: 'radial-gradient(ellipse, rgba(139,92,246,0.3) 0%, transparent 70%)',
+                  filter: 'blur(14px)',
+                  animation: 'deckShadowPulse 3s ease-in-out infinite',
+                }} />
+
+                {/* Pack interior — dark cavity visible through the rip, gives 3D depth */}
+                <div className="pack-interior" style={{
+                  position: 'absolute', inset: '8%',
+                  zIndex: 0,
+                  borderRadius: '4px',
+                  background: 'linear-gradient(180deg, rgba(20,15,35,1) 0%, rgba(10,8,20,1) 40%, rgba(15,12,28,1) 100%)',
+                  boxShadow: 'inset 0 0 30px rgba(0,0,0,0.8), inset 0 0 60px rgba(139,92,246,0.08)',
+                  overflow: 'hidden',
+                }}>
+                  {/* Inner shimmer — suggests cards inside */}
+                  <div style={{
+                    position: 'absolute', inset: 0,
+                    background: 'repeating-linear-gradient(180deg, transparent 0px, transparent 3px, rgba(139,92,246,0.03) 3px, rgba(139,92,246,0.03) 4px)',
+                    opacity: 0.5,
+                  }} />
+                </div>
+
+                {/* ═══ CARD STACK — full-size front-face cards behind pack ═══ */}
+                <div ref={dealContainerRef} className="pack-card-stack" style={{
+                  position: 'absolute', inset: 0, zIndex: 1,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  overflow: 'visible',
+                }}>
+                  {allGeniusCards.map(({ catId, mod, cat }, i) => {
+                    const color = cat.color;
+                    const r2 = parseInt(color.slice(1,3),16);
+                    const g2 = parseInt(color.slice(3,5),16);
+                    const b2 = parseInt(color.slice(5,7),16);
+                    const IconComp = CATEGORY_ICONS[cat.icon] || Star;
+                    const pw = isMobile ? 195 : 270; // pack-sized width (85% of pack)
+                    const ph = Math.round(pw * 1.4);
+                    return (
+                      <div key={mod.id} className="deal-card" data-idx={i} data-deal-genius={mod.id} style={{
+                        position: 'absolute',
+                        width: `${pw}px`, height: `${ph}px`,
+                        borderRadius: isMobile ? '8px' : '10px',
+                        overflow: 'hidden',
+                        willChange: 'transform, opacity',
+                        opacity: 0,
+                        perspective: '800px',
+                        transformStyle: 'preserve-3d',
+                      }}>
+                        {/* FRONT FACE — visible initially, hidden after flip */}
+                        <div className="deal-front" style={{
+                          position: 'absolute', inset: 0,
+                          backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
+                          borderRadius: 'inherit', overflow: 'hidden',
+                          background: `linear-gradient(180deg, ${color}50 0%, rgba(${r2},${g2},${b2},0.25) 8%, rgba(22,22,30,0.98) 15%, rgba(18,18,26,0.99) 85%, rgba(${r2},${g2},${b2},0.25) 92%, ${color}50 100%)`,
+                          padding: isMobile ? '2px' : '2.5px',
+                          boxShadow: `0 8px 32px rgba(0,0,0,0.5), 0 0 30px rgba(${r2},${g2},${b2},0.2), 0 0 60px rgba(${r2},${g2},${b2},0.08)`,
+                        }}>
+                          <div style={{
+                            width: '100%', height: '100%', borderRadius: isMobile ? '4px' : '6px', overflow: 'hidden', position: 'relative',
+                            background: `linear-gradient(180deg, rgba(${r2},${g2},${b2},0.08) 0%, rgba(10,10,16,0.99) 100%)`,
+                            display: 'flex', flexDirection: 'column',
+                          }}>
+                            {/* Foil shimmer */}
+                            <div className="card-foil" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: `linear-gradient(115deg, transparent 25%, rgba(255,255,255,0.06) 42%, rgba(${r2},${g2},${b2},0.08) 50%, rgba(255,255,255,0.04) 58%, transparent 75%)`, backgroundSize: '200% 200%', pointerEvents: 'none', zIndex: 4 }} />
+                            {/* Name banner */}
+                            <div style={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                              padding: isMobile ? '4px 6px 3px' : '5px 7px 3px',
+                              background: `linear-gradient(180deg, rgba(${r2},${g2},${b2},0.18) 0%, rgba(${r2},${g2},${b2},0.06) 100%)`,
+                              borderBottom: `1px solid rgba(${r2},${g2},${b2},0.15)`,
+                              minHeight: 0, zIndex: 2,
+                            }}>
+                              <div style={{
+                                fontSize: isMobile ? '8px' : '10px', fontWeight: 800, color: 'rgba(255,255,255,0.92)',
+                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                flex: 1, letterSpacing: '-0.2px', textTransform: 'uppercase',
+                                textShadow: '0 1px 2px rgba(0,0,0,0.6)',
+                              }}>{mod.name}</div>
+                              <div style={{
+                                fontSize: isMobile ? '8px' : '9px', fontWeight: 900, color,
+                                fontFamily: 'ui-monospace, monospace', lineHeight: 1, flexShrink: 0, marginLeft: '4px',
+                                textShadow: `0 0 6px rgba(${r2},${g2},${b2},0.5)`,
+                              }}>{mod.power}</div>
+                            </div>
+                            {/* Art box */}
+                            <div style={{
+                              flex: '1 1 auto', position: 'relative',
+                              margin: isMobile ? '3px 4px' : '3px 5px',
+                              borderRadius: '3px',
+                              background: `radial-gradient(ellipse at 50% 40%, rgba(${r2},${g2},${b2},0.15) 0%, rgba(${r2},${g2},${b2},0.04) 50%, rgba(8,8,14,0.95) 100%)`,
+                              border: `1px solid rgba(${r2},${g2},${b2},0.1)`,
+                              overflow: 'hidden',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}>
+                              <div style={{ position: 'absolute', inset: 0, opacity: 0.3, background: `radial-gradient(circle at 30% 20%, rgba(${r2},${g2},${b2},0.2) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(${r2},${g2},${b2},0.1) 0%, transparent 40%)`, pointerEvents: 'none' }} />
+                              <div style={{
+                                filter: `drop-shadow(0 0 ${isMobile ? '8px' : '14px'} rgba(${r2},${g2},${b2},0.4)) drop-shadow(0 2px 4px rgba(0,0,0,0.6))`,
+                                position: 'relative', zIndex: 1,
+                              }}>
+                                <CardIcon icon={IconComp} size={isMobile ? 28 : 38} color={color} />
+                              </div>
+                            </div>
+                            {/* Type line */}
+                            <div style={{
+                              padding: isMobile ? '3px 6px' : '2px 7px',
+                              background: `linear-gradient(180deg, rgba(${r2},${g2},${b2},0.1) 0%, rgba(${r2},${g2},${b2},0.04) 100%)`,
+                              borderTop: `1px solid rgba(${r2},${g2},${b2},0.1)`,
+                              borderBottom: `1px solid rgba(${r2},${g2},${b2},0.1)`,
+                              display: 'flex', alignItems: 'center', gap: '3px', zIndex: 2,
+                            }}>
+                              <CardIcon icon={IconComp} size={isMobile ? 8 : 9} color={color} />
+                              <div style={{
+                                fontSize: isMobile ? '6.5px' : '7px', fontWeight: 600, color: `rgba(${r2},${g2},${b2},0.68)`,
+                                letterSpacing: '0.3px', textTransform: 'uppercase',
+                              }}>{cat.name}</div>
+                            </div>
+                            {/* Specs */}
+                            <div style={{
+                              padding: isMobile ? '4px 6px 5px' : '4px 7px 6px',
+                              flex: '0 0 auto', minHeight: isMobile ? '24px' : '30px', zIndex: 2,
+                              display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: '2px',
+                            }}>
+                              <div style={{
+                                fontSize: isMobile ? '6.5px' : '7.5px', color: 'rgba(255,255,255,0.64)',
+                                lineHeight: 1.25, overflow: 'hidden',
+                                display: '-webkit-box', WebkitLineClamp: isMobile ? 2 : 3, WebkitBoxOrient: 'vertical',
+                              }}>{mod.specs}</div>
+                            </div>
+                          </div>
+                        </div>
+                        {/* BACK FACE — matches grid tile design exactly */}
+                        <div className="deal-back" style={{
+                          position: 'absolute', inset: 0,
+                          backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
+                          transform: 'rotateY(180deg)',
+                          borderRadius: 'inherit', overflow: 'hidden',
+                          background: `linear-gradient(180deg, rgba(${r2},${g2},${b2},0.25) 0%, rgba(30,30,40,0.7) 8%, rgba(18,18,26,0.98) 15%, rgba(14,14,22,0.99) 85%, rgba(30,30,40,0.7) 92%, rgba(${r2},${g2},${b2},0.2) 100%)`,
+                          padding: '1px',
+                          boxShadow: `0 4px 12px rgba(0,0,0,0.3)`,
+                        }}>
+                          <div style={{
+                            width: '100%', height: '100%', borderRadius: 'inherit', overflow: 'hidden',
+                            position: 'relative',
+                            background: 'rgba(10,10,16,0.98)',
+                            display: 'flex', flexDirection: 'column',
+                          }}>
+                            {/* Card-back geometric border */}
+                            <div style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', overflow: 'hidden', pointerEvents: 'none', zIndex: 1 }}>
+                              <div style={{ position: 'absolute', inset: '4px', borderRadius: '2px', border: `1px solid rgba(${r2},${g2},${b2},0.06)`, pointerEvents: 'none' }} />
+                              <div style={{ position: 'absolute', inset: '7px', borderRadius: '1px', border: `1px solid rgba(${r2},${g2},${b2},0.03)`, pointerEvents: 'none' }} />
+                            </div>
+                            {/* Art box */}
+                            <div style={{
+                              flex: '1 1 auto', position: 'relative',
+                              margin: '3px 3px 1px',
+                              borderRadius: '2px',
+                              background: `radial-gradient(ellipse at 50% 40%, rgba(${r2},${g2},${b2},0.1) 0%, rgba(${r2},${g2},${b2},0.03) 50%, rgba(8,8,14,0.95) 100%)`,
+                              overflow: 'hidden',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}>
+                              <div style={{ position: 'absolute', inset: 0, opacity: 0.35, background: `radial-gradient(circle at 30% 25%, rgba(${r2},${g2},${b2},0.2) 0%, transparent 50%), radial-gradient(circle at 70% 75%, rgba(${r2},${g2},${b2},0.1) 0%, transparent 40%)`, pointerEvents: 'none' }} />
+                              {/* Center gem */}
+                              <div style={{ position: 'absolute', width: '28px', height: '28px', borderRadius: '4px', transform: 'rotate(45deg)', border: `1px solid rgba(${r2},${g2},${b2},0.06)`, pointerEvents: 'none', zIndex: 0 }} />
+                              <div style={{
+                                position: 'relative', zIndex: 1,
+                                filter: `drop-shadow(0 0 6px rgba(${r2},${g2},${b2},0.25)) drop-shadow(0 1px 3px rgba(0,0,0,0.4))`,
+                              }}>
+                                <CardIcon icon={IconComp} size={isMobile ? 17 : 22} color={color} />
+                              </div>
+                              {/* Power badge top-right */}
+                              <div style={{
+                                position: 'absolute', top: '2px', right: '2px',
+                                fontSize: '7px', fontWeight: 900, color,
+                                fontFamily: 'ui-monospace, monospace', lineHeight: 1, zIndex: 3,
+                                background: `rgba(${r2},${g2},${b2},0.15)`,
+                                padding: '1px 3px', borderRadius: '3px',
+                                textShadow: `0 0 4px rgba(${r2},${g2},${b2},0.4)`,
+                              }}>{mod.power}</div>
+                            </div>
+                            {/* Name below art */}
+                            <div style={{ padding: '1px 2px 3px', zIndex: 2, textAlign: 'center' }}>
+                              <div style={{
+                                fontSize: isMobile ? '8px' : '9px', fontWeight: 700,
+                                color: 'rgba(255,255,255,0.8)',
+                                lineHeight: 1.15, letterSpacing: '-0.2px',
+                                textShadow: '0 1px 2px rgba(0,0,0,0.4)',
+                                overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                                wordBreak: 'break-word',
+                              }}>{mod.name}</div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
+                    );
+                  })}
+                </div>
 
-            {/* Social proof */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', marginTop: '24px', animation: 'fadeInUp 0.6s 0.5s ease-out both' }}>
-              <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.2)', margin: 0 }}>
-                <span style={{ color: 'rgba(139,92,246,0.6)', fontWeight: 800 }}>55+</span> genius minds
-              </p>
-              <span style={{ width: '1px', height: '12px', background: 'rgba(255,255,255,0.08)' }} />
-              <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.2)', margin: 0 }}>Free to use</p>
-              <span style={{ width: '1px', height: '12px', background: 'rgba(255,255,255,0.08)' }} />
-              <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.2)', margin: 0 }}>
-                Paste into <span style={{ color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>ChatGPT / Claude / Cursor</span>
-              </p>
+                {/* Pack top flap — sliced off diagonally by the slash */}
+                <div className="pack-half pack-top" style={{
+                  position: 'absolute', inset: 0,
+                  clipPath: 'polygon(0 0, 100% 0, 100% 17%, 0 22%)',
+                  zIndex: 2,
+                  willChange: 'transform, opacity',
+                  filter: 'url(#tearEdge)',
+                  transformOrigin: '80% 19%',
+                  borderRadius: isMobile ? '10px' : '14px',
+                  overflow: 'hidden',
+                }}>
+                  <img src="/pack.png" alt="" draggable={false} className="pack-img" style={{
+                    position: 'absolute',
+                    top: '50%', left: '50%',
+                    width: '175.5%', height: '57%',
+                    transform: 'translate(-50%, -50%) rotate(-90deg)',
+                    objectFit: 'cover',
+                    filter: 'brightness(1.05) contrast(1.1)',
+                  }} />
+                </div>
+
+                {/* Pack body — stays in place, cards emerge from slash opening */}
+                <div className="pack-half pack-bottom" style={{
+                  position: 'absolute', inset: 0,
+                  clipPath: 'polygon(0 22%, 100% 17%, 100% 100%, 0 100%)',
+                  zIndex: 2,
+                  willChange: 'transform, opacity',
+                  borderRadius: isMobile ? '10px' : '14px',
+                  overflow: 'hidden',
+                }}>
+                  <img src="/pack.png" alt="" draggable={false} className="pack-img" style={{
+                    position: 'absolute',
+                    top: '50%', left: '50%',
+                    width: '175.5%', height: '57%',
+                    transform: 'translate(-50%, -50%) rotate(-90deg)',
+                    objectFit: 'cover',
+                    filter: 'brightness(1.05) contrast(1.1)',
+                  }} />
+                </div>
+
+                {/* Full unripped pack (visible before tear — covers the halves) */}
+                <div className="pack-full" style={{
+                  position: 'absolute', inset: 0,
+                  zIndex: 3,
+                  borderRadius: isMobile ? '10px' : '14px',
+                  overflow: 'hidden',
+                  boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 0 60px rgba(139,92,246,0.1)',
+                }}>
+                  <img src="/pack.png" alt="SkillClone Pack" draggable={false} className="pack-img" style={{
+                    position: 'absolute',
+                    top: '50%', left: '50%',
+                    width: '175.5%', height: '57%',
+                    transform: 'translate(-50%, -50%) rotate(-90deg)',
+                    objectFit: 'cover',
+                    filter: 'brightness(1.05) contrast(1.1)',
+                  }} />
+                  {/* Holographic shimmer — sweeps on hover */}
+                  <div className="deck-shimmer" style={{
+                    position: 'absolute', inset: 0,
+                    borderRadius: 'inherit',
+                    background: 'linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.06) 32%, rgba(255,255,255,0.14) 38%, rgba(255,255,255,0.06) 44%, transparent 52%, rgba(167,139,250,0.08) 68%, rgba(236,72,153,0.05) 76%, transparent 85%)',
+                    backgroundSize: '300% 100%',
+                    backgroundPosition: '200% 0',
+                    pointerEvents: 'none',
+                    mixBlendMode: 'screen',
+                  }} />
+                  {/* Breathing glow */}
+                  <div style={{
+                    position: 'absolute', inset: 0,
+                    borderRadius: 'inherit',
+                    background: 'radial-gradient(ellipse at 50% 50%, rgba(139,92,246,0.12) 0%, transparent 60%)',
+                    animation: 'deckGlowBreathe 3s ease-in-out infinite',
+                    pointerEvents: 'none',
+                  }} />
+                </div>
+
+                {/* Tear line glow — energy along the diagonal slash */}
+                <div className="pack-tear-glow" style={{
+                  position: 'absolute', left: '-15%', right: '-15%',
+                  top: '19.5%', transform: 'translateY(-50%) rotate(-3deg)',
+                  height: '4px',
+                  background: 'linear-gradient(90deg, transparent 5%, rgba(255,255,255,0.6) 20%, rgba(167,139,250,1) 40%, rgba(255,255,255,1) 50%, rgba(167,139,250,1) 60%, rgba(255,255,255,0.6) 80%, transparent 95%)',
+                  filter: 'blur(1.5px)',
+                  opacity: 0, zIndex: 5,
+                  pointerEvents: 'none',
+                }} />
+                {/* Secondary wider glow behind the slash */}
+                <div className="pack-tear-bloom" style={{
+                  position: 'absolute', left: '-20%', right: '-20%',
+                  top: '19.5%', transform: 'translateY(-50%) rotate(-3deg)',
+                  height: '36px',
+                  background: 'linear-gradient(90deg, transparent, rgba(139,92,246,0.3) 30%, rgba(167,139,250,0.5) 50%, rgba(139,92,246,0.3) 70%, transparent)',
+                  filter: 'blur(10px)',
+                  opacity: 0, zIndex: 4,
+                  pointerEvents: 'none',
+                }} />
+
+                {/* Energy burst — radial shockwave from top tear */}
+                <div className="pack-burst" style={{
+                  position: 'absolute', top: '20%', left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  width: '250%', height: '250%',
+                  background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(167,139,250,0.2) 15%, rgba(139,92,246,0.08) 30%, transparent 55%)',
+                  opacity: 0, zIndex: 1,
+                  pointerEvents: 'none',
+                }} />
+
+                {/* Spark particles along the slash cut */}
+                {Array.from({ length: 16 }).map((_, si) => (
+                  <div key={si} className="pack-spark" style={{
+                    position: 'absolute',
+                    left: `${5 + (si / 15) * 90}%`,
+                    top: `${22 - (si / 15) * 5}%`,
+                    width: si % 3 === 0 ? '4px' : '3px',
+                    height: si % 3 === 0 ? '4px' : '3px',
+                    borderRadius: '50%',
+                    background: si % 3 === 0 ? '#fff' : si % 3 === 1 ? '#c4b5fd' : '#93c5fd',
+                    boxShadow: si % 2 === 0
+                      ? '0 0 6px 2px rgba(255,255,255,0.9), 0 0 14px 4px rgba(167,139,250,0.5)'
+                      : '0 0 5px 2px rgba(196,181,253,0.8)',
+                    opacity: 0, zIndex: 12,
+                    pointerEvents: 'none',
+                  }} />
+                ))}
+
+                {/* ═══ SLASH BLADE — diagonal energy cut ═══ */}
+                <div className="pack-slash" style={{
+                  position: 'absolute',
+                  width: '200%', height: '3px',
+                  left: '-120%', top: '19%',
+                  transform: 'rotate(-3deg)',
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(167,139,250,0.05) 10%, rgba(255,255,255,0.4) 30%, rgba(255,255,255,1) 45%, rgba(200,180,255,1) 50%, rgba(255,255,255,1) 55%, rgba(255,255,255,0.4) 70%, rgba(167,139,250,0.05) 90%, transparent 100%)',
+                  boxShadow: '0 0 8px 2px rgba(255,255,255,0.6), 0 0 20px 4px rgba(167,139,250,0.5), 0 0 50px 8px rgba(139,92,246,0.3), 0 0 100px 16px rgba(99,102,241,0.15)',
+                  opacity: 0, zIndex: 10,
+                  pointerEvents: 'none',
+                }} />
+                {/* Slash afterglow trail — wider, softer, fades slower */}
+                <div className="pack-slash-trail" style={{
+                  position: 'absolute',
+                  width: '200%', height: '12px',
+                  left: '-120%', top: '19%',
+                  transform: 'rotate(-3deg) translateY(-4.5px)',
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(167,139,250,0.02) 15%, rgba(139,92,246,0.15) 35%, rgba(167,139,250,0.3) 50%, rgba(139,92,246,0.15) 65%, rgba(167,139,250,0.02) 85%, transparent 100%)',
+                  filter: 'blur(4px)',
+                  opacity: 0, zIndex: 9,
+                  pointerEvents: 'none',
+                }} />
+                {/* Slash impact flash — full-width white flash at cut */}
+                <div className="pack-slash-flash" style={{
+                  position: 'absolute',
+                  left: '-10%', right: '-10%',
+                  top: '15%', height: '12%',
+                  background: 'linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.5) 40%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0.5) 60%, transparent 100%)',
+                  filter: 'blur(6px)',
+                  opacity: 0, zIndex: 8,
+                  pointerEvents: 'none',
+                }} />
+
+              </div>
+
+              {/* CTA hint — fades */}
+              <div style={{
+                fontSize: isMobile ? '15px' : '18px', color: 'rgba(255,255,255,0.35)',
+                fontWeight: 400, letterSpacing: '-0.2px',
+                animation: 'fadeInUp 0.6s 0.5s ease-out both, deckHintPulse 2.5s 1.5s ease-in-out infinite',
+                textAlign: 'center',
+                opacity: deckDealing ? 0 : undefined,
+                transition: 'opacity 0.3s ease',
+              }}>
+                Slide across to open
+              </div>
+
+              {/* Paste into — minimal social proof */}
+              <div style={{
+                animation: 'fadeInUp 0.6s 0.6s ease-out both',
+                opacity: deckDealing ? 0 : undefined,
+                transition: 'opacity 0.3s ease',
+              }}>
+                <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.18)', margin: 0, textAlign: 'center' }}>
+                  Paste into <span style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>ChatGPT / Claude / Cursor</span>
+                </p>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* BUILDING */}
-      {stage === 'building' && (
-        <div style={{ display: 'flex', minHeight: '100vh', position: 'relative', zIndex: 1 }}>
+      {/* BUILDING — always rendered, landing overlays on top */}
+      {(stage === 'building' || stage === 'landing') && (
+        <div ref={buildingViewRef} style={{ display: 'flex', minHeight: '100vh', position: 'relative', zIndex: 1, opacity: stage === 'landing' ? 0 : 1, pointerEvents: stage === 'landing' ? 'none' : undefined }}>
 
           {/* LEFT SIDEBAR — SQUAD LIBRARY */}
           {!isMobile && (
@@ -2353,7 +3299,7 @@ Begin. — skillcl.one`;
                     <button onClick={() => { setShowCustomForm(true); sounds.click(); }}
                       style={{ width: '100%', padding: '10px 12px 10px 32px', fontSize: '13px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', textAlign: 'left', position: 'relative' }}>
                       Search geniuses or anyone...
-                      <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: 'rgba(255,255,255,0.25)', pointerEvents: 'none' }}>⌕</span>
+                      <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.25)', pointerEvents: 'none', display: 'flex' }}><Search size={13} strokeWidth={2} /></span>
                     </button>
                   ) : (
                     <>
@@ -2361,7 +3307,7 @@ Begin. — skillcl.one`;
                         placeholder="Search geniuses or anyone..."
                         className="glow-input"
                         style={{ width: '100%', padding: '8px 12px 8px 32px', fontSize: '13px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: 'white', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s, box-shadow 0.2s' }} />
-                      <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: 'rgba(255,255,255,0.25)', pointerEvents: 'none' }}>⌕</span>
+                      <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.25)', pointerEvents: 'none', display: 'flex' }}><Search size={13} strokeWidth={2} /></span>
                     </>
                   )}
 
@@ -2546,7 +3492,7 @@ Begin. — skillcl.one`;
                   {visibleCats.map(({ catId, cat, mods }) => {
                     const selCount = (selectedModules[catId] || []).length;
                     return (
-                      <div key={catId} style={{ minWidth: 0 }}>
+                      <div key={catId} style={{ minWidth: 0, contentVisibility: 'auto', containIntrinsicSize: isMobile ? '160px 340px' : '184px 420px' }}>
                         {/* Column header */}
                         <div style={{
                           display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 4px', marginBottom: '6px',
@@ -2593,48 +3539,146 @@ Begin. — skillcl.one`;
               );
             })()}
 
-            {/* Hover tooltip — floats near the hovered card, desktop only */}
-            {!isMobile && hoveredGenius && hoveredGenius.rect && (() => {
-              const rect = hoveredGenius.rect;
-              const hColor = hoveredGenius.cat.color;
+            {/* Miyamoto-style enlarged card inspect — tap card → it presents itself */}
+            {inspectedCard && (() => {
+              const { catId, mod, cat } = inspectedCard;
+              const hColor = cat.color;
               const hr = parseInt(hColor.slice(1,3),16);
               const hg = parseInt(hColor.slice(3,5),16);
               const hb = parseInt(hColor.slice(5,7),16);
-              const inDeck = isSelected(hoveredGenius.catId, hoveredGenius.mod.id);
-              // Position: right of card if space, otherwise left
-              const spaceRight = window.innerWidth - rect.right;
-              const tooltipW = 260;
-              const posRight = spaceRight > tooltipW + 20;
-              const left = posRight ? rect.right + 12 : rect.left - tooltipW - 12;
-              const top = Math.max(8, Math.min(rect.top, window.innerHeight - 220));
+              const inDeck = isSelected(catId, mod.id);
+              const iconKey = catId === 'custom' ? (mod._source === 'wikipedia' ? 'discovered' : 'custom') : cat.icon;
+              const IconComp = CATEGORY_ICONS[iconKey] || Star;
+              const keyQuote = extractKeyQuotes(mod.prompt);
               return (
-                <div style={{
-                  position: 'fixed', left: `${left}px`, top: `${top}px`, width: `${tooltipW}px`,
-                  zIndex: 500, pointerEvents: 'none',
-                  background: 'rgba(12,12,18,0.95)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-                  border: `1px solid rgba(${hr},${hg},${hb},0.2)`,
-                  borderRadius: '12px', padding: '14px',
-                  boxShadow: `0 16px 48px rgba(0,0,0,0.5), 0 0 20px rgba(${hr},${hg},${hb},0.08)`,
-                  animation: 'cardFadeIn 0.12s ease-out',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                    <div style={{ filter: `drop-shadow(0 0 6px ${hColor}40)` }}>
-                      <CardIcon icon={CATEGORY_ICONS[hoveredGenius.catId === 'custom' ? (hoveredGenius.mod._source === 'wikipedia' ? 'discovered' : 'custom') : hoveredGenius.cat.icon] || Star} size={22} color={hColor} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '13px', fontWeight: 700, color: 'white', letterSpacing: '-0.2px' }}>{hoveredGenius.mod.name}</div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                        <span style={{ fontSize: '9px', padding: '1px 6px', background: `rgba(${hr},${hg},${hb},0.1)`, border: `1px solid rgba(${hr},${hg},${hb},0.2)`, borderRadius: '6px', color: hColor, fontWeight: 600 }}>{hoveredGenius.cat.name}</span>
-                        <span style={{ fontSize: '10px', color: hColor, fontWeight: 700 }}>{hoveredGenius.mod.power}</span>
+                <div
+                  onClick={(e) => { if (e.target === e.currentTarget) setInspectedCard(null); }}
+                  style={{
+                    position: 'fixed', inset: 0, zIndex: 600,
+                    background: 'rgba(4,4,8,0.75)',
+                    backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    animation: 'fadeInUp 0.15s ease-out',
+                    padding: isMobile ? '20px' : '40px',
+                  }}
+                >
+                  <div
+                    ref={inspectedCardRef}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      width: isMobile ? '260px' : '300px',
+                      borderRadius: '14px',
+                      overflow: 'hidden',
+                      background: `linear-gradient(180deg, ${hColor}50 0%, rgba(${hr},${hg},${hb},0.2) 4%, rgba(18,18,26,0.99) 10%, rgba(14,14,22,0.99) 90%, rgba(${hr},${hg},${hb},0.2) 96%, ${hColor}50 100%)`,
+                      padding: '1.5px',
+                      boxShadow: `0 24px 80px rgba(0,0,0,0.6), 0 0 60px rgba(${hr},${hg},${hb},0.15), 0 0 120px rgba(${hr},${hg},${hb},0.06)`,
+                      animation: 'cardInspectIn 0.2s cubic-bezier(0.34, 1.4, 0.64, 1)',
+                    }}
+                  >
+                    <div style={{
+                      width: '100%', borderRadius: '13px', overflow: 'hidden',
+                      background: 'rgba(10,10,16,0.98)',
+                      display: 'flex', flexDirection: 'column',
+                    }}>
+                      {/* Name banner */}
+                      <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '10px 14px 8px',
+                        background: `linear-gradient(180deg, rgba(${hr},${hg},${hb},0.2) 0%, rgba(${hr},${hg},${hb},0.06) 100%)`,
+                        borderBottom: `1px solid rgba(${hr},${hg},${hb},0.15)`,
+                      }}>
+                        <div style={{
+                          fontSize: '15px', fontWeight: 800, color: 'white',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          flex: 1, letterSpacing: '-0.3px', textTransform: 'uppercase',
+                          textShadow: `0 0 12px ${hColor}60`,
+                        }}>{mod.name}</div>
+                        <div style={{
+                          fontSize: '13px', fontWeight: 900, color: 'white',
+                          fontFamily: 'ui-monospace, monospace', lineHeight: 1, flexShrink: 0, marginLeft: '8px',
+                          background: hColor, padding: '3px 8px', borderRadius: '6px',
+                          boxShadow: `0 0 10px ${hColor}60`,
+                        }}>{mod.power}</div>
+                      </div>
+
+                      {/* Art box */}
+                      <div style={{
+                        position: 'relative', height: isMobile ? '120px' : '140px',
+                        margin: '6px 10px',
+                        borderRadius: '8px',
+                        background: `radial-gradient(ellipse at 50% 40%, rgba(${hr},${hg},${hb},0.18) 0%, rgba(${hr},${hg},${hb},0.03) 50%, rgba(8,8,14,0.95) 100%)`,
+                        border: `1px solid rgba(${hr},${hg},${hb},0.12)`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        overflow: 'hidden',
+                      }}>
+                        <div style={{ position: 'absolute', inset: 0, opacity: 0.4, background: `radial-gradient(circle at 30% 25%, rgba(${hr},${hg},${hb},0.25) 0%, transparent 50%), radial-gradient(circle at 70% 75%, rgba(${hr},${hg},${hb},0.12) 0%, transparent 40%)`, pointerEvents: 'none' }} />
+                        <div style={{
+                          position: 'relative', zIndex: 1,
+                          filter: `drop-shadow(0 0 16px ${hColor}70) drop-shadow(0 2px 4px rgba(0,0,0,0.5))`,
+                        }}>
+                          <CardIcon icon={IconComp} size={48} color="white" />
+                        </div>
+                        {inDeck && (
+                          <div style={{ position: 'absolute', top: '8px', right: '8px', width: '20px', height: '20px', borderRadius: '50%', background: hColor, border: '2px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3, boxShadow: `0 0 12px ${hColor}60` }}>
+                            <Check size={10} color="white" strokeWidth={3} />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Type line */}
+                      <div style={{
+                        padding: '4px 14px',
+                        background: `linear-gradient(180deg, rgba(${hr},${hg},${hb},0.06) 0%, rgba(${hr},${hg},${hb},0.02) 100%)`,
+                        borderTop: `1px solid rgba(${hr},${hg},${hb},0.06)`,
+                        borderBottom: `1px solid rgba(${hr},${hg},${hb},0.06)`,
+                        display: 'flex', alignItems: 'center', gap: '6px',
+                      }}>
+                        <CardIcon icon={IconComp} size={10} color={hColor} />
+                        <div style={{ fontSize: '9px', fontWeight: 700, color: hColor, letterSpacing: '0.5px', textTransform: 'uppercase', opacity: 0.7 }}>{cat.name}</div>
+                      </div>
+
+                      {/* Specs */}
+                      <div style={{ padding: '8px 14px 4px' }}>
+                        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{mod.specs}</div>
+                      </div>
+
+                      {/* Key quotes — flavor text */}
+                      {keyQuote && (
+                        <div style={{ padding: '4px 14px 8px' }}>
+                          <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.28)', lineHeight: 1.4, fontStyle: 'italic', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '6px' }}>
+                            {keyQuote}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Action button */}
+                      <div style={{ padding: '6px 14px 14px' }}>
+                        <button
+                          onClick={() => {
+                            toggleModule(catId, mod);
+                            if (!inDeck) {
+                              lastSelectedCardRef.current = document.querySelector(`[data-genius="${mod.id}"]`);
+                            }
+                            // Don't dismiss — let them see the state change
+                          }}
+                          style={{
+                            width: '100%', padding: '10px 16px',
+                            fontSize: '12px', fontWeight: 700, letterSpacing: '0.5px',
+                            border: inDeck ? `1px solid rgba(${hr},${hg},${hb},0.3)` : 'none',
+                            borderRadius: '8px', cursor: 'pointer',
+                            background: inDeck
+                              ? 'transparent'
+                              : `linear-gradient(135deg, ${hColor}, ${hColor}cc)`,
+                            color: inDeck ? hColor : 'white',
+                            boxShadow: inDeck ? 'none' : `0 4px 20px ${hColor}40`,
+                            transition: 'all 0.15s ease',
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          {inDeck ? 'Remove from deck' : 'Add to deck'}
+                        </button>
                       </div>
                     </div>
-                  </div>
-                  <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.35, marginBottom: '6px' }}>{hoveredGenius.mod.specs}</div>
-                  <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)', lineHeight: 1.4, fontStyle: 'italic', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '6px' }}>
-                    {extractKeyQuotes(hoveredGenius.mod.prompt)}
-                  </div>
-                  <div style={{ marginTop: '8px', fontSize: '9px', fontWeight: 600, color: inDeck ? hColor : 'rgba(255,255,255,0.25)', letterSpacing: '0.5px' }}>
-                    {inDeck ? '✓ In your deck' : 'Click to add'}
                   </div>
                 </div>
               );
@@ -3090,7 +4134,7 @@ Begin. — skillcl.one`;
                       width: `${Math.min(Math.max(moduleCount * 110, isMobile ? 220 : 280), isMobile ? 340 : 760)}px`,
                       height: isMobile ? '18px' : '20px',
                       borderRadius: '999px',
-                      background: 'linear-gradient(90deg, transparent 0%, rgba(167,139,250,0.18) 20%, rgba(96,165,250,0.2) 50%, rgba(167,139,250,0.18) 80%, transparent 100%)',
+                      background: 'linear-gradient(90deg, transparent 0%, rgba(167,139,250,0.18) 20%, rgba(167,139,250,0.2) 50%, rgba(167,139,250,0.18) 80%, transparent 100%)',
                       opacity: focusedHandCard ? 0.6 : 0.4,
                       filter: 'blur(10px)',
                       pointerEvents: 'none',
@@ -3174,45 +4218,49 @@ Begin. — skillcl.one`;
                           e.currentTarget.style.transform = baseTransform;
                           e.currentTarget.style.zIndex = `${isFocused ? 110 : i + 1}`;
                         }}>
-                        {/* Remove button — visible on hover, inside card top-right */}
-                        <button
-                          className="hand-card-remove"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const leftId = i > 0 ? handSlice[i - 1].id : null;
-                            const rightId = i < handSlice.length - 1 ? handSlice[i + 1].id : null;
-                            removeHandCard(mod.id, catId, leftId, rightId);
-                          }}
-                          aria-label={`Remove ${mod.name}`}
-                          title={`Remove ${mod.name}`}
-                          style={{
-                            position: 'absolute',
-                            top: isMobile ? '3px' : '4px',
-                            right: isMobile ? '3px' : '4px',
-                            width: isMobile ? '18px' : '20px',
-                            height: isMobile ? '18px' : '20px',
-                            borderRadius: '999px',
-                            border: 'none',
-                            background: 'rgba(0,0,0,0.6)',
-                            color: 'rgba(255,255,255,0.8)',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                            zIndex: 240,
-                            pointerEvents: 'auto',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: isMobile ? '10px' : '11px',
-                            fontWeight: 400,
-                            lineHeight: 1,
-                            padding: 0,
-                            opacity: (isMobile && isFocused) ? 1 : 0,
-                            transform: (isMobile && isFocused) ? 'scale(1)' : 'scale(0.6)',
-                            transition: 'opacity 0.15s ease, transform 0.2s cubic-bezier(0.22, 1.2, 0.36, 1), background 0.15s ease',
-                          }}
-                        >
-                          ×
-                        </button>
+                        {/* Remove strip — slides out below focused card */}
+                        {isFocused && (
+                          <button
+                            className="hand-card-discard"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const leftId = i > 0 ? handSlice[i - 1].id : null;
+                              const rightId = i < handSlice.length - 1 ? handSlice[i + 1].id : null;
+                              removeHandCard(mod.id, catId, leftId, rightId);
+                            }}
+                            style={{
+                              position: 'absolute',
+                              bottom: isMobile ? '-28px' : '-32px',
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              width: isMobile ? '64px' : '80px',
+                              height: isMobile ? '22px' : '26px',
+                              borderRadius: '0 0 8px 8px',
+                              border: `1px solid rgba(${r},${g},${b},0.2)`,
+                              borderTop: 'none',
+                              background: `linear-gradient(180deg, rgba(${r},${g},${b},0.12) 0%, rgba(20,20,28,0.95) 100%)`,
+                              color: `rgba(${r},${g},${b},0.7)`,
+                              boxShadow: `0 4px 16px rgba(0,0,0,0.4), 0 0 12px rgba(${r},${g},${b},0.06)`,
+                              zIndex: 240,
+                              pointerEvents: 'auto',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px',
+                              fontSize: isMobile ? '8px' : '9px',
+                              fontWeight: 700,
+                              letterSpacing: '0.5px',
+                              textTransform: 'uppercase',
+                              padding: 0,
+                              animation: 'discardSlideIn 0.18s cubic-bezier(0.22, 1.2, 0.36, 1)',
+                              transition: 'background 0.15s ease, color 0.15s ease, border-color 0.15s ease',
+                            }}
+                          >
+                            <span style={{ fontSize: isMobile ? '10px' : '11px', lineHeight: 1, marginTop: '-1px' }}>−</span>
+                            Remove
+                          </button>
+                        )}
                         {/* MTG-style card frame */}
                         <div style={{
                           position: 'absolute', inset: 0, borderRadius: 'inherit', overflow: 'hidden',
@@ -3277,7 +4325,7 @@ Begin. — skillcl.one`;
                               <div style={{
                                 fontSize: isMobile ? '6.5px' : '7px', fontWeight: 600, color: `rgba(${r},${g},${b},0.68)`,
                                 letterSpacing: '0.3px', textTransform: 'uppercase',
-                              }}>{catId === 'custom' ? (mod._source === 'wikipedia' ? 'Discovered' : 'Custom') : catId}</div>
+                              }}>{cat.name || (catId === 'custom' ? (mod._source === 'wikipedia' ? 'Discovered' : 'Custom') : catId)}</div>
                             </div>
 
                             {/* === TEXT BOX — specs/flavor like MTG === */}
@@ -3290,7 +4338,7 @@ Begin. — skillcl.one`;
                                 fontSize: isMobile ? '6.5px' : '7.5px', color: 'rgba(255,255,255,0.64)',
                                 lineHeight: 1.25, overflow: 'hidden',
                                 display: '-webkit-box', WebkitLineClamp: isMobile ? 2 : 3, WebkitBoxOrient: 'vertical',
-                              }}>{mod.specs.split('\u2022')[0].trim()}</div>
+                              }}>{mod.specs}</div>
                             </div>
 
 
@@ -3398,10 +4446,11 @@ Begin. — skillcl.one`;
             </>
           )}
 
-          {moduleCount === 0 && (
-            <div style={{ position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', padding: '10px 24px', background: 'rgba(10,10,14,0.85)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(139,92,246,0.15)', borderRadius: '50px', fontSize: '13px', color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: '8px', animation: 'fadeInUp 0.3s ease-out' }}>
-              <span style={{ display: 'inline-block', animation: 'float1 2s ease-in-out infinite', fontSize: '14px' }}>+</span>
-              <span>Tap geniuses to build your deck</span>
+          {moduleCount === 0 && stage === 'building' && !deckDealing && (
+            <div onClick={() => { if (isMobile) { setShowCustomForm(true); sounds.click(); } else if (searchInputRef.current) { searchInputRef.current.focus(); searchInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' }); } }}
+              style={{ position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', padding: '10px 24px', background: 'rgba(10,10,14,0.85)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(139,92,246,0.15)', borderRadius: '50px', fontSize: '13px', color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: '8px', animation: 'fadeInUp 0.3s ease-out', cursor: 'pointer' }}>
+              <Search size={14} color="rgba(139,92,246,0.5)" strokeWidth={2} />
+              <span>Search geniuses or anyone...</span>
             </div>
           )}
         </div>
@@ -3412,7 +4461,31 @@ Begin. — skillcl.one`;
         <div style={{ position: 'relative', zIndex: 1, padding: isMobile ? '30px 16px' : '50px 20px', maxWidth: '720px', margin: '0 auto', animation: 'fadeInUp 0.5s ease-out' }}>
           <div style={{ textAlign: 'center', marginBottom: '24px' }}>
             <div style={{ position: 'relative', display: 'inline-block', marginBottom: '12px' }}>
-              <span style={{ fontSize: '52px', display: 'block', filter: 'drop-shadow(0 0 20px rgba(139,92,246,0.4))' }}>🧬</span>
+              <svg width="52" height="52" viewBox="0 0 52 52" fill="none" style={{ display: 'block', filter: 'drop-shadow(0 0 20px rgba(139,92,246,0.4))' }}>
+                <defs>
+                  <linearGradient id="helixA" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#a855f7"/><stop offset="100%" stopColor="#7c3aed"/></linearGradient>
+                  <linearGradient id="helixB" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ec4899"/><stop offset="100%" stopColor="#d946ef"/></linearGradient>
+                  <linearGradient id="rung" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="#a855f7" stopOpacity="0.5"/><stop offset="50%" stopColor="#c084fc" stopOpacity="0.7"/><stop offset="100%" stopColor="#ec4899" stopOpacity="0.5"/></linearGradient>
+                </defs>
+                {/* Rungs */}
+                <line x1="16" y1="10" x2="36" y2="10" stroke="url(#rung)" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+                <line x1="13" y1="18" x2="39" y2="18" stroke="url(#rung)" strokeWidth="1.5" strokeLinecap="round" opacity="0.7"/>
+                <line x1="14" y1="26" x2="38" y2="26" stroke="url(#rung)" strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/>
+                <line x1="13" y1="34" x2="39" y2="34" stroke="url(#rung)" strokeWidth="1.5" strokeLinecap="round" opacity="0.7"/>
+                <line x1="16" y1="42" x2="36" y2="42" stroke="url(#rung)" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+                {/* Strand A — violet */}
+                <path d="M16,6 C16,6 38,14 38,18 C38,22 14,26 14,30 C14,34 38,38 38,42 C38,46 16,50 16,50" stroke="url(#helixA)" strokeWidth="2.5" strokeLinecap="round" fill="none">
+                  <animate attributeName="stroke-dashoffset" from="0" to="-120" dur="3s" repeatCount="indefinite"/>
+                </path>
+                {/* Strand B — magenta */}
+                <path d="M36,6 C36,6 14,14 14,18 C14,22 38,26 38,30 C38,34 14,38 14,42 C14,46 36,50 36,50" stroke="url(#helixB)" strokeWidth="2.5" strokeLinecap="round" fill="none">
+                  <animate attributeName="stroke-dashoffset" from="0" to="-120" dur="3s" repeatCount="indefinite"/>
+                </path>
+                {/* Glow nodes at crossover points */}
+                <circle cx="26" cy="14" r="2.5" fill="#c084fc" opacity="0.8"><animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite"/></circle>
+                <circle cx="26" cy="26" r="3" fill="#d946ef" opacity="0.9"><animate attributeName="opacity" values="0.6;1;0.6" dur="2.4s" repeatCount="indefinite"/></circle>
+                <circle cx="26" cy="38" r="2.5" fill="#c084fc" opacity="0.8"><animate attributeName="opacity" values="0.5;1;0.5" dur="2s" begin="0.5s" repeatCount="indefinite"/></circle>
+              </svg>
             </div>
             <h2 style={{ margin: '0 0 6px 0', fontSize: '24px', fontWeight: 700, letterSpacing: '-0.5px' }}>Your Skillclone is Ready</h2>
             <p style={{ margin: '0 0 12px 0', fontSize: '14px', color: 'rgba(255,255,255,0.4)', fontWeight: 300 }}>
@@ -3576,10 +4649,89 @@ Begin. — skillcl.one`;
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
         .genius-item { transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important; }
         .genius-item:hover { background: rgba(255,255,255,0.05) !important; transform: translateX(1px); }
-        .mission-card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important; }
-        .mission-card:hover { background: rgba(255,255,255,0.06) !important; border-color: rgba(139,92,246,0.25) !important; transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.2), 0 0 20px rgba(139,92,246,0.06); }
-        .fusion-preset { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important; }
-        .fusion-preset:hover { background: rgba(255,255,255,0.04) !important; border-color: rgba(255,255,255,0.1) !important; transform: translateX(2px); }
+        .mission-card {
+          transition: transform 0.5s cubic-bezier(0.22, 1.2, 0.36, 1), background 0.35s ease, border-color 0.35s ease, box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1) !important;
+          transform-style: preserve-3d;
+          will-change: transform, box-shadow;
+        }
+        .mission-card:hover {
+          background: rgba(139,92,246,0.06) !important;
+          border-color: rgba(139,92,246,0.3) !important;
+          transform: translateY(-4px) scale(1.04);
+          box-shadow: 0 8px 32px rgba(139,92,246,0.12), 0 0 0 1px rgba(139,92,246,0.08), inset 0 1px 0 rgba(255,255,255,0.06);
+        }
+        .mission-card:active {
+          transform: translateY(0px) scale(0.97);
+          transition-duration: 0.1s;
+        }
+        .fusion-preset {
+          --accent: #8b5cf6;
+          transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.55s cubic-bezier(0.22, 1, 0.36, 1) !important;
+          will-change: transform, box-shadow;
+        }
+        .fusion-preset::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          border-radius: inherit;
+          opacity: 0;
+          background: linear-gradient(135deg, rgba(139,92,246,0.08) 0%, transparent 50%, rgba(236,72,153,0.04) 100%);
+          transition: opacity 0.4s ease;
+          pointer-events: none;
+        }
+        .fusion-preset:hover::after { opacity: 1; }
+        .fusion-preset:hover {
+          background: rgba(255,255,255,0.035) !important;
+          border-color: rgba(139,92,246,0.18) !important;
+          box-shadow:
+            0 12px 40px rgba(0,0,0,0.25),
+            0 0 0 1px rgba(139,92,246,0.08),
+            0 0 30px rgba(139,92,246,0.06),
+            inset 0 1px 0 rgba(255,255,255,0.04);
+        }
+        .fusion-preset:active {
+          transform: translateY(1px) scale(0.985) !important;
+          transition: transform 0.1s ease !important;
+        }
+        .fusion-preset:hover .deck-cards-fan {
+          transform: rotate(-2deg) scale(1.1);
+        }
+        .fusion-preset:hover .deck-power {
+          transform: scale(1.12);
+          filter: brightness(1.3);
+        }
+        .deck-cards-fan {
+          transition: transform 0.55s cubic-bezier(0.22, 1.2, 0.36, 1);
+        }
+        .deck-power {
+          transition: transform 0.55s cubic-bezier(0.22, 1.2, 0.36, 1), filter 0.4s ease;
+        }
+        .fusion-preset:hover .deck-glow {
+          width: 140px !important;
+          height: 140px !important;
+          top: -40px !important;
+          left: -30px !important;
+          opacity: 2.5;
+          filter: blur(4px);
+        }
+        .fusion-preset:hover .deck-shine {
+          background-position: -50% 0 !important;
+          transition: background-position 0.7s ease !important;
+        }
+        .fusion-preset .deck-label {
+          transition: transform 0.45s cubic-bezier(0.22, 1.2, 0.36, 1), letter-spacing 0.4s ease;
+        }
+        .fusion-preset:hover .deck-label {
+          transform: translateX(2px);
+          letter-spacing: -0.1px;
+        }
+        .fusion-preset .deck-sub {
+          transition: color 0.4s ease, transform 0.45s cubic-bezier(0.22, 1.2, 0.36, 1);
+        }
+        .fusion-preset:hover .deck-sub {
+          color: rgba(255,255,255,0.45) !important;
+          transform: translateX(2px);
+        }
         .fuse-btn { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
         .fuse-btn:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 6px 28px rgba(139,92,246,0.5), 0 0 60px rgba(139,92,246,0.15) !important; }
         .fuse-btn:active { transform: translateY(0) scale(0.97); }
@@ -3605,14 +4757,17 @@ Begin. — skillcl.one`;
         .hand-card:hover {
           filter: brightness(1.12) saturate(1.08) drop-shadow(0 0 8px var(--hand-glow, rgba(139,92,246,0.15)));
         }
-        .hand-card:hover .hand-card-remove {
-          opacity: 1 !important;
-          transform: scale(1) !important;
+        .hand-card-discard:hover {
+          background: linear-gradient(180deg, rgba(239,68,68,0.25) 0%, rgba(20,20,28,0.95) 100%) !important;
+          color: rgba(239,68,68,0.9) !important;
+          border-color: rgba(239,68,68,0.3) !important;
         }
-        .hand-card-remove:hover {
-          background: rgba(239,68,68,0.7) !important;
-          border-color: rgba(239,68,68,0.5) !important;
-          color: white !important;
+        .hand-card-discard:active {
+          transform: translateX(-50%) scale(0.95) !important;
+        }
+        @keyframes discardSlideIn {
+          from { opacity: 0; transform: translateX(-50%) translateY(-8px) scaleY(0); }
+          to { opacity: 1; transform: translateX(-50%) translateY(0) scaleY(1); }
         }
         .hand-card::after {
           content: '';
@@ -3644,14 +4799,11 @@ Begin. — skillcl.one`;
           from { opacity: 0; transform: translateY(8px) scale(0.95); }
           to { opacity: 1; transform: translateY(0) scale(1); }
         }
-        /* Enhancement #6: Cascading 3D Fan Deal-In with flip + micro-bounce */
-        @keyframes dealCard {
-          0% { opacity: 0; transform: perspective(800px) translateY(-60px) translateX(30px) scale(0.3) rotateY(180deg) rotateX(15deg); }
-          35% { opacity: 1; transform: perspective(800px) translateY(-10px) translateX(5px) scale(0.9) rotateY(40deg) rotateX(3deg); }
-          65% { transform: perspective(800px) translateY(3px) translateX(-2px) scale(1.05) rotateY(-4deg) rotateX(-1deg); }
-          82% { transform: perspective(800px) translateY(-1px) translateX(0) scale(0.97) rotateY(1deg) rotateX(0deg); }
-          100% { opacity: 1; transform: perspective(800px) translateY(0) translateX(0) scale(1) rotateY(0deg) rotateX(0deg); }
+        @keyframes cardInspectIn {
+          from { opacity: 0; transform: scale(0.6) translateY(30px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
         }
+        /* Deal animation handled by GSAP timeline */
         @keyframes cardCheckPop {
           0% { transform: scale(0); }
           60% { transform: scale(1.3); }
@@ -3697,9 +4849,37 @@ Begin. — skillcl.one`;
           100% { transform: translate(var(--sx, 20px), var(--sy, -20px)) scale(0.3); opacity: 0; }
         }
         .genius-tile {
-          transition: transform 0.4s cubic-bezier(0.22, 1.2, 0.36, 1), filter 0.35s ease, box-shadow 0.4s ease;
+          transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), filter 0.18s ease, box-shadow 0.2s ease;
           transform-style: preserve-3d;
           will-change: transform, filter;
+          contain: layout paint style;
+        }
+        .genius-tile.is-flipped {
+          z-index: 50;
+        }
+        /* When flipped, a light bloom radiates outward */
+        .genius-tile.is-flipped::after {
+          opacity: 1 !important;
+          animation: flipGlowPulse 1.8s ease-in-out infinite !important;
+        }
+        @keyframes flipGlowPulse {
+          0%, 100% { box-shadow: 0 0 18px var(--tile-glow, rgba(139,92,246,0.2)), inset 0 0 18px var(--tile-glow, rgba(139,92,246,0.08)); }
+          50% { box-shadow: 0 0 32px var(--tile-glow, rgba(139,92,246,0.35)), inset 0 0 24px var(--tile-glow, rgba(139,92,246,0.14)); }
+        }
+        .card-flipper {
+          transform-style: preserve-3d;
+          will-change: transform;
+        }
+        .card-back-face, .card-front-face {
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
+        }
+        .card-front-btn:hover {
+          transform: scale(1.06);
+          filter: brightness(1.15);
+        }
+        .card-front-btn:active {
+          transform: scale(0.94);
         }
         /* Light-spot cursor follower */
         .genius-tile::before {
@@ -3707,10 +4887,10 @@ Begin. — skillcl.one`;
           position: absolute;
           inset: 0;
           border-radius: inherit;
-          background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.2), transparent 50%);
+          background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.14), transparent 45%);
           pointer-events: none;
           opacity: 0;
-          transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+          transition: opacity 0.18s ease;
           z-index: 5;
         }
         /* Edge glow ring — blooms in on hover */
@@ -3723,19 +4903,19 @@ Begin. — skillcl.one`;
           pointer-events: none;
           z-index: 0;
           border: 1.5px solid var(--tile-glow, rgba(139,92,246,0.25));
-          box-shadow: 0 0 16px var(--tile-glow, rgba(139,92,246,0.12)), inset 0 0 16px var(--tile-glow, rgba(139,92,246,0.06));
-          transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.5s ease;
+          box-shadow: 0 0 10px var(--tile-glow, rgba(139,92,246,0.1)), inset 0 0 8px var(--tile-glow, rgba(139,92,246,0.04));
+          transition: opacity 0.18s ease, box-shadow 0.18s ease;
           filter: blur(0.5px);
         }
         .genius-tile:hover::before { opacity: 1; }
-        .genius-tile:hover::after { opacity: 1; }
+        .genius-tile:hover::after { opacity: 0.72; }
         .genius-tile:hover {
           z-index: 10;
-          filter: brightness(1.15) saturate(1.12);
+          filter: brightness(1.06) saturate(1.03);
         }
-        .genius-tile:hover > div:first-child {
-          box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 28px var(--tile-glow, rgba(139,92,246,0.2)) !important;
-          transition: box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1) !important;
+        .genius-tile:hover > .card-flipper > .card-back-face {
+          box-shadow: 0 6px 18px rgba(0,0,0,0.42), 0 0 16px var(--tile-glow, rgba(139,92,246,0.14)) !important;
+          transition: box-shadow 0.18s ease !important;
         }
         .genius-tile:active {
           transform: translateY(0px) scale(0.94) !important;
@@ -3771,6 +4951,58 @@ Begin. — skillcl.one`;
           0%, 100% { opacity: 0.06; }
           50% { opacity: 0.14; }
         }
+        /* ═══ LANDING DECK ANIMATIONS ═══ */
+        @keyframes deckGlowBreathe {
+          0%, 100% { opacity: 0.6; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.04); }
+        }
+        @keyframes deckShadowPulse {
+          0%, 100% { opacity: 0.6; transform: translateX(-50%) scaleX(1); }
+          50% { opacity: 1; transform: translateX(-50%) scaleX(1.15); }
+        }
+        @keyframes deckHintPulse {
+          0%, 100% { opacity: 0.35; }
+          50% { opacity: 0.6; }
+        }
+        @keyframes sliceLinePulse {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 0.8; }
+        }
+        @keyframes sliceOrbSlide {
+          0% { left: -4%; opacity: 0; }
+          8% { opacity: 1; }
+          70% { left: 104%; opacity: 1; }
+          85% { left: 104%; opacity: 0; }
+          100% { left: -4%; opacity: 0; }
+        }
+        .slice-here-line {
+          transition: opacity 0.3s ease;
+        }
+        .landing-deck-stack:hover .slice-here-line {
+          opacity: 1 !important;
+        }
+        .landing-deck-stack:hover .slice-here-line > div:first-child {
+          background: repeating-linear-gradient(90deg, rgba(200,180,255,0.7) 0px, rgba(200,180,255,0.7) 5px, transparent 5px, transparent 11px) !important;
+        }
+        /* Deck fly-away handled by GSAP */
+        .landing-deck-stack {
+          transition: transform 0.4s cubic-bezier(0.22, 1.2, 0.36, 1);
+        }
+        .landing-deck-stack:hover {
+          transform: translateY(-6px) scale(1.03);
+        }
+        .landing-deck-stack:hover .deck-top-card {
+          border-color: rgba(167,139,250,0.5) !important;
+          box-shadow: 0 12px 48px rgba(0,0,0,0.5), 0 0 80px rgba(139,92,246,0.15) !important;
+        }
+        .landing-deck-stack:hover .deck-shimmer {
+          background-position: -50% 0 !important;
+          transition: background-position 0.8s ease !important;
+        }
+        .landing-deck-stack:active {
+          transform: translateY(0) scale(0.96) !important;
+          transition: transform 0.1s ease !important;
+        }
         .card-foil {
           animation: cardFoilShimmer 4s ease-in-out infinite;
         }
@@ -3785,6 +5017,16 @@ Begin. — skillcl.one`;
         }
         .genius-tile:hover .card-foil {
           animation-duration: 2s;
+        }
+        /* Desktop CSS-driven hover flip — zero React re-renders */
+        @media (hover: hover) and (pointer: fine) {
+          .genius-tile:not(.is-large):hover > .card-flipper {
+            transform: rotateY(180deg) !important;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+          }
+          .genius-tile:not(.is-large):not(:hover) > .card-flipper {
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          }
         }
         .deck-scrollbar::-webkit-scrollbar { width: 3px; }
         .deck-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
