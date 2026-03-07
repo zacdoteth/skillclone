@@ -54,8 +54,8 @@
           radial-gradient(circle at 24% 74%, rgba(99, 102, 241, 0.18) 0%, transparent 34%),
           radial-gradient(circle at 78% 64%, rgba(59, 130, 246, 0.14) 0%, transparent 36%);
         filter: blur(64px);
-        opacity: 0.92;
-        animation: bootPulse 14s ease-in-out infinite alternate;
+        opacity: 0;
+        animation: bootPulse 14s 0.6s ease-in-out infinite alternate, bootFadeIn 0.6s 0.3s ease-out forwards;
       }
       body::after {
         content: "";
@@ -63,13 +63,14 @@
         inset: 0;
         pointer-events: none;
         z-index: -1;
-        opacity: 0.16;
+        opacity: 0;
         background:
           radial-gradient(circle at 42% 36%, rgba(255,255,255,0.08) 0%, transparent 22%),
           radial-gradient(circle at 60% 58%, rgba(139,92,246,0.14) 0%, transparent 20%),
           radial-gradient(circle at 38% 74%, rgba(59,130,246,0.10) 0%, transparent 16%),
           repeating-linear-gradient(115deg, rgba(255,255,255,0.028) 0 2px, transparent 2px 28px);
         mix-blend-mode: screen;
+        animation: bootFadeInSubtle 0.5s 0.4s ease-out forwards;
       }
       #root {
         position: relative;
@@ -79,6 +80,14 @@
         0% { transform: scale(1) translate3d(0, 0, 0); opacity: 0.82; }
         50% { transform: scale(1.03) translate3d(0, -1%, 0); opacity: 0.96; }
         100% { transform: scale(1.06) translate3d(0, 1%, 0); opacity: 0.86; }
+      }
+      @keyframes bootFadeIn {
+        from { opacity: 0; }
+        to { opacity: 0.82; }
+      }
+      @keyframes bootFadeInSubtle {
+        from { opacity: 0; }
+        to { opacity: 0.16; }
       }
     </style>
   </head>

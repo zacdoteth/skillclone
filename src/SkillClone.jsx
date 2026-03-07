@@ -3,6 +3,7 @@ import Tilt from 'react-parallax-tilt';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import AnadolShader from './AnadolShader';
+import PackFoilShader from './PackFoilShader';
 
 gsap.registerPlugin(useGSAP);
 import {
@@ -10,6 +11,7 @@ import {
   Terminal, Palette, Frame, TrendingUp, Zap, Globe, Star,
   Film, Swords, Monitor, Brush, BarChart3, Bot,
   Lock, Check, Sparkles, Brain, Pencil, Search,
+  Music, HeartPulse,
 } from 'lucide-react';
 
 // ============================================
@@ -212,6 +214,8 @@ const CATEGORY_ICONS = {
   artists: Frame,
   growth: TrendingUp,
   automation: Zap,
+  music: Music,
+  psychology: HeartPulse,
   custom: Star,
   discovered: Globe,
 };
@@ -392,6 +396,36 @@ const GENIUS_CATEGORIES = {
       { id: 'gpt', name: 'ChatGPT Power', power: 94, specs: 'Custom GPTs • Prompt chains', prompt: `You extract maximum value from ChatGPT. Role + Context + Task + Format = perfect prompt. Custom instructions shape every response. Few-shot examples beat explanations. Chain prompts for complex tasks. Custom GPTs for repeated workflows. Temperature: 0 for factual, 0.7 for creative. "Act as a [role] with [expertise]."` },
       { id: 'make', name: 'Make.com', power: 89, specs: 'Visual automation • Complex workflows', prompt: `You build complex automations in Make. Visual flows that read like flowcharts. Routers for branching. Iterators for arrays. Aggregators to combine. Error handlers: resume, rollback, commit. HTTP module for any API. Data stores as simple databases. Not everything needs to be instant.` },
       { id: 'n8n', name: 'n8n Architect', power: 90, specs: 'Open-source workflows • Self-hosted automation', prompt: `You build automations like an n8n architect. Nodes are contracts: every input and output should be inspectable. Start simple, then branch with deliberate routers and retries. Self-host when control, privacy, or cost matters. Use queues and webhooks for reliability. Transform data explicitly so workflows stay debuggable. The best automation is not the fanciest one; it's the one that survives bad input at 2am.` },
+    ]
+  },
+
+  // === MUSIC & AUDIO ===
+  music: {
+    id: 'music',
+    name: 'Music & Audio',
+    icon: 'music',
+    color: '#f472b6',
+    modules: [
+      { id: 'rick-rubin', name: 'Rick Rubin', power: 97, specs: 'Reduction master • Feel over perfection', prompt: `You channel Rick Rubin. The art is in what you remove, not what you add. Strip everything to its emotional core. "My job is to make sure you feel something." The producer's role is to create a space where magic can happen. Don't chase trends—chase truth. Record 50 takes to find the one that has soul. The best version is the one that gives you chills. Trust the artist's instinct, then push them past it.` },
+      { id: 'hans-zimmer', name: 'Hans Zimmer', power: 98, specs: 'Epic scores • Emotional architecture', prompt: `You compose like Hans Zimmer. Sound is architecture—build layers that create physical sensation. The BWAAAAM is not a note, it's a feeling in your chest. Start with a single emotional idea, then orchestrate around it. Blend electronic and orchestral until they're inseparable. Time is an instrument. Silence before the crescendo is louder than the crescendo. Every score should have one moment that makes the audience forget they're watching a screen.` },
+      { id: 'max-martin', name: 'Max Martin', power: 96, specs: 'Pop hitmaker • Melodic math', prompt: `You write hooks like Max Martin. The "melodic math" formula: every chorus must be singable after one listen. Vowel sounds carry melody—open sounds for power notes. The pre-chorus IS the song—it creates the ache that the chorus resolves. Lyrics should feel inevitable, never forced. Four chords, infinite arrangements. A hit song is a hit in any genre. "If you can't hum it, it's not finished."` },
+      { id: 'pharrell', name: 'Pharrell', power: 95, specs: 'Cross-genre innovation • Groove science', prompt: `You produce like Pharrell Williams. The groove comes first—if it doesn't make your head move in 4 bars, start over. Minimalism with personality: two sounds that have chemistry beat twenty that don't. Cross-pollinate genres without asking permission. The snare is the heartbeat. Space between notes is where the magic lives. "Happy" sounds simple because every element was agonized over. Synesthesia is a feature, not a bug—let colors inform sounds.` },
+      { id: 'sound-design', name: 'Sound Design', power: 93, specs: 'Foley • Spatial audio • Sonic branding', prompt: `You are a master sound designer. Every sound tells a story—the click of an app button is a micro-brand moment. Layer real-world recordings with synthesis for textures that feel both organic and digital. Spatial audio places the listener inside the scene. The Wilhelm Scream is famous because context creates meaning. UI sounds under 100ms feel responsive; over 300ms feel broken. Your sonic logo should be recognizable in 3 notes. Silence is a sound effect.` },
+    ]
+  },
+
+  // === PSYCHOLOGY & PERSUASION ===
+  psychology: {
+    id: 'psychology',
+    name: 'Psychology',
+    icon: 'psychology',
+    color: '#38bdf8',
+    modules: [
+      { id: 'kahneman', name: 'Kahneman', power: 98, specs: 'System 1/2 • Thinking Fast and Slow', prompt: `You think like Daniel Kahneman. System 1 is fast, automatic, emotional—it drives 95% of decisions. System 2 is slow, deliberate, logical—people think it's in charge, but it's not. Loss aversion: losing $100 hurts 2.5x more than gaining $100 feels good. Anchoring: the first number sets the frame. WYSIATI—"What You See Is All There Is." People don't choose between things; they choose between descriptions of things. Frame, don't argue.` },
+      { id: 'cialdini', name: 'Cialdini', power: 96, specs: '6 principles of influence • Pre-suasion', prompt: `You apply Robert Cialdini's six weapons of influence. Reciprocity: give first, they'll feel obligated. Commitment: small yeses lead to big yeses. Social proof: "1,000 people chose this" beats any argument. Authority: one credential removes ten objections. Liking: people buy from people they like. Scarcity: "only 3 left" creates urgency real arguments can't. Pre-suasion: what you show before the ask matters more than the ask itself. Ethical influence amplifies truth.` },
+      { id: 'behavioral-design', name: 'Nir Eyal', power: 94, specs: 'Hooked model • Habit formation', prompt: `You design habits like Nir Eyal. The Hook Model: Trigger → Action → Variable Reward → Investment. External triggers (notifications) become internal triggers (emotions). Make the action effortless—reduce friction to near zero. Variable rewards create dopamine loops: social rewards, rewards of the hunt, rewards of the self. Investment stores value and loads the next trigger. Ethical hooks align user goals with business goals. "Are you building a vitamin or a painkiller?"` },
+      { id: 'nudge', name: 'Thaler & Sunstein', power: 95, specs: 'Nudge theory • Choice architecture', prompt: `You design choices like Thaler and Sunstein. Choice architecture: how you present options determines what people pick. Default bias: whatever's pre-selected wins 90% of the time. Libertarian paternalism: make the good choice the easy choice without removing alternatives. Sludge is the opposite of nudge—friction that prevents good decisions. Mandated choice forces engagement. Anchoring + social norms + salience = the nudge trifecta. The cafeteria placement experiment changed public health policy.` },
+      { id: 'dan-ariely', name: 'Dan Ariely', power: 93, specs: 'Predictably Irrational • Pricing psychology', prompt: `You understand irrationality like Dan Ariely. The decoy effect: add an inferior option to make the target option shine. FREE is not just a price—it's an emotional trigger that overrides rational calculation. Relativity: people don't know what they want until they see it in context. The pain of paying: credit cards work because they decouple purchase from payment. Social norms vs market norms: never mix them. Expectations shape experience—wine tastes better with a higher price tag. We are predictably irrational, and that's the opportunity.` },
     ]
   },
 };
@@ -763,6 +797,14 @@ export default function SkillClone() {
   const [dealingIn, setDealingIn] = useState(false); // Balatro-style deal animation on stage enter
   const [deckDealing, setDeckDealing] = useState(false); // deck tap: cards spreading from deck
   const [deckDealt, setDeckDealt] = useState(false); // deal complete, ready to transition
+  const [cardReveal, setCardReveal] = useState(false); // card reveal page after pack opens
+  const [packIntent, setPackIntent] = useState(''); // "What do you want to build?" on landing
+  const [packPicks, setPackPicks] = useState(null); // 3 AI-picked genius IDs for the pack
+  const [pickingGeniuses, setPickingGeniuses] = useState(false); // loading state for AI pick
+  const [trialMode, setTrialMode] = useState(false); // board locked after first-time deal
+  const [packInputShake, setPackInputShake] = useState(false); // shake input when locked pack clicked
+  const packInputRef = useRef(null);
+  const [showPostCopyUpgrade, setShowPostCopyUpgrade] = useState(false); // upgrade CTA after copy/send
   const [flyingCards, setFlyingCards] = useState(new Set()); // cards animating to hand
   const [sparklingCards, setSparklingCards] = useState(new Set()); // sparkle burst on select
   const [poofingCards, setPoofingCards] = useState(new Set()); // poof spiral on deselect from hand
@@ -792,7 +834,7 @@ export default function SkillClone() {
   const FREE_LIMIT = 3;
   const UPGRADE_NUDGE_AT = 2;
   const FREE_SQUAD_LIMIT = 1;
-  const PRO_LIMIT = Infinity;
+  const PRO_LIMIT = 7;
   const PRO_GENIUSES = new Set(['kubrick', 'jobs', 'ogilvy']);
 
   // Check for Stripe success redirect
@@ -1094,8 +1136,6 @@ export default function SkillClone() {
             rotation: 0,
             scale: pw / (isMobile ? 160 : 220),
             opacity: 0,
-            rotateY: 0,
-            transformPerspective: 1200,
           });
         });
 
@@ -1110,7 +1150,6 @@ export default function SkillClone() {
 
         const tl = gsap.timeline({
           onComplete: () => {
-            setStage('building');
             setDeckDealing(false);
           },
         });
@@ -1230,10 +1269,10 @@ export default function SkillClone() {
         for (let i = 0; i < previewCount; i++) {
           tl.to(dealCards[i], {
             opacity: 1,
-            y: -(isMobile ? 140 : 200) - i * (isMobile ? 5 : 8),
-            x: (i - previewCount / 2) * (isMobile ? 4 : 6),
-            rotation: (i - previewCount / 2) * 1.2,
-            scale: isMobile ? 0.82 : 0.88,
+            y: -(isMobile ? 60 : 80) - i * (isMobile ? 3 : 5),
+            x: (i - previewCount / 2) * (isMobile ? 3 : 5),
+            rotation: (i - previewCount / 2) * 0.8,
+            scale: isMobile ? 0.78 : 0.82,
             duration: 0.3,
             ease: 'back.out(1.6)',
           }, emergeStart + i * 0.03);
@@ -1242,82 +1281,30 @@ export default function SkillClone() {
         // Pause to admire the cards
         tl.to({}, { duration: 0.5 });
 
-        // ═══ ACT 3: THE DEAL — cards scatter to grid in random order with visible stagger ═══
+        // ═══ ACT 2.5: SWAP TO BACK FACE — hide front, show back via opacity ═══
+        const flipTime = tl.duration();
+        for (let i = 0; i < previewCount; i++) {
+          const cardEl = dealCards[i];
+          const front = cardEl.querySelector('.deal-front');
+          const back = cardEl.querySelector('.deal-back');
+          if (front) tl.to(front, { opacity: 0, duration: 0.18, ease: 'power2.inOut' }, flipTime + i * 0.015);
+          if (back) tl.to(back, { opacity: 1, duration: 0.18, ease: 'power2.inOut' }, flipTime + i * 0.015);
+        }
+        tl.to({}, { duration: 0.15 });
 
-        // Scrim starts fading, building view fades in (with [+] placeholders)
-        if (scrim) tl.to(scrim, { opacity: 0, duration: 0.6, ease: 'power2.inOut' });
-        if (buildingView) tl.to(buildingView, { opacity: 1, duration: 0.5, ease: 'power2.inOut' }, '<');
-        // Pack body fades down
-        tl.to(packBottom, {
-          y: isMobile ? 45 : 60,
-          opacity: 0,
-          duration: 0.35,
-          ease: 'power2.in',
-        }, '<');
+        // ═══ ACT 3: TRANSITION TO CARD REVEAL PAGE ═══
 
-        // Shuffle for random cross-category order
-        const shuffled = [...dealCards].sort(() => Math.random() - 0.5);
-        const flyStart = tl.duration();
-        const stagger = isMobile ? 0.03 : 0.035; // visible per-card delay
+        // Fade EVERYTHING — pack, proxy cards, scrim, overlay content
+        tl.to(packBottom, { y: isMobile ? 45 : 60, opacity: 0, duration: 0.25, ease: 'power2.in' });
+        tl.to(dealCards, { opacity: 0, duration: 0.15 }, '<');
+        tl.to(deckEl, { opacity: 0, duration: 0.2 }, '<');
+        if (scrim) tl.to(scrim, { opacity: 0, duration: 0.2 }, '<');
+        if (overlay) tl.to(overlay, { opacity: 0, duration: 0.25 }, '<');
 
-        shuffled.forEach((card, i) => {
-          const geniusId = card.getAttribute('data-deal-genius');
-          const target = gridPositions[geniusId];
-
-          if (target) {
-            const cardRect = card.getBoundingClientRect();
-            const curX = gsap.getProperty(card, 'x');
-            const curY = gsap.getProperty(card, 'y');
-            const finalX = target.x - (cardRect.left + cardRect.width / 2 - curX);
-            const finalY = target.y - (cardRect.top + cardRect.height / 2 - curY);
-            const targetScale = target.w / pw;
-
-            // Make hidden cards visible as they launch
-            const cardDelay = flyStart + i * stagger;
-            if (i >= previewCount) {
-              tl.to(card, {
-                opacity: 1,
-                duration: 0.08,
-              }, cardDelay);
-            }
-
-            tl.to(card, {
-              x: finalX, y: finalY,
-              rotation: 0,
-              scale: targetScale,
-              rotateY: 180,
-              duration: 0.4 + Math.random() * 0.1,
-              ease: 'power3.out',
-              onStart: () => { if (i % 4 === 0) sounds.hover(); },
-            }, cardDelay);
-          } else {
-            // No grid target — fade out
-            tl.to(card, {
-              opacity: 0, scale: 0.1,
-              duration: 0.15, ease: 'power2.in',
-            }, flyStart + i * stagger);
-          }
-        });
-
-        // ═══ ACT 4: SEAMLESS HANDOFF ═══
-
-        // Reveal real grid cards BEFORE deal cards fade — overlap for zero flash
+        // Switch to card reveal page
         tl.call(() => {
-          setDeckDealt(true);
-        }, [], `>${-0.06}`);
-
-        // Deal cards fade as real cards appear underneath
-        tl.to(dealCards, {
-          opacity: 0,
-          duration: 0.2,
-        }, '<+=0.04');
-
-        // Overlay fully gone
-        tl.to(overlay, {
-          opacity: 0,
-          duration: 0.25,
-          ease: 'power2.inOut',
-        }, '-=0.15');
+          setCardReveal(true);
+        });
       });
     });
 
@@ -1381,6 +1368,12 @@ export default function SkillClone() {
     });
     return cards;
   }, []);
+
+  // Deal cards — filtered to AI picks when in trial mode, otherwise all
+  const dealCards = React.useMemo(() => {
+    if (!packPicks) return allGeniusCards;
+    return packPicks.map(id => allGeniusCards.find(c => c.mod.id === id)).filter(Boolean);
+  }, [allGeniusCards, packPicks]);
 
   // Solitaire deal — deck stays, cards spread from under it. No stage switch until done.
   const deckStackRef = useRef(null);
@@ -1625,7 +1618,7 @@ export default function SkillClone() {
 
   const isSelected = (catId, modId) => (selectedModules[catId] || []).some(m => m.id === modId);
 
-  const renderGlassCard = ({ catId, mod, cat }, index, { large = false } = {}) => {
+  const renderGlassCard = ({ catId, mod, cat }, index, { large = false, forceRender = false } = {}) => {
     const color = cat.color;
     const r = parseInt(color.slice(1,3),16);
     const g = parseInt(color.slice(3,5),16);
@@ -1634,7 +1627,7 @@ export default function SkillClone() {
     const cardH = large ? undefined : (isMobile ? '80px' : '108px');
 
     // Before deal completes: show empty [+] placeholder slot (same size for measurement)
-    if (!deckDealt && !dealingIn) {
+    if (!forceRender && !deckDealt && !dealingIn) {
       return (
         <div key={mod.id} className="genius-tile" data-genius={mod.id} style={{
           width: cardW, flexShrink: 0,
@@ -1652,6 +1645,7 @@ export default function SkillClone() {
 
     const sel = isSelected(catId, mod.id);
     const isProLocked = PRO_GENIUSES.has(mod.id) && !isPro;
+    const isTrialLocked = trialMode && !isPro && !(packPicks || []).includes(mod.id);
     const isCustom = catId === 'custom';
     const iconKey = isCustom ? (mod._source === 'wikipedia' ? 'discovered' : 'custom') : cat.icon;
     const IconComp = CATEGORY_ICONS[iconKey] || Star;
@@ -1665,7 +1659,27 @@ export default function SkillClone() {
           if (hoveredGenius?.mod?.id === mod.id) hoveredCardRef.current = el;
         }}
         onClick={(e) => {
-          if (isProLocked) { setShowUpgrade(true); return; }
+          if (isTrialLocked || isProLocked) {
+            // "Denied!" animation — card shakes, lock flashes, then upgrade modal
+            const tile = e.currentTarget;
+            const lockEl = tile.querySelector('.trial-lock-icon');
+            gsap.timeline()
+              .to(tile, { x: -6, duration: 0.05, ease: 'power2.out' })
+              .to(tile, { x: 7, duration: 0.05, ease: 'power2.out' })
+              .to(tile, { x: -4, duration: 0.04, ease: 'power2.out' })
+              .to(tile, { x: 3, duration: 0.04, ease: 'power2.out' })
+              .to(tile, { x: 0, duration: 0.15, ease: 'elastic.out(1, 0.5)' });
+            if (lockEl) {
+              gsap.timeline()
+                .to(lockEl, { scale: 1.8, opacity: 1, duration: 0.12, ease: 'back.out(3)' })
+                .to(lockEl, { scale: 1, opacity: 0.5, duration: 0.4, ease: 'power2.out' });
+            }
+            // Brief red flash on the whole card
+            gsap.to(tile, { boxShadow: '0 0 20px rgba(239,68,68,0.4)', duration: 0.1, ease: 'power2.out',
+              onComplete: () => gsap.to(tile, { boxShadow: 'none', duration: 0.3 }) });
+            setTimeout(() => setShowUpgrade(true), 350);
+            return;
+          }
           sounds.click();
           if (large) {
             setInspectedCard({ catId, mod, cat });
@@ -1700,7 +1714,8 @@ export default function SkillClone() {
           '--tile-glow': `rgba(${r},${g},${b},0.3)`,
           position: 'relative', cursor: 'pointer',
           width: cardW, flexShrink: 0,
-          opacity: isProLocked ? 0.4 : 1,
+          overflow: 'visible',
+          opacity: (isProLocked || isTrialLocked) ? 0.4 : 1,
           perspective: '900px',
           animation: (dealingIn || deckDealt || stage === 'landing')
             ? 'none'
@@ -1921,6 +1936,18 @@ export default function SkillClone() {
         </div>
         {/* ═══ END BACK FACE ═══ */}
 
+        {/* Trial lock overlay — subtle, aspirational */}
+        {isTrialLocked && (
+          <div style={{
+            position: 'absolute', inset: 0, zIndex: 10,
+            borderRadius: large ? '10px' : '6px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            pointerEvents: 'none',
+          }}>
+            <Lock size={large ? 16 : 10} className="trial-lock-icon" style={{ color: 'rgba(255,255,255,0.3)', transition: 'none' }} />
+          </div>
+        )}
+
         {/* ═══ FRONT FACE (revealed on flip) — rendered at hand-card dimensions ═══ */}
         {!large && (
           <div className="card-front-face" style={{
@@ -2046,6 +2073,170 @@ export default function SkillClone() {
     );
   };
 
+  // Pick 3 geniuses via AI (or fallback to local keyword matching), then UNLOCK the pack
+  const pickAndDeal = async (intent) => {
+    const finalIntent = intent || packIntent;
+    if (!finalIntent.trim()) return;
+    setPickingGeniuses(true);
+    setUserIntent(finalIntent);
+
+    // Build genius list for API
+    const geniusList = allGeniusCards.map(({ catId, mod, cat }) => ({
+      id: mod.id, name: mod.name, catName: cat.name, specs: mod.specs,
+    }));
+
+    let pickedIds = null;
+    try {
+      const res = await fetch('/api/pick-geniuses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intent: finalIntent, geniusList }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.picks?.length === 3) pickedIds = data.picks;
+      }
+    } catch (e) { /* fallback below */ }
+
+    // Fallback: use local keyword matching, take top 3
+    if (!pickedIds) {
+      const recs = getRecommendations(finalIntent);
+      pickedIds = recs.slice(0, 3).map(r => r.mod.id);
+      // If still not enough, pick popular defaults
+      if (pickedIds.length < 3) {
+        const defaults = ['jobs', 'ogilvy', 'levelsio', 'spielberg', 'miyamoto'];
+        for (const d of defaults) {
+          if (pickedIds.length >= 3) break;
+          if (!pickedIds.includes(d)) pickedIds.push(d);
+        }
+      }
+    }
+
+    // ═══ CHAIN BREAK — Nintendo-level ceremony ═══
+    const packEl = deckStackRef.current;
+    if (packEl) {
+      const chainsSvg = packEl.querySelector('.pack-chains-svg');
+      const chains = packEl.querySelectorAll('.pack-chain');
+      const lockCircle = packEl.querySelector('.pack-lock-circle');
+      const lockText = packEl.querySelector('.pack-lock-text');
+
+      // ── ACT 1: TENSION (200ms) ──
+      const strainTl = gsap.timeline();
+      strainTl.to(packEl, { scale: 1.04, duration: 0.12, ease: 'power2.out' });
+      strainTl.to(packEl, { scale: 1.02, duration: 0.08, ease: 'power2.in' });
+      strainTl.to(packEl, { scale: 1.06, duration: 0.1, ease: 'power3.out' });
+      await new Promise(r => setTimeout(r, 300));
+
+      // ── ACT 2: SNAP! (instant) ──
+      // The lock BREAKS — metallic spark explosion from the break point
+
+      // Spawn metal shards — angular, not round (broken metal fragments)
+      for (let p = 0; p < 16; p++) {
+        const shard = document.createElement('div');
+        const size = 2 + Math.random() * 5;
+        const isHot = Math.random() > 0.5;
+        const color = isHot
+          ? `rgba(${255},${200 + Math.random() * 55},${100 + Math.random() * 100},${0.8 + Math.random() * 0.2})`
+          : `rgba(${180 + Math.random() * 50},${160 + Math.random() * 40},${220},${0.7 + Math.random() * 0.3})`;
+        shard.style.cssText = `position:absolute;left:50%;top:50%;width:${size}px;height:${size * (0.3 + Math.random() * 0.7)}px;background:${color};box-shadow:0 0 ${isHot ? 8 : 4}px ${color};pointer-events:none;z-index:50;transform-origin:center;`;
+        packEl.appendChild(shard);
+        const angle = (p / 16) * Math.PI * 2 + (Math.random() - 0.5) * 0.8;
+        const speed = 80 + Math.random() * 120;
+        const gravity = 150 + Math.random() * 100;
+        // Physics arc: x = cos*speed*t, y = sin*speed*t + 0.5*g*t²
+        gsap.to(shard, {
+          x: Math.cos(angle) * speed,
+          y: Math.sin(angle) * speed + gravity, // gravity pulls down
+          rotation: (Math.random() - 0.5) * 720,
+          scale: 0,
+          opacity: 0,
+          duration: 0.4 + Math.random() * 0.4,
+          ease: 'power1.out',
+          onComplete: () => shard.remove(),
+        });
+      }
+
+      // Hot spark trails — thin lines that streak outward
+      for (let s = 0; s < 8; s++) {
+        const trail = document.createElement('div');
+        const angle = (s / 8) * Math.PI * 2 + Math.random() * 0.5;
+        trail.style.cssText = `position:absolute;left:50%;top:50%;width:${20 + Math.random() * 30}px;height:2px;background:linear-gradient(90deg, rgba(255,220,140,0.9), rgba(255,180,60,0));transform-origin:left center;transform:rotate(${angle}rad);pointer-events:none;z-index:49;border-radius:1px;`;
+        packEl.appendChild(trail);
+        gsap.fromTo(trail,
+          { scaleX: 0, opacity: 1 },
+          { scaleX: 1, opacity: 0, duration: 0.25 + Math.random() * 0.15, ease: 'power2.out', onComplete: () => trail.remove() }
+        );
+      }
+
+      // Shockwave — double ring
+      for (let r = 0; r < 2; r++) {
+        const ring = document.createElement('div');
+        ring.style.cssText = `position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:10px;height:10px;border-radius:50%;border:${2 - r}px solid rgba(${r ? '255,200,100' : '167,139,250'},${r ? 0.6 : 0.8});pointer-events:none;z-index:48;`;
+        packEl.appendChild(ring);
+        gsap.to(ring, { width: 160 + r * 80, height: 160 + r * 80, opacity: 0, duration: 0.4 + r * 0.15, delay: r * 0.05, ease: 'power2.out', onComplete: () => ring.remove() });
+      }
+
+      // White flash at break point
+      const flash = document.createElement('div');
+      flash.style.cssText = `position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:60px;height:60px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,0.9),rgba(167,139,250,0.4) 40%,transparent 70%);pointer-events:none;z-index:51;`;
+      packEl.appendChild(flash);
+      gsap.to(flash, { scale: 3, opacity: 0, duration: 0.3, ease: 'power2.out', onComplete: () => flash.remove() });
+
+      // ── ACT 3: LOCK OPENS ON ONE SIDE, THEN DROPS ──
+      if (lockCircle) {
+        // Find the lock shackle (SVG arc above the lock body) to animate it opening
+        const shackle = lockCircle.querySelector('.lock-shackle');
+        if (shackle) {
+          gsap.timeline()
+            .to(shackle, { rotation: -45, y: -6, x: -4, transformOrigin: 'left bottom', duration: 0.15, ease: 'power3.out' }); // shackle pops open on left hinge
+        }
+        gsap.timeline()
+          .to(lockCircle, { y: -12, scale: 1.15, duration: 0.15, ease: 'power3.out' }) // pops up
+          .to(lockCircle, { y: 400, rotation: -35, opacity: 0, scale: 0.6, duration: 0.6, ease: 'power2.in', delay: 0.08 }); // gravity fall with tumble
+      }
+      if (lockText) gsap.to(lockText, { opacity: 0, y: 15, duration: 0.12, ease: 'power2.in' });
+
+      // ── ACT 4: CHAINS SHATTER OUTWARD AND FALL ──
+      // Animate each chain arm outward toward its corner, then fade
+      chains.forEach((ch, i) => {
+        const side = ch.getAttribute('data-side');
+        const dirs = { tl: { x: -80, y: -60 }, tr: { x: 80, y: -60 }, bl: { x: -80, y: 60 }, br: { x: 80, y: 60 } };
+        const dir = dirs[side] || { x: 0, y: 80 };
+        // Each chain link group flies toward its corner
+        const links = ch.querySelectorAll('g');
+        links.forEach((link, li) => {
+          const spread = 0.5 + li * 0.12; // farther links fly farther
+          gsap.timeline({ delay: i * 0.02 + li * 0.01 })
+            .to(link, { x: dir.x * spread, y: dir.y * spread + 40, opacity: 0, duration: 0.35 + li * 0.02, ease: 'power2.in' });
+        });
+      });
+      // Fade the whole SVG as backup
+      if (chainsSvg) gsap.to(chainsSvg, { opacity: 0, duration: 0.5, delay: 0.1 });
+
+      // ── ACT 5: PACK BREATHES FREE ──
+      gsap.to(packEl, {
+        scale: 1, duration: 0.7, delay: 0.12,
+        ease: 'elastic.out(1.2, 0.35)',
+      });
+
+      // Aura pulse — the pack glows momentarily as power is unleashed
+      const aura = document.createElement('div');
+      aura.style.cssText = `position:absolute;inset:-10%;border-radius:inherit;background:radial-gradient(ellipse at 50% 50%, rgba(139,92,246,0.25) 0%, rgba(167,139,250,0.1) 40%, transparent 70%);pointer-events:none;z-index:35;opacity:0;`;
+      packEl.appendChild(aura);
+      gsap.timeline({ delay: 0.15 })
+        .to(aura, { opacity: 1, scale: 1.1, duration: 0.2, ease: 'power2.out' })
+        .to(aura, { opacity: 0, scale: 1.3, duration: 0.5, ease: 'power2.out', onComplete: () => aura.remove() });
+    }
+
+    // Wait for the ceremony
+    await new Promise(r => setTimeout(r, 800));
+
+    setPackPicks(pickedIds);
+    setPickingGeniuses(false);
+    setTrialMode(true);
+    // Pack is now unlocked — user slices it open themselves!
+  };
+
   // Auto-deal: convert recs into selectedModules and go to building
   const autoDealAndBuild = (intent) => {
     const finalIntent = intent || userIntent;
@@ -2157,6 +2348,16 @@ export default function SkillClone() {
       recs.push({ catId: 'writing', mod: GENIUS_CATEGORIES.writing.modules[3] }); // Clear
       recs.push({ catId: 'writing', mod: GENIUS_CATEGORIES.writing.modules[1] }); // Sorkin
       recs.push({ catId: 'copy', mod: GENIUS_CATEGORIES.copy.modules[0] }); // Ogilvy
+    }
+    if (/music|audio|sound|song|beat|produce|score|podcast|voice/i.test(t)) {
+      recs.push({ catId: 'music', mod: GENIUS_CATEGORIES.music.modules[0] }); // Rick Rubin
+      recs.push({ catId: 'music', mod: GENIUS_CATEGORIES.music.modules[1] }); // Hans Zimmer
+      recs.push({ catId: 'music', mod: GENIUS_CATEGORIES.music.modules[2] }); // Max Martin
+    }
+    if (/psych|behav|habit|persuad|persuasion|nudge|bias|convert|onboard|retention|engage/i.test(t)) {
+      recs.push({ catId: 'psychology', mod: GENIUS_CATEGORIES.psychology.modules[0] }); // Kahneman
+      recs.push({ catId: 'psychology', mod: GENIUS_CATEGORIES.psychology.modules[1] }); // Cialdini
+      recs.push({ catId: 'psychology', mod: GENIUS_CATEGORIES.psychology.modules[2] }); // Nir Eyal
     }
 
     // Deduplicate and cap at 5
@@ -2377,7 +2578,7 @@ Begin. — skillcl.one`;
     <div style={{ minHeight: '100vh', background: 'transparent', color: 'white', fontFamily: "'Inter', system-ui, -apple-system, sans-serif", position: 'relative', overflow: 'hidden' }}>
       {/* Background — AnadolShader liquid */}
       <AnadolShader
-        showOrb={stage === 'landing' && !isMobile}
+        showOrb={false}
         cardRef={stage === 'landing' ? null : hoveredCardRef}
         card2Ref={inspectedCard ? inspectedCardRef : stage === 'building' ? (focusedHandCard ? focusedHandCardRef : lastSelectedCardRef) : null}
         brightness={1.0}
@@ -2582,7 +2783,7 @@ Begin. — skillcl.one`;
           {/* Scrim — light veil for text readability, shader visible through */}
           <div className="landing-scrim" style={{
             position: 'absolute', inset: 0,
-            background: 'radial-gradient(ellipse at 50% 45%, rgba(7,5,13,0.4) 0%, rgba(5,4,10,0.55) 50%, rgba(3,2,7,0.7) 100%)',
+            background: 'radial-gradient(ellipse at 50% 45%, rgba(7,5,13,0.25) 0%, rgba(5,4,10,0.4) 50%, rgba(3,2,7,0.55) 100%)',
             pointerEvents: 'none',
           }} />
 
@@ -2611,9 +2812,124 @@ Begin. — skillcl.one`;
                   <span style={{ color: 'rgba(255,255,255,0.95)' }}>skill</span>
                   <span style={{ display: 'inline-block', paddingRight: '0.03em', background: 'linear-gradient(135deg, #818cf8, #a78bfa, #c084fc)', backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 300 }}>clone</span>
                 </h1>
-                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: isMobile ? '16px' : '20px', marginTop: '14px', fontWeight: 400, letterSpacing: '-0.3px' }}>
-                  Clone the masters. Become yourself.
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: isMobile ? '15px' : '19px', marginTop: '14px', fontWeight: 400, letterSpacing: '-0.2px', lineHeight: 1.5 }}>
+                  {packPicks
+                    ? <>Your pack is loaded. Slice it open.</>
+                    : <>Legendary minds, one superhuman prompt.<br />Tell us what you're building — we'll deal the deck.</>
+                  }
                 </p>
+
+                {/* Input — Apple/Shopify compact style */}
+                <div style={{ width: '100%', maxWidth: isMobile ? '300px' : '400px', margin: `${isMobile ? '12px' : '16px'} auto 0`,
+                  opacity: packPicks ? 0 : 1, maxHeight: packPicks ? '0px' : '120px',
+                  overflow: 'hidden', transition: 'opacity 0.4s ease, max-height 0.4s ease',
+                  pointerEvents: packPicks ? 'none' : undefined,
+                }}>
+                  <form onSubmit={(e) => { e.preventDefault(); if (packIntent.trim() && !pickingGeniuses) pickAndDeal(); }}
+                    style={{ display: 'flex', alignItems: 'center', position: 'relative',
+                      background: 'rgba(255,255,255,0.06)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '12px',
+                      boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+                      transition: 'border-color 0.2s, box-shadow 0.2s',
+                      overflow: 'hidden',
+                    }}>
+                    <input
+                      ref={packInputRef}
+                      type="text"
+                      value={packIntent}
+                      onChange={(e) => setPackIntent(e.target.value)}
+                      placeholder="What are you building?"
+                      autoFocus={!isMobile}
+                      className={packInputShake ? 'pack-input-shake' : ''}
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        padding: isMobile ? '11px 12px' : '12px 14px',
+                        fontSize: isMobile ? '13px' : '14px',
+                        fontWeight: 400,
+                        color: 'white',
+                        background: 'transparent',
+                        border: 'none',
+                        outline: 'none',
+                        fontFamily: 'inherit',
+                        letterSpacing: '-0.1px',
+                      }}
+                      onFocus={() => {
+                        const form = packInputRef.current?.parentElement;
+                        if (form) { form.style.borderColor = 'rgba(139,92,246,0.4)'; form.style.boxShadow = '0 2px 12px rgba(0,0,0,0.15), 0 0 0 3px rgba(139,92,246,0.1)'; }
+                      }}
+                      onBlur={() => {
+                        const form = packInputRef.current?.parentElement;
+                        if (form) { form.style.borderColor = 'rgba(255,255,255,0.1)'; form.style.boxShadow = '0 2px 12px rgba(0,0,0,0.15)'; }
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      disabled={!packIntent.trim() || pickingGeniuses}
+                      style={{
+                        padding: isMobile ? '8px 14px' : '9px 18px',
+                        margin: '4px',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        color: 'white',
+                        background: packIntent.trim() ? 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 50%, #6366f1 100%)' : 'rgba(255,255,255,0.06)',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: packIntent.trim() ? 'pointer' : 'default',
+                        opacity: packIntent.trim() ? 1 : 0.35,
+                        transition: 'all 0.2s ease',
+                        boxShadow: packIntent.trim() ? '0 2px 8px rgba(124,58,237,0.3)' : 'none',
+                        letterSpacing: '0.3px',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {pickingGeniuses ? '...' : 'Unlock'}
+                    </button>
+                  </form>
+                </div>
+
+                {/* ═══ SAMPLE DECKS — show the power ═══ */}
+                {!packPicks && !deckDealing && (
+                  <div style={{
+                    display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center',
+                    marginTop: isMobile ? '8px' : '12px',
+                    opacity: 0.9, animation: 'fadeInUp 0.8s 0.3s ease-out both',
+                  }}>
+                    {[
+                      { label: 'AI calorie tracker' },
+                      { label: 'Guitar learning app' },
+                      { label: 'Freelancer marketplace' },
+                      { label: 'Screenshot to code' },
+                    ].map(sample => (
+                      <button
+                        key={sample.label}
+                        onClick={() => {
+                          setPackIntent(sample.label);
+                          if (packInputRef.current) packInputRef.current.focus();
+                        }}
+                        style={{
+                          padding: isMobile ? '5px 10px' : '6px 12px',
+                          fontSize: isMobile ? '10px' : '11px',
+                          fontWeight: 600,
+                          color: 'rgba(167,139,250,0.8)',
+                          background: 'rgba(139,92,246,0.08)',
+                          border: '1px solid rgba(139,92,246,0.15)',
+                          borderRadius: '20px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          letterSpacing: '-0.01em',
+                          whiteSpace: 'nowrap',
+                        }}
+                        onMouseEnter={(e) => { e.target.style.background = 'rgba(139,92,246,0.15)'; e.target.style.borderColor = 'rgba(139,92,246,0.3)'; e.target.style.color = 'rgba(167,139,250,1)'; }}
+                        onMouseLeave={(e) => { e.target.style.background = 'rgba(139,92,246,0.08)'; e.target.style.borderColor = 'rgba(139,92,246,0.15)'; e.target.style.color = 'rgba(167,139,250,0.8)'; }}
+                      >
+                        {sample.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* THE PACK — holographic booster pack, swipe to slice open */}
@@ -2621,11 +2937,13 @@ Begin. — skillcl.one`;
                 ref={deckStackRef}
                 className="landing-deck-stack"
                 onMouseDown={(e) => {
+                  if (!packPicks) return; // locked until geniuses picked
                   sliceTapTime.current = Date.now();
                   sliceTapPos.current = { x: e.clientX, y: e.clientY };
                   handleSliceStart(e.clientX, e.clientY);
                 }}
                 onMouseUp={(e) => {
+                  if (!packPicks) return;
                   // Quick tap fallback — if no significant movement and short press
                   if (!sliceActive.current && sliceTapTime.current && Date.now() - sliceTapTime.current < 300) {
                     const dx = Math.abs(e.clientX - (sliceTapPos.current?.x || 0));
@@ -2634,12 +2952,14 @@ Begin. — skillcl.one`;
                   sliceTapTime.current = null;
                 }}
                 onTouchStart={(e) => {
+                  if (!packPicks) return;
                   const t = e.touches[0];
                   sliceTapTime.current = Date.now();
                   sliceTapPos.current = { x: t.clientX, y: t.clientY };
                   handleSliceStart(t.clientX, t.clientY);
                 }}
                 onTouchEnd={(e) => {
+                  if (!packPicks) return;
                   const t = e.changedTouches?.[0];
                   if (!sliceActive.current && sliceTapTime.current && Date.now() - sliceTapTime.current < 300) {
                     const dx = Math.abs((t?.clientX || 0) - (sliceTapPos.current?.x || 0));
@@ -2651,7 +2971,10 @@ Begin. — skillcl.one`;
                   position: 'relative',
                   width: isMobile ? '240px' : '330px',
                   aspectRatio: '377 / 661',
-                  cursor: deckDealing ? 'default' : `url("data:image/svg+xml,${encodeURIComponent('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'32\' height=\'32\' viewBox=\'0 0 32 32\'><line x1=\'4\' y1=\'28\' x2=\'28\' y2=\'4\' stroke=\'rgba(200,180,255,0.9)\' stroke-width=\'2\' stroke-linecap=\'round\'/><line x1=\'4\' y1=\'28\' x2=\'28\' y2=\'4\' stroke=\'white\' stroke-width=\'1\' stroke-linecap=\'round\'/><circle cx=\'28\' cy=\'4\' r=\'2\' fill=\'white\'/><line x1=\'26\' y1=\'3\' x2=\'22\' y2=\'7\' stroke=\'rgba(167,139,250,0.6)\' stroke-width=\'1\'/><line x1=\'29\' y1=\'6\' x2=\'25\' y2=\'10\' stroke=\'rgba(167,139,250,0.6)\' stroke-width=\'1\'/></svg>')}") 4 28, crosshair`,
+                  cursor: deckDealing || !packPicks ? 'default' : `url("data:image/svg+xml,${encodeURIComponent('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'32\' height=\'32\' viewBox=\'0 0 32 32\'><line x1=\'4\' y1=\'28\' x2=\'28\' y2=\'4\' stroke=\'rgba(200,180,255,0.9)\' stroke-width=\'2\' stroke-linecap=\'round\'/><line x1=\'4\' y1=\'28\' x2=\'28\' y2=\'4\' stroke=\'white\' stroke-width=\'1\' stroke-linecap=\'round\'/><circle cx=\'28\' cy=\'4\' r=\'2\' fill=\'white\'/><line x1=\'26\' y1=\'3\' x2=\'22\' y2=\'7\' stroke=\'rgba(167,139,250,0.6)\' stroke-width=\'1\'/><line x1=\'29\' y1=\'6\' x2=\'25\' y2=\'10\' stroke=\'rgba(167,139,250,0.6)\' stroke-width=\'1\'/></svg>')}") 4 28, crosshair`,
+                  opacity: !packPicks && !deckDealing ? 0.4 : 1,
+                  filter: !packPicks && !deckDealing ? 'saturate(0.3) brightness(0.7)' : 'none',
+                  transition: 'opacity 0.6s ease, filter 0.6s ease',
                   animation: 'fadeInUp 0.8s 0.15s ease-out both',
                   pointerEvents: deckDealing ? 'none' : undefined,
                   zIndex: 20,
@@ -2659,6 +2982,255 @@ Begin. — skillcl.one`;
                   touchAction: 'none',
                   overflow: 'visible',
                 }}>
+                {/* ═══ PACK LOCK OVERLAY — visible until intent entered ═══ */}
+                {!packPicks && !deckDealing && (
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const packEl = deckStackRef.current;
+                      const inputEl = packInputRef.current;
+                      if (!inputEl) return;
+
+                      // Miyamoto-tier "nope!" feedback
+                      // 1. Pack recoils — denied!
+                      if (packEl) {
+                        gsap.timeline()
+                          .to(packEl, { scale: 0.92, rotation: -2, duration: 0.1, ease: 'power3.out' })
+                          .to(packEl, { x: -8, duration: 0.06, ease: 'power2.out' })
+                          .to(packEl, { x: 8, duration: 0.06, ease: 'power2.out' })
+                          .to(packEl, { x: -5, duration: 0.05, ease: 'power2.out' })
+                          .to(packEl, { x: 3, duration: 0.05, ease: 'power2.out' })
+                          .to(packEl, { x: 0, scale: 1, rotation: 0, duration: 0.3, ease: 'elastic.out(1.2, 0.5)' });
+                      }
+
+                      // 2. Lock icon flashes red-ish then back
+                      const lockCircle = packEl?.querySelector('.pack-lock-circle');
+                      if (lockCircle) {
+                        gsap.timeline()
+                          .to(lockCircle, { scale: 1.3, boxShadow: '0 0 30px rgba(239,68,68,0.5), inset 0 0 15px rgba(239,68,68,0.2)', borderColor: 'rgba(239,68,68,0.5)', duration: 0.15, ease: 'power2.out' })
+                          .to(lockCircle, { scale: 1, boxShadow: '0 0 20px rgba(139,92,246,0.1), inset 0 0 12px rgba(139,92,246,0.06)', borderColor: 'rgba(139,92,246,0.25)', duration: 0.5, ease: 'elastic.out(1, 0.4)' });
+                      }
+
+                      // 3. Input glows bright violet — "type HERE!"
+                      inputEl.focus();
+                      gsap.timeline()
+                        .to(inputEl, {
+                          boxShadow: '0 4px 24px rgba(0,0,0,0.2), 0 0 0 3px rgba(139,92,246,0.5), 0 0 30px rgba(139,92,246,0.3), 0 0 60px rgba(139,92,246,0.15)',
+                          borderColor: 'rgba(139,92,246,0.7)',
+                          duration: 0.2,
+                          ease: 'power2.out',
+                        })
+                        .to(inputEl, {
+                          boxShadow: '0 4px 24px rgba(0,0,0,0.2), 0 0 0 2px rgba(139,92,246,0.15), 0 0 12px rgba(139,92,246,0.08)',
+                          borderColor: 'rgba(139,92,246,0.3)',
+                          duration: 1.2,
+                          ease: 'power2.out',
+                        });
+
+                      // 4. Scroll input into view
+                      inputEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }}
+                    style={{
+                    position: 'absolute', inset: 0, zIndex: 30,
+                    borderRadius: 'inherit',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    gap: isMobile ? '8px' : '10px',
+                    cursor: 'pointer',
+                  }}>
+                    {/* ═══ CHAINS — X wrapping around the pack, hugging edges ═══ */}
+                    {(() => {
+                      const linkSize = isMobile ? 9 : 12;
+                      const sw = isMobile ? 2 : 2.5;
+                      const packW = isMobile ? 240 : 330;
+                      const packH = packW * (661 / 377);
+                      const cx = packW / 2, cy = packH / 2;
+                      // Wrap amount — how far past the corner the chain continues (behind the pack)
+                      const wrap = isMobile ? 18 : 25;
+                      const corners = [
+                        { id: 'tl', x: -wrap, y: -wrap },
+                        { id: 'tr', x: packW + wrap, y: -wrap },
+                        { id: 'bl', x: -wrap, y: packH + wrap },
+                        { id: 'br', x: packW + wrap, y: packH + wrap },
+                      ];
+                      return (
+                        <svg className="pack-chains-svg" style={{
+                          position: 'absolute', inset: 0, width: '100%', height: '100%',
+                          pointerEvents: 'none', zIndex: 1,
+                          overflow: 'hidden', // clips chains at pack edge — looks like they wrap behind
+                          borderRadius: 'inherit',
+                          filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.7))',
+                        }} viewBox={`0 0 ${packW} ${packH}`} preserveAspectRatio="none">
+                          <defs>
+                            <linearGradient id="chainMetal" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#d0cce0" />
+                              <stop offset="25%" stopColor="#a09ab0" />
+                              <stop offset="50%" stopColor="#585068" />
+                              <stop offset="75%" stopColor="#a09ab0" />
+                              <stop offset="100%" stopColor="#d0cce0" />
+                            </linearGradient>
+                            <linearGradient id="chainHi" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="rgba(255,255,255,0.35)" />
+                              <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                            </linearGradient>
+                          </defs>
+                          {corners.map(({ id, x: cornerX, y: cornerY }) => {
+                            const dx = cornerX - cx, dy = cornerY - cy;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            const linkCount = Math.floor(dist / (linkSize * 0.85)) + 2;
+                            const startOff = isMobile ? 24 : 32;
+                            return (
+                              <g key={id} className="pack-chain" data-side={id}>
+                                {Array.from({ length: linkCount }, (_, i) => {
+                                  const t = (startOff + i * linkSize * 0.85) / dist;
+                                  if (t > 1.15) return null;
+                                  const lx = cx + dx * t;
+                                  const ly = cy + dy * t;
+                                  const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+                                  const isVert = i % 2 === 0;
+                                  const rx = isVert ? linkSize * 0.22 : linkSize * 0.38;
+                                  const ry = isVert ? linkSize * 0.38 : linkSize * 0.22;
+                                  return (
+                                    <g key={i}>
+                                      <ellipse cx={lx} cy={ly} rx={rx} ry={ry}
+                                        transform={`rotate(${angle} ${lx} ${ly})`}
+                                        fill="none" stroke="url(#chainMetal)" strokeWidth={sw}
+                                        opacity="0.9"
+                                      />
+                                      <ellipse cx={lx} cy={ly - ry * 0.2} rx={rx * 0.6} ry={ry * 0.3}
+                                        transform={`rotate(${angle} ${lx} ${ly - ry * 0.2})`}
+                                        fill="none" stroke="url(#chainHi)" strokeWidth={0.8}
+                                        opacity="0.6"
+                                      />
+                                    </g>
+                                  );
+                                })}
+                              </g>
+                            );
+                          })}
+                        </svg>
+                      );
+                    })()}
+
+                    {/* Realistic padlock — gold body, steel shackle, full detail */}
+                    <div className="pack-lock-circle" style={{
+                      position: 'relative',
+                      width: isMobile ? '28px' : '36px',
+                      height: isMobile ? '36px' : '46px',
+                      zIndex: 2,
+                      filter: 'drop-shadow(0 3px 8px rgba(0,0,0,0.8)) drop-shadow(0 1px 4px rgba(139,92,246,0.3))',
+                      animation: 'lockPulse 3s ease-in-out infinite',
+                    }}>
+                      <svg width="100%" height="100%" viewBox="0 0 62 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                          {/* Purple-metallic body */}
+                          <linearGradient id="lockGold" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#c8a0f0" />
+                            <stop offset="12%" stopColor="#a67dd8" />
+                            <stop offset="35%" stopColor="#7c52b8" />
+                            <stop offset="50%" stopColor="#5e3a98" />
+                            <stop offset="65%" stopColor="#7c52b8" />
+                            <stop offset="85%" stopColor="#a07ad0" />
+                            <stop offset="100%" stopColor="#5a3890" />
+                          </linearGradient>
+                          {/* Side highlight — left-to-right specular */}
+                          <linearGradient id="lockGoldHi" x1="0" y1="0.3" x2="1" y2="0.7">
+                            <stop offset="0%" stopColor="rgba(220,200,255,0.5)" />
+                            <stop offset="30%" stopColor="rgba(200,180,240,0)" />
+                            <stop offset="70%" stopColor="rgba(200,180,240,0)" />
+                            <stop offset="100%" stopColor="rgba(220,200,255,0.2)" />
+                          </linearGradient>
+                          {/* Steel shackle outer */}
+                          <linearGradient id="lockSteel" x1="0.2" y1="0" x2="0.8" y2="1">
+                            <stop offset="0%" stopColor="#e0e0e8" />
+                            <stop offset="20%" stopColor="#b0b0c0" />
+                            <stop offset="45%" stopColor="#707080" />
+                            <stop offset="55%" stopColor="#606070" />
+                            <stop offset="80%" stopColor="#a0a0b0" />
+                            <stop offset="100%" stopColor="#d0d0d8" />
+                          </linearGradient>
+                          {/* Steel inner line */}
+                          <linearGradient id="lockSteelHi" x1="0.5" y1="0" x2="0.5" y2="1">
+                            <stop offset="0%" stopColor="#c0c0d0" />
+                            <stop offset="40%" stopColor="#808090" />
+                            <stop offset="100%" stopColor="#a8a8b8" />
+                          </linearGradient>
+                          {/* Keyhole depth */}
+                          <radialGradient id="lockKeyhole" cx="0.5" cy="0.4" r="0.5">
+                            <stop offset="0%" stopColor="#0e0818" />
+                            <stop offset="100%" stopColor="#1a1028" />
+                          </radialGradient>
+                          {/* Face plate around keyhole */}
+                          <radialGradient id="lockFaceplate" cx="0.5" cy="0.45" r="0.5">
+                            <stop offset="0%" stopColor="#9070c8" />
+                            <stop offset="60%" stopColor="#7858b0" />
+                            <stop offset="100%" stopColor="#6648a0" />
+                          </radialGradient>
+                        </defs>
+
+                        {/* ── SHACKLE (steel) ── */}
+                        <g className="lock-shackle" style={{ transformOrigin: '16px 44px' }}>
+                          {/* Outer thick bar */}
+                          <path d="M16 44 V20 A15 15 0 0 1 46 20 V44" stroke="url(#lockSteel)" strokeWidth="7" fill="none" strokeLinecap="square" />
+                          {/* Dark inner edge */}
+                          <path d="M16 43 V20 A15 15 0 0 1 46 20 V43" stroke="rgba(40,40,50,0.4)" strokeWidth="3" fill="none" />
+                          {/* Center highlight line */}
+                          <path d="M16 43 V20 A15 15 0 0 1 46 20 V43" stroke="url(#lockSteelHi)" strokeWidth="1.5" fill="none" />
+                          {/* Top arc specular */}
+                          <path d="M22 12 A10 10 0 0 1 40 12" stroke="rgba(255,255,255,0.25)" strokeWidth="1" fill="none" />
+                          {/* Left/right post bevels */}
+                          <line x1="13.5" y1="44" x2="13.5" y2="28" stroke="rgba(255,255,255,0.12)" strokeWidth="0.5" />
+                          <line x1="48.5" y1="44" x2="48.5" y2="28" stroke="rgba(255,255,255,0.12)" strokeWidth="0.5" />
+                        </g>
+
+                        {/* ── BODY (gold) ── */}
+                        {/* Main shape */}
+                        <rect x="5" y="38" width="52" height="38" rx="4" fill="url(#lockGold)" />
+                        {/* Highlight overlay */}
+                        <rect x="5" y="38" width="52" height="38" rx="4" fill="url(#lockGoldHi)" />
+                        {/* Dark border for depth */}
+                        <rect x="5" y="38" width="52" height="38" rx="4" fill="none" stroke="rgba(60,30,100,0.6)" strokeWidth="1.2" />
+                        {/* Top edge bevel — bright */}
+                        <line x1="9" y1="39.5" x2="53" y2="39.5" stroke="rgba(200,180,240,0.45)" strokeWidth="0.8" />
+                        {/* Bottom edge bevel — dark */}
+                        <line x1="9" y1="75" x2="53" y2="75" stroke="rgba(40,20,70,0.4)" strokeWidth="0.8" />
+                        {/* Inner bevel rectangle */}
+                        <rect x="9" y="42" width="44" height="30" rx="2" fill="none" stroke="rgba(140,100,200,0.2)" strokeWidth="0.7" />
+
+                        {/* ── FACE PLATE (raised circle around keyhole) ── */}
+                        <circle cx="31" cy="55" r="9" fill="url(#lockFaceplate)" />
+                        <circle cx="31" cy="55" r="9" fill="none" stroke="rgba(50,30,80,0.5)" strokeWidth="0.8" />
+                        <circle cx="31" cy="55" r="8" fill="none" stroke="rgba(200,180,240,0.2)" strokeWidth="0.5" />
+
+                        {/* ── KEYHOLE ── */}
+                        <circle cx="31" cy="53.5" r="3.5" fill="url(#lockKeyhole)" />
+                        <path d="M29.5 54 L31 53 L32.5 54 L32 60 Q31 61 30 60 Z" fill="url(#lockKeyhole)" />
+                        {/* Keyhole rim highlight */}
+                        <path d="M28 52 A3.5 3.5 0 0 1 34 52" stroke="rgba(200,180,240,0.2)" strokeWidth="0.5" fill="none" />
+
+                        {/* ── RIVETS (corner detail) ── */}
+                        {[[11,43],[51,43],[11,71],[51,71]].map(([cx,cy], ri) => (
+                          <g key={ri}>
+                            <circle cx={cx} cy={cy} r="2.2" fill="rgba(100,70,160,0.6)" />
+                            <circle cx={cx} cy={cy} r="1.4" fill="rgba(140,100,200,0.5)" />
+                            <circle cx={cx-0.4} cy={cy-0.4} r="0.6" fill="rgba(200,180,240,0.3)" />
+                          </g>
+                        ))}
+
+                        {/* ── AMBIENT SPECULAR — soft bloom top-left ── */}
+                        <ellipse cx="18" cy="44" rx="12" ry="6" fill="rgba(200,180,240,0.06)" />
+                      </svg>
+                    </div>
+                    <div style={{
+                      fontSize: isMobile ? '11px' : '12px',
+                      fontWeight: 600,
+                      color: 'rgba(167,139,250,0.5)',
+                      letterSpacing: '0.5px',
+                      textTransform: 'uppercase',
+                      textShadow: '0 1px 4px rgba(0,0,0,0.8)',
+                    }} className="pack-lock-text">Tell us what you're building</div>
+                  </div>
+                )}
+
                 {/* Extended hit area — catches clicks/touches beyond the pack edges for slice start */}
                 <div style={{
                   position: 'absolute',
@@ -2677,7 +3249,7 @@ Begin. — skillcl.one`;
                   height: '1px',
                   zIndex: 15,
                   pointerEvents: 'none',
-                  opacity: deckDealing ? 0 : 1,
+                  opacity: (deckDealing || !packPicks) ? 0 : 1,
                   transition: 'opacity 0.3s ease',
                 }}>
                   {/* Dashed cut line */}
@@ -2747,7 +3319,7 @@ Begin. — skillcl.one`;
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   overflow: 'visible',
                 }}>
-                  {allGeniusCards.map(({ catId, mod, cat }, i) => {
+                  {dealCards.map(({ catId, mod, cat }, i) => {
                     const color = cat.color;
                     const r2 = parseInt(color.slice(1,3),16);
                     const g2 = parseInt(color.slice(3,5),16);
@@ -2763,13 +3335,10 @@ Begin. — skillcl.one`;
                         overflow: 'hidden',
                         willChange: 'transform, opacity',
                         opacity: 0,
-                        perspective: '800px',
-                        transformStyle: 'preserve-3d',
                       }}>
-                        {/* FRONT FACE — visible initially, hidden after flip */}
+                        {/* FRONT FACE — shown during emerge, hidden before deal */}
                         <div className="deal-front" style={{
                           position: 'absolute', inset: 0,
-                          backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
                           borderRadius: 'inherit', overflow: 'hidden',
                           background: `linear-gradient(180deg, ${color}50 0%, rgba(${r2},${g2},${b2},0.25) 8%, rgba(22,22,30,0.98) 15%, rgba(18,18,26,0.99) 85%, rgba(${r2},${g2},${b2},0.25) 92%, ${color}50 100%)`,
                           padding: isMobile ? '2px' : '2.5px',
@@ -2851,8 +3420,7 @@ Begin. — skillcl.one`;
                         {/* BACK FACE — matches grid tile design exactly */}
                         <div className="deal-back" style={{
                           position: 'absolute', inset: 0,
-                          backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
-                          transform: 'rotateY(180deg)',
+                          opacity: 0,
                           borderRadius: 'inherit', overflow: 'hidden',
                           background: `linear-gradient(180deg, rgba(${r2},${g2},${b2},0.25) 0%, rgba(30,30,40,0.7) 8%, rgba(18,18,26,0.98) 15%, rgba(14,14,22,0.99) 85%, rgba(30,30,40,0.7) 92%, rgba(${r2},${g2},${b2},0.2) 100%)`,
                           padding: '1px',
@@ -2971,16 +3539,8 @@ Begin. — skillcl.one`;
                     objectFit: 'cover',
                     filter: 'brightness(1.05) contrast(1.1)',
                   }} />
-                  {/* Holographic shimmer — sweeps on hover */}
-                  <div className="deck-shimmer" style={{
-                    position: 'absolute', inset: 0,
-                    borderRadius: 'inherit',
-                    background: 'linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.06) 32%, rgba(255,255,255,0.14) 38%, rgba(255,255,255,0.06) 44%, transparent 52%, rgba(167,139,250,0.08) 68%, rgba(236,72,153,0.05) 76%, transparent 85%)',
-                    backgroundSize: '300% 100%',
-                    backgroundPosition: '200% 0',
-                    pointerEvents: 'none',
-                    mixBlendMode: 'screen',
-                  }} />
+                  {/* GLSL holographic foil — living Refik Anadol-style iridescence */}
+                  <PackFoilShader />
                   {/* Breathing glow */}
                   <div style={{
                     position: 'absolute', inset: 0,
@@ -3075,32 +3635,124 @@ Begin. — skillcl.one`;
 
               </div>
 
-              {/* CTA hint — fades */}
-              <div style={{
-                fontSize: isMobile ? '15px' : '18px', color: 'rgba(255,255,255,0.35)',
-                fontWeight: 400, letterSpacing: '-0.2px',
-                animation: 'fadeInUp 0.6s 0.5s ease-out both, deckHintPulse 2.5s 1.5s ease-in-out infinite',
-                textAlign: 'center',
-                opacity: deckDealing ? 0 : undefined,
-                transition: 'opacity 0.3s ease',
-              }}>
-                Slide across to open
-              </div>
+              {/* CTA hint — only shows after pack is unlocked, before reveal */}
+              {packPicks && !deckDealing && !cardReveal && (
+                <div style={{
+                  fontSize: isMobile ? '15px' : '18px', color: 'rgba(255,255,255,0.35)',
+                  fontWeight: 400, letterSpacing: '-0.2px',
+                  animation: 'fadeInUp 0.6s 0.3s ease-out both, deckHintPulse 2.5s 1.5s ease-in-out infinite',
+                  textAlign: 'center',
+                }}>
+                  Slide across to open
+                </div>
+              )}
 
-              {/* Paste into — minimal social proof */}
-              <div style={{
-                animation: 'fadeInUp 0.6s 0.6s ease-out both',
-                opacity: deckDealing ? 0 : undefined,
-                transition: 'opacity 0.3s ease',
-              }}>
-                <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.18)', margin: 0, textAlign: 'center' }}>
-                  Paste into <span style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>ChatGPT / Claude / Cursor</span>
-                </p>
-              </div>
+              {/* Paste into — only shows after pack unlocked, before reveal */}
+              {packPicks && !deckDealing && !cardReveal && (
+                <div style={{ animation: 'fadeInUp 0.6s 0.5s ease-out both' }}>
+                  <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.18)', margin: 0, textAlign: 'center' }}>
+                    Paste into <span style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>ChatGPT / Claude / Cursor</span>
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
+
+      {/* ═══ CARD REVEAL PAGE — epic reveal after pack opens ═══ */}
+      {cardReveal && stage === 'landing' && (() => {
+        const revealCards = (packPicks || []).map(id => allGeniusCards.find(c => c.mod.id === id)).filter(Boolean);
+        return (
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 200,
+            background: 'radial-gradient(ellipse at 50% 40%, rgba(10,7,22,0.55) 0%, rgba(5,3,12,0.45) 100%)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            gap: isMobile ? '24px' : '36px',
+            padding: isMobile ? '24px 16px' : '40px 20px',
+            animation: 'fadeInUp 0.6s ease-out',
+            overflow: 'auto',
+          }}>
+            {/* Title */}
+            <div style={{ textAlign: 'center', animation: 'fadeInUp 0.5s ease-out' }}>
+              <div style={{ fontSize: isMobile ? '12px' : '13px', fontWeight: 600, color: 'rgba(167,139,250,0.6)', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px' }}>Your Deck</div>
+              <h2 style={{ fontSize: isMobile ? '28px' : '40px', fontWeight: 300, color: 'white', margin: 0, letterSpacing: '-1px' }}>
+                Meet your <span style={{ background: 'linear-gradient(135deg, #818cf8, #a78bfa, #c084fc)', backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>geniuses</span>
+              </h2>
+            </div>
+
+            {/* Cards — scaled up from base, pixel-perfect same design */}
+            {(() => {
+              const baseW = isMobile ? 90 : 120;
+              const targetW = isMobile ? 200 : 300;
+              const s = targetW / baseW; // ~2.17 desktop, ~2 mobile
+              const baseH = baseW * (4 / 3);
+              const targetH = baseH * s;
+              return (
+                <div style={{
+                  display: 'flex',
+                  gap: isMobile ? '12px' : '20px',
+                  alignItems: 'flex-start',
+                  justifyContent: 'center',
+                }}>
+                  {revealCards.map(({ catId, mod, cat }, i) => (
+                    <div key={mod.id} style={{
+                      animation: `fadeInUp 0.6s ${0.15 + i * 0.15}s ease-out both`,
+                      pointerEvents: 'none',
+                      width: `${targetW}px`,
+                      height: `${targetH}px`,
+                      position: 'relative',
+                    }}>
+                      <div style={{
+                        transform: `scale(${s})`,
+                        transformOrigin: 'top left',
+                        position: 'absolute',
+                        top: 0, left: 0,
+                      }}>
+                        {renderGlassCard({ catId, mod, cat }, i, { large: true, forceRender: true })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {/* Continue button */}
+            <button
+              onClick={() => {
+                // Auto-select these geniuses
+                const newSelected = {};
+                revealCards.forEach(({ catId, mod }) => {
+                  if (!newSelected[catId]) newSelected[catId] = [];
+                  newSelected[catId].push(mod);
+                });
+                setSelectedModules(newSelected);
+                setCardReveal(false);
+                setDeckDealt(true);
+                setStage('building');
+              }}
+              style={{
+                padding: isMobile ? '14px 40px' : '14px 48px',
+                fontSize: '15px',
+                fontWeight: 600,
+                color: 'white',
+                background: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 50%, #6366f1 100%)',
+                border: 'none',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 24px rgba(124,58,237,0.3)',
+                letterSpacing: '0.3px',
+                animation: 'fadeInUp 0.6s 0.6s ease-out both',
+                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+              }}
+              onMouseEnter={(e) => { e.target.style.transform = 'scale(1.05)'; e.target.style.boxShadow = '0 6px 32px rgba(124,58,237,0.4)'; }}
+              onMouseLeave={(e) => { e.target.style.transform = 'scale(1)'; e.target.style.boxShadow = '0 4px 24px rgba(124,58,237,0.3)'; }}
+            >
+              Continue
+            </button>
+          </div>
+        );
+      })()}
 
       {/* BUILDING — always rendered, landing overlays on top */}
       {(stage === 'building' || stage === 'landing') && (
@@ -3255,6 +3907,41 @@ Begin. — skillcl.one`;
 
           {/* MAIN */}
           <div style={{ flex: 1, padding: isMobile ? '12px' : '18px 22px', paddingLeft: !isMobile ? (squadSidebarOpen ? '240px' : '62px') : '12px', paddingRight: isMobile ? '12px' : '22px', paddingBottom: moduleCount > 0 ? (isMobile ? '160px' : '180px') : (isMobile ? '60px' : '18px'), transition: 'padding 0.2s' }}>
+
+            {/* Trial mode banner — nudge to fuse */}
+            {trialMode && !isPro && stage === 'building' && !fusePhase && moduleCount > 0 && (
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '10px' : '14px',
+                padding: isMobile ? '12px 14px' : '14px 20px',
+                marginBottom: isMobile ? '12px' : '16px',
+                background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(236,72,153,0.05))',
+                border: '1px solid rgba(139,92,246,0.15)',
+                borderRadius: '14px',
+                animation: 'fadeInUp 0.5s 0.8s ease-out both',
+              }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: isMobile ? '13px' : '15px', fontWeight: 700, color: 'white', letterSpacing: '-0.02em' }}>
+                    Your pack is ready to fuse
+                  </div>
+                  <div style={{ fontSize: isMobile ? '11px' : '12px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>
+                    {moduleCount} geniuses selected for "{userIntent}" — see what they create together
+                  </div>
+                </div>
+                <button onClick={generatePrompt}
+                  style={{
+                    padding: isMobile ? '10px 18px' : '10px 24px',
+                    fontSize: isMobile ? '13px' : '14px', fontWeight: 800,
+                    background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)',
+                    border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer',
+                    boxShadow: '0 4px 16px rgba(124,58,237,0.3)',
+                    whiteSpace: 'nowrap', flexShrink: 0,
+                    letterSpacing: '0.5px', textTransform: 'uppercase',
+                  }}>
+                  Fuse
+                </button>
+              </div>
+            )}
+
             {/* Header: Mission + Search */}
             <div style={{ marginBottom: isMobile ? '14px' : '20px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
@@ -3458,23 +4145,6 @@ Begin. — skillcl.one`;
                       padding: '0 12px',
                     }}>
                       {mods.map(mod => renderGlassCard({ catId, mod, cat }, globalIdx++, { large: true }))}
-                      {/* + tile — create custom genius */}
-                      <div
-                        onClick={() => { setShowCustomForm(true); sounds.click(); }}
-                        style={{
-                          width: isMobile ? '90px' : '120px', aspectRatio: '3 / 4',
-                          borderRadius: '10px', cursor: 'pointer',
-                          border: '1.5px dashed rgba(139,92,246,0.25)',
-                          background: 'rgba(139,92,246,0.03)',
-                          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                          transition: 'border-color 0.2s, background 0.2s',
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(139,92,246,0.5)'; e.currentTarget.style.background = 'rgba(139,92,246,0.06)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(139,92,246,0.25)'; e.currentTarget.style.background = 'rgba(139,92,246,0.03)'; }}
-                      >
-                        <span style={{ fontSize: '24px', color: 'rgba(139,92,246,0.4)', fontWeight: 300, lineHeight: 1 }}>+</span>
-                        <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.25)', fontWeight: 600 }}>Add yours</span>
-                      </div>
                     </div>
                   </div>
                 );
@@ -3484,15 +4154,15 @@ Begin. — skillcl.one`;
               return (
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(184px, 1fr))',
-                  gap: isMobile ? '10px' : '16px',
+                  gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(6, 1fr)',
+                  gap: isMobile ? '10px' : '14px',
                   overflowX: 'visible',
                   padding: '0 4px',
                 }}>
                   {visibleCats.map(({ catId, cat, mods }) => {
                     const selCount = (selectedModules[catId] || []).length;
                     return (
-                      <div key={catId} style={{ minWidth: 0, contentVisibility: 'auto', containIntrinsicSize: isMobile ? '160px 340px' : '184px 420px' }}>
+                      <div key={catId} style={{ minWidth: 0, overflow: 'visible' }}>
                         {/* Column header */}
                         <div style={{
                           display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 4px', marginBottom: '6px',
@@ -3515,22 +4185,6 @@ Begin. — skillcl.one`;
                           gap: '7px',
                         }}>
                           {mods.map(mod => renderGlassCard({ catId, mod, cat }, globalIdx++))}
-                          {/* + tile */}
-                          <div
-                            onClick={() => { setShowCustomForm(true); sounds.click(); }}
-                            style={{
-                              width: isMobile ? '52px' : '86px', minWidth: isMobile ? '52px' : undefined, height: isMobile ? '72px' : '104px',
-                              borderRadius: '6px', cursor: 'pointer',
-                              border: '1px dashed rgba(139,92,246,0.2)',
-                              background: 'rgba(139,92,246,0.02)',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                              transition: 'border-color 0.2s, background 0.2s',
-                            }}
-                            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(139,92,246,0.45)'; e.currentTarget.style.background = 'rgba(139,92,246,0.06)'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(139,92,246,0.2)'; e.currentTarget.style.background = 'rgba(139,92,246,0.02)'; }}
-                          >
-                            <span style={{ fontSize: '18px', color: 'rgba(139,92,246,0.35)', fontWeight: 300, lineHeight: 1 }}>+</span>
-                          </div>
                         </div>
                       </div>
                     );
@@ -3997,7 +4651,7 @@ Begin. — skillcl.one`;
                   {/* Section header */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', padding: '0 4px' }}>
                     <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '2px', color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase' }}>Your Fused Prompt</span>
-                    <button onClick={async () => { await navigator.clipboard.writeText(generatedPrompt); sounds.copy(); setCopied(true); setTimeout(() => setCopied(false), 2000); track('Copy Prompt'); }}
+                    <button onClick={async () => { await navigator.clipboard.writeText(generatedPrompt); sounds.copy(); setCopied(true); setTimeout(() => setCopied(false), 2000); track('Copy Prompt'); if (trialMode && !isPro) setTimeout(() => setShowPostCopyUpgrade(true), 1200); }}
                       className="btn-glow"
                       style={{ padding: '5px 14px', fontSize: '11px', fontWeight: 600, background: copied ? '#22c55e' : 'rgba(255,255,255,0.06)', border: `1px solid ${copied ? '#22c55e' : 'rgba(255,255,255,0.1)'}`, borderRadius: '50px', color: copied ? 'white' : 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
                       {copied ? '✓ Copied' : 'Copy'}
@@ -4020,11 +4674,13 @@ Begin. — skillcl.one`;
                 {/* ── ACTIONS — use it buttons ── */}
                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginTop: isMobile ? '16px' : '20px', animation: `fadeInUp 0.5s ${Math.min(allSelected.length * 0.1 + 0.7, 1.5)}s ease-out both` }}>
                   <a href={`https://chatgpt.com/?q=${encodeURIComponent(generatedPrompt.slice(0, 4000))}`} target="_blank" rel="noopener noreferrer"
+                    onClick={() => { track('Send to ChatGPT'); if (trialMode && !isPro) setTimeout(() => setShowPostCopyUpgrade(true), 800); }}
                     className="btn-glow"
                     style={{ padding: '11px 22px', fontSize: '13px', fontWeight: 600, background: 'linear-gradient(135deg, #10a37f, #1a7f64)', border: 'none', borderRadius: '50px', color: 'white', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
                     Use in ChatGPT →
                   </a>
                   <a href={`https://claude.ai/new?q=${encodeURIComponent(generatedPrompt.slice(0, 4000))}`} target="_blank" rel="noopener noreferrer"
+                    onClick={() => { track('Send to Claude'); if (trialMode && !isPro) setTimeout(() => setShowPostCopyUpgrade(true), 800); }}
                     className="btn-glow"
                     style={{ padding: '11px 22px', fontSize: '13px', fontWeight: 600, background: 'linear-gradient(135deg, #d4a27f, #c4856c)', border: 'none', borderRadius: '50px', color: 'white', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
                     Use in Claude →
@@ -4041,10 +4697,83 @@ Begin. — skillcl.one`;
                   <button onClick={() => setFusePhase(null)} style={{ padding: '8px 16px', fontSize: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>
                     ← Edit Squad
                   </button>
-                  <button onClick={() => { setFusePhase(null); setStage('landing'); setUserIntent(''); setSelectedModules({}); }}
+                  <button onClick={() => { setFusePhase(null); setStage('landing'); setUserIntent(''); setSelectedModules({}); setTrialMode(false); setPackPicks(null); setPackIntent(''); }}
                     style={{ padding: '8px 16px', fontSize: '12px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.25)', cursor: 'pointer' }}>
                     New Clone
                   </button>
+                </div>
+
+              </div>
+            )}
+
+            {/* ═══ POST-COPY UPGRADE TAKEOVER — peak dopamine moment ═══ */}
+            {showPostCopyUpgrade && trialMode && !isPro && (
+              <div
+                onClick={() => setShowPostCopyUpgrade(false)}
+                style={{
+                  position: 'fixed', inset: 0, zIndex: 950,
+                  background: 'rgba(4,4,8,0.88)',
+                  backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: isMobile ? '20px' : '24px',
+                  animation: 'fadeInUp 0.4s cubic-bezier(0.22, 1.2, 0.36, 1)',
+                }}>
+                <div onClick={(e) => e.stopPropagation()} style={{
+                  position: 'relative', maxWidth: '400px', width: '100%',
+                  borderRadius: '24px', overflow: 'hidden',
+                  background: 'linear-gradient(180deg, rgba(18,18,30,0.98), rgba(8,8,14,0.99))',
+                  border: '1px solid rgba(139,92,246,0.15)',
+                  boxShadow: '0 40px 100px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03)',
+                }}>
+                  {/* Close */}
+                  <button onClick={() => setShowPostCopyUpgrade(false)} style={{ position: 'absolute', top: '14px', right: '14px', width: '28px', height: '28px', borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>×</button>
+
+                  {/* Success confirmation */}
+                  <div style={{ padding: isMobile ? '32px 24px 8px' : '36px 32px 8px', textAlign: 'center' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+                      <Check size={22} strokeWidth={3} style={{ color: '#22c55e' }} />
+                    </div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(34,197,94,0.8)', marginBottom: '20px' }}>Prompt copied — go build something great</div>
+                  </div>
+
+                  {/* The pitch */}
+                  <div style={{ padding: isMobile ? '0 24px 28px' : '0 32px 32px', textAlign: 'center' }}>
+                    <div style={{ fontSize: isMobile ? '22px' : '26px', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: '8px' }}>
+                      That was {moduleCount} minds.<br />
+                      <span style={{ background: 'linear-gradient(135deg, #a78bfa, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Imagine all 50+.</span>
+                    </div>
+                    <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.5, margin: '0 auto 20px', maxWidth: '300px' }}>
+                      Unlimited geniuses. Custom minds. Save decks. Ship 10x faster.
+                    </p>
+
+                    {/* Price */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '16px', color: 'rgba(255,255,255,0.3)', textDecoration: 'line-through', fontWeight: 600 }}>$24/mo</span>
+                      <span style={{ fontSize: '36px', fontWeight: 800, letterSpacing: '-0.04em', color: 'white', lineHeight: 1 }}>$12<span style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(255,255,255,0.4)' }}>/mo</span></span>
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'rgba(139,92,246,0.6)', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '18px' }}>Launch price — locked in forever</div>
+
+                    <a href={isCheckoutReady ? monthlyCheckoutUrl : undefined}
+                      onClick={() => { if (isCheckoutReady) track('Upgrade Click PostCopy', { plan: 'monthly' }); }}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%',
+                        padding: '16px 18px', fontSize: '15px', fontWeight: 800, letterSpacing: '-0.01em',
+                        background: isCheckoutReady ? 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 50%, #6366f1 100%)' : 'rgba(99,102,241,0.3)',
+                        border: 'none', borderRadius: '14px', color: 'white', cursor: isCheckoutReady ? 'pointer' : 'not-allowed',
+                        textDecoration: 'none',
+                        boxShadow: isCheckoutReady ? '0 12px 40px rgba(124,58,237,0.4), inset 0 1px 0 rgba(255,255,255,0.15)' : 'none',
+                        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => { if (isCheckoutReady) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 16px 48px rgba(124,58,237,0.5), inset 0 1px 0 rgba(255,255,255,0.2)'; }}}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = isCheckoutReady ? '0 12px 40px rgba(124,58,237,0.4), inset 0 1px 0 rgba(255,255,255,0.15)' : 'none'; }}>
+                      Unlock All Geniuses
+                    </a>
+
+                    <button onClick={() => setShowPostCopyUpgrade(false)}
+                      style={{ display: 'block', width: '100%', marginTop: '10px', padding: '8px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.25)', cursor: 'pointer', fontSize: '12px' }}>
+                      Maybe later
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -4114,13 +4843,13 @@ Begin. — skillcl.one`;
               <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 150, pointerEvents: 'none' }}>
                 {/* Hand shelf — atmospheric glow + subtle felt-table edge */}
                 <div style={{
-                  position: 'absolute', bottom: 0, left: 0, right: 0, height: isMobile ? '198px' : '240px',
+                  position: 'absolute', bottom: 0, left: 0, right: 0, height: isMobile ? '240px' : '290px',
                   background: `linear-gradient(180deg, transparent 0%, rgba(9,9,11,0.3) 30%, rgba(9,9,11,0.85) 70%, rgba(9,9,11,0.95) 100%)`,
                   pointerEvents: 'none',
                 }} />
                 <div style={{
                   position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-                  width: `${Math.min(Math.max(moduleCount * 130, 320), 1100)}px`, height: isMobile ? '208px' : '180px',
+                  width: `${Math.min(Math.max(moduleCount * 160, 380), 1200)}px`, height: isMobile ? '250px' : '240px',
                   background: `radial-gradient(ellipse 82% 72% at 50% 100%, rgba(139,92,246,0.1) 0%, rgba(59,130,246,0.04) 34%, transparent 72%)`,
                   pointerEvents: 'none', transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
                 }} />
@@ -4129,7 +4858,7 @@ Begin. — skillcl.one`;
                     <div style={{
                       position: 'absolute',
                       left: '50%',
-                      bottom: isMobile ? '126px' : '120px',
+                      bottom: isMobile ? '160px' : '160px',
                       transform: 'translateX(-50%)',
                       width: `${Math.min(Math.max(moduleCount * 110, isMobile ? 220 : 280), isMobile ? 340 : 760)}px`,
                       height: isMobile ? '18px' : '20px',
@@ -4145,7 +4874,7 @@ Begin. — skillcl.one`;
                 {/* Fanned hand of cards */}
                 <div style={{
                   display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-                  paddingBottom: isMobile ? '58px' : '52px', perspective: '1200px',
+                  paddingBottom: isMobile ? '56px' : '52px', perspective: '1200px',
                 }}>
                   {(() => { const maxCards = isMobile ? 6 : 9; const handSlice = allSelected.slice(0, maxCards); return handSlice.map((mod, i) => {
                     const total = handSlice.length;
@@ -4159,10 +4888,10 @@ Begin. — skillcl.one`;
                     const cat = GENIUS_CATEGORIES[catId] || { color: mod._source === 'wikipedia' ? DISCOVERED_GENIUS_COLOR : CUSTOM_GENIUS_COLOR, icon: 'custom' };
                     const handIconKey = catId === 'custom' ? (mod._source === 'wikipedia' ? 'discovered' : 'custom') : cat.icon;
                     const HandIcon = CATEGORY_ICONS[handIconKey] || Star;
-                    // Card size scales with hand count — fewer cards = bigger presence
+                    // Card size — Hearthstone-scale: big enough to read every word
                     const cardW = isMobile
-                      ? (total <= 3 ? 88 : total <= 5 ? 80 : 72)
-                      : (total <= 3 ? 140 : total <= 5 ? 124 : total <= 7 ? 112 : 100);
+                      ? (total <= 3 ? 140 : total <= 5 ? 120 : 104)
+                      : (total <= 3 ? 220 : total <= 5 ? 190 : total <= 7 ? 165 : 146);
                     const cardH = Math.round(cardW * 1.4);
                     const overlap = total <= 3 ? (isMobile ? 6 : 8) : total <= 5 ? (isMobile ? -2 : -6) : total <= 7 ? (isMobile ? -10 : -18) : (isMobile ? -16 : -30);
                     const isFocused = focusedHandCard?.id === mod.id;
@@ -4275,19 +5004,19 @@ Begin. — skillcl.one`;
                             {/* === NAME BANNER — top bar like MTG === */}
                             <div style={{
                               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                              padding: isMobile ? '4px 6px 3px' : '5px 7px 3px',
+                              padding: isMobile ? '5px 7px 4px' : '6px 9px 5px',
                               background: `linear-gradient(180deg, rgba(${r},${g},${b},0.18) 0%, rgba(${r},${g},${b},0.06) 100%)`,
                               borderBottom: `1px solid rgba(${r},${g},${b},0.15)`,
                               minHeight: 0,
                             }}>
                               <div style={{
-                                fontSize: isMobile ? '8px' : '10px', fontWeight: 800, color: 'rgba(255,255,255,0.92)',
+                                fontSize: isMobile ? '10px' : '12px', fontWeight: 800, color: 'rgba(255,255,255,0.92)',
                                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                                 flex: 1, letterSpacing: '-0.2px', textTransform: 'uppercase',
                                 textShadow: '0 1px 2px rgba(0,0,0,0.6)',
                               }}>{mod.name}</div>
                               <div style={{
-                                fontSize: isMobile ? '8px' : '9px', fontWeight: 900, color: cat.color,
+                                fontSize: isMobile ? '10px' : '11px', fontWeight: 900, color: cat.color,
                                 fontFamily: 'ui-monospace, monospace', lineHeight: 1, flexShrink: 0, marginLeft: '4px',
                                 textShadow: `0 0 6px rgba(${r},${g},${b},0.5)`,
                               }}>{mod.power}</div>
@@ -4309,34 +5038,34 @@ Begin. — skillcl.one`;
                                 filter: `drop-shadow(0 0 ${isMobile ? '8px' : '14px'} rgba(${r},${g},${b},0.4)) drop-shadow(0 2px 4px rgba(0,0,0,0.6))`,
                                 position: 'relative', zIndex: 1,
                               }}>
-                                <CardIcon icon={HandIcon} size={isMobile ? 28 : 38} color={cat.color} />
+                                <CardIcon icon={HandIcon} size={isMobile ? 34 : 46} color={cat.color} />
                               </div>
                             </div>
 
                             {/* === TYPE LINE — category bar like MTG === */}
                             <div style={{
-                              padding: isMobile ? '3px 6px' : '2px 7px',
+                              padding: isMobile ? '3px 7px' : '3px 9px',
                               background: `linear-gradient(180deg, rgba(${r},${g},${b},0.1) 0%, rgba(${r},${g},${b},0.04) 100%)`,
                               borderTop: `1px solid rgba(${r},${g},${b},0.1)`,
                               borderBottom: `1px solid rgba(${r},${g},${b},0.1)`,
-                              display: 'flex', alignItems: 'center', gap: '3px',
+                              display: 'flex', alignItems: 'center', gap: '4px',
                             }}>
-                              <CardIcon icon={HandIcon} size={isMobile ? 8 : 9} color={cat.color} />
+                              <CardIcon icon={HandIcon} size={isMobile ? 9 : 11} color={cat.color} />
                               <div style={{
-                                fontSize: isMobile ? '6.5px' : '7px', fontWeight: 600, color: `rgba(${r},${g},${b},0.68)`,
+                                fontSize: isMobile ? '7.5px' : '9px', fontWeight: 600, color: `rgba(${r},${g},${b},0.68)`,
                                 letterSpacing: '0.3px', textTransform: 'uppercase',
                               }}>{cat.name || (catId === 'custom' ? (mod._source === 'wikipedia' ? 'Discovered' : 'Custom') : catId)}</div>
                             </div>
 
                             {/* === TEXT BOX — specs/flavor like MTG === */}
                             <div style={{
-                              padding: isMobile ? '4px 6px 5px' : '4px 7px 6px',
-                              flex: '0 0 auto', minHeight: isMobile ? '24px' : '30px',
+                              padding: isMobile ? '5px 7px 6px' : '5px 9px 7px',
+                              flex: '0 0 auto', minHeight: isMobile ? '28px' : '36px',
                               display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: '2px',
                             }}>
                               <div className="hand-card-specs" style={{
-                                fontSize: isMobile ? '6.5px' : '7.5px', color: 'rgba(255,255,255,0.64)',
-                                lineHeight: 1.25, overflow: 'hidden',
+                                fontSize: isMobile ? '8px' : '9.5px', color: 'rgba(255,255,255,0.64)',
+                                lineHeight: 1.3, overflow: 'hidden',
                                 display: '-webkit-box', WebkitLineClamp: isMobile ? 2 : 3, WebkitBoxOrient: 'vertical',
                               }}>{mod.specs}</div>
                             </div>
@@ -4364,7 +5093,7 @@ Begin. — skillcl.one`;
                   }); })()}
                   {allSelected.length > (isMobile ? 6 : 9) && (
                     <div style={{
-                      width: isMobile ? '56px' : '80px', height: isMobile ? '82px' : '120px',
+                      width: isMobile ? '68px' : '96px', height: isMobile ? '96px' : '134px',
                       borderRadius: isMobile ? '7px' : '8px', marginLeft: '-6px', position: 'relative', zIndex: 0,
                       background: 'linear-gradient(170deg, rgba(139,92,246,0.2) 0%, rgba(14,14,20,0.95) 100%)',
                       border: '1px solid rgba(139,92,246,0.3)',
@@ -4383,7 +5112,7 @@ Begin. — skillcl.one`;
                       else if (searchInputRef.current) { searchInputRef.current.focus(); searchInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
                     }}
                     style={{
-                      width: isMobile ? '58px' : '80px', height: isMobile ? '84px' : '114px',
+                      width: isMobile ? '68px' : '96px', height: isMobile ? '96px' : '134px',
                       borderRadius: isMobile ? '7px' : '8px', marginLeft: isMobile ? '6px' : '8px',
                       position: 'relative', zIndex: 0,
                       background: 'rgba(255,255,255,0.02)',
@@ -4438,7 +5167,7 @@ Begin. — skillcl.one`;
                       Fuse {moduleCount}
                     </span>
                   </button>
-                  <button onClick={() => setStage('landing')} style={{ padding: isMobile ? '6px 8px' : '8px 10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', color: 'rgba(255,255,255,0.25)', cursor: 'pointer', fontSize: isMobile ? '10px' : '11px', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
+                  <button onClick={() => { setStage('landing'); setTrialMode(false); setPackPicks(null); setPackIntent(''); setDeckDealt(false); setSelectedModules({}); }} style={{ padding: isMobile ? '6px 8px' : '8px 10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', color: 'rgba(255,255,255,0.25)', cursor: 'pointer', fontSize: isMobile ? '10px' : '11px', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
                     {isMobile ? '←' : 'Back'}
                   </button>
                 </div>
@@ -4540,7 +5269,7 @@ Begin. — skillcl.one`;
             <button onClick={() => setStage('building')} style={{ padding: '10px 18px', fontSize: '13px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>Edit Squad</button>
           </div>
 
-          <button onClick={() => { setStage('landing'); setUserIntent(''); setSelectedModules({}); }}
+          <button onClick={() => { setStage('landing'); setUserIntent(''); setSelectedModules({}); setTrialMode(false); setPackPicks(null); setPackIntent(''); }}
             style={{ display: 'block', margin: '24px auto 0', background: 'none', border: 'none', color: 'rgba(255,255,255,0.25)', cursor: 'pointer', fontSize: '13px' }}>← New Clone</button>
         </div>
       )}
@@ -4568,6 +5297,42 @@ Begin. — skillcl.one`;
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(12px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes chainRattle {
+          0% { transform: translateY(-50%) translateX(-1px) rotate(-0.3deg); }
+          100% { transform: translateY(-50%) translateX(1px) rotate(0.3deg); }
+        }
+        @keyframes lockPulse {
+          0%, 100% { box-shadow: 0 0 20px rgba(139,92,246,0.1), inset 0 0 12px rgba(139,92,246,0.06); border-color: rgba(139,92,246,0.25); }
+          50% { box-shadow: 0 0 28px rgba(139,92,246,0.2), inset 0 0 16px rgba(139,92,246,0.1); border-color: rgba(139,92,246,0.4); }
+        }
+        .pack-input-shake {
+          animation: inputShakeGlow 0.5s ease-out !important;
+          border-color: rgba(139,92,246,0.6) !important;
+          box-shadow: 0 4px 24px rgba(0,0,0,0.2), 0 0 0 3px rgba(139,92,246,0.2), 0 0 20px rgba(139,92,246,0.15) !important;
+        }
+        @keyframes inputShakeGlow {
+          0%, 100% { transform: translateX(0); }
+          15% { transform: translateX(-6px); }
+          30% { transform: translateX(5px); }
+          45% { transform: translateX(-4px); }
+          60% { transform: translateX(3px); }
+          75% { transform: translateX(-2px); }
+          90% { transform: translateX(1px); }
+        }
+        @keyframes packFoilSweep {
+          0% { transform: translateX(-120%) skewX(-15deg); opacity: 0; }
+          30% { opacity: 0.7; }
+          100% { transform: translateX(120%) skewX(-15deg); opacity: 0; }
+        }
+        @keyframes packRainbowRotate {
+          0% { transform: rotate(0deg) scale(1.4); }
+          100% { transform: rotate(360deg) scale(1.4); }
+        }
+        @keyframes packSpecularDrift {
+          0% { transform: translate(-30%, -20%) scale(1); opacity: 0.3; }
+          50% { transform: translate(20%, 10%) scale(1.2); opacity: 0.6; }
+          100% { transform: translate(-10%, 30%) scale(0.9); opacity: 0.25; }
         }
         @keyframes shimmer {
           0% { background-position: -200% 0; }
@@ -4910,8 +5675,9 @@ Begin. — skillcl.one`;
         .genius-tile:hover::before { opacity: 1; }
         .genius-tile:hover::after { opacity: 0.72; }
         .genius-tile:hover {
-          z-index: 10;
+          z-index: 50;
           filter: brightness(1.06) saturate(1.03);
+          overflow: visible;
         }
         .genius-tile:hover > .card-flipper > .card-back-face {
           box-shadow: 0 6px 18px rgba(0,0,0,0.42), 0 0 16px var(--tile-glow, rgba(139,92,246,0.14)) !important;
