@@ -1715,6 +1715,7 @@ export default function SkillClone() {
           position: 'relative', cursor: 'pointer',
           width: cardW, flexShrink: 0,
           overflow: 'visible',
+          borderRadius: large ? '10px' : undefined,
           opacity: (isProLocked || isTrialLocked) ? 0.4 : 1,
           perspective: '900px',
           animation: (dealingIn || deckDealt || stage === 'landing')
@@ -3695,24 +3696,46 @@ Begin. — skillcl.one`;
                   alignItems: 'flex-start',
                   justifyContent: 'center',
                 }}>
-                  {revealCards.map(({ catId, mod, cat }, i) => (
-                    <div key={mod.id} style={{
-                      animation: `fadeInUp 0.6s ${0.15 + i * 0.15}s ease-out both`,
-                      pointerEvents: 'none',
-                      width: `${targetW}px`,
-                      height: `${targetH}px`,
-                      position: 'relative',
-                    }}>
+                  {revealCards.map(({ catId, mod, cat }, i) => {
+                    const rc = parseInt(cat.color.slice(1,3),16);
+                    const gc = parseInt(cat.color.slice(3,5),16);
+                    const bc = parseInt(cat.color.slice(5,7),16);
+                    return (
+                    <div key={mod.id}
+                      className="hand-card"
+                      style={{
+                        '--hand-glow': `rgba(${rc},${gc},${bc},0.2)`,
+                        animation: `fadeInUp 0.6s ${0.15 + i * 0.15}s ease-out both`,
+                        width: `${targetW}px`,
+                        height: `${targetH}px`,
+                        position: 'relative',
+                        borderRadius: `${10 * s}px`,
+                        overflow: 'visible',
+                      }}
+                      onMouseOver={(e) => {
+                        if (isMobile) return;
+                        e.currentTarget.style.transform = 'scale(1.08) translateY(-8px)';
+                        e.currentTarget.style.zIndex = '10';
+                      }}
+                      onMouseOut={(e) => {
+                        if (isMobile) return;
+                        if (e.currentTarget.contains(e.relatedTarget)) return;
+                        e.currentTarget.style.transform = '';
+                        e.currentTarget.style.zIndex = '';
+                      }}
+                    >
                       <div style={{
                         transform: `scale(${s})`,
                         transformOrigin: 'top left',
                         position: 'absolute',
                         top: 0, left: 0,
+                        pointerEvents: 'none',
                       }}>
                         {renderGlassCard({ catId, mod, cat }, i, { large: true, forceRender: true })}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               );
             })()}
