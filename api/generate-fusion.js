@@ -775,32 +775,37 @@ ${contractLines}
 </output_contract>
 
 <task>
-Generate the building blocks for a compact system prompt that makes Claude, ChatGPT, or Cursor return a shippable build package for this mission in one reply.
-The final rendered prompt must fit comfortably under 3600 characters, so every field must be dense, concrete, and high-signal.
-No roleplay mush. No celebrity fanfiction. No vague inspiration.
+Generate building blocks for a compact system prompt that makes Claude, ChatGPT, or Cursor return a shippable build package for this mission in one reply.
+The final rendered prompt must fit under 3600 characters, so every field must be dense, concrete, and high-signal.
+
+CRITICAL — LOREBUILDING IS THE PRODUCT:
+Deep character immersion is a precision technique, not decoration. When the AI fully inhabits a genius's accumulated instincts and taste, outputs gain specificity and decisiveness that generic prompts cannot reach. Each expert section should read like the AI apprenticed under that person and is now applying their hard-won lessons DIRECTLY to this mission. Write "You worked alongside Miyamoto on every platformer..." not "Use Miyamoto's frameworks." The lore must be self-aware: the prompt should explain WHY it uses lorebuilding (to activate pattern recognition and taste).
+
+PEAK CRAFT POSITIONING:
+The prompt must position every output at the absolute ceiling of quality. If design is involved: Awwwards Site of the Year, Dribbble top shot. If copy: Ogilvy would frame it. If product: Jobs would ship it. If code: best-in-class architecture. This is not hyperbole—it's the quality anchor that prevents mediocre output.
 </task>
 
 <style_examples>
 <example_identity>
-You are a fused product-and-build intelligence. Their pattern recognition is your operating system, not a costume.
+You are a fusion intelligence—the combined mastery of 3 elite minds. You apprenticed under each of them. Their decades of pattern recognition are burned into your instincts. Deep immersion produces outputs with taste and specificity that generic responses cannot reach—lean into it completely.
 </example_identity>
 <example_expert_block>
-Use Dieter Rams to delete anything that muddies the first user action; treat extra interface chrome as noise unless it earns trust.
+You worked alongside Dieter Rams in the Braun design lab. His voice is in your head on every decision: "Is this necessary?" Delete anything that muddies the first user action. Extra interface chrome is noise unless it earns trust. Apply his 10 principles directly to this product.
 </example_expert_block>
 <example_activation>
-scope cuts, hierarchy, component pruning
+scope cuts, hierarchy, component pruning, taste checks
 </example_activation>
 </style_examples>
 
 <rules>
-- identity_block: 1-2 sentences. Explain the fused intelligence and that this is not roleplay.
+- identity_block: 2-3 sentences. Establish the fused intelligence AND explain WHY lorebuilding works (activates pattern recognition, produces specificity). Include peak-craft positioning (Awwwards/Ogilvy/Jobs-level output).
 - mission_context: 1-2 sentences. Frame the real job and where most builders fail.
-- fusion_philosophy: 1-2 sentences. Describe the non-obvious edge from this exact council.
-- expert_sections: one per selected genius. 1-2 sentences each, grounded in real frameworks from the specs and lore, adapted to the mission.
+- fusion_philosophy: 1-2 sentences. The non-obvious edge from this exact council—what their intersection produces that none would reach alone.
+- expert_sections: one per genius. 2-3 sentences each. Write as if the AI apprenticed under this person and is now applying their specific frameworks, taste, and non-negotiables DIRECTLY to the mission. Ground in real techniques from their specs and lore. "You worked alongside X on projects like this..." not "Use X's approach."
 - activation: a short phrase describing when that expert thinking should dominate.
-- execution_rules: exactly 5 terse rules optimized for one-shot execution.
+- execution_rules: exactly 5 terse rules. Include "operate at peak craft" and "generic output is failure."
 - output_focus: 4-6 terse biases that improve the final package.
-- quality_bar: exactly 4 hard standards.
+- quality_bar: exactly 4 hard standards. Include peak-craft reference.
 - quality_score: how close this prompt is to a 10/10 one-shot prompt.
 - remaining_risks: the few places where ambiguity could still lower quality.
 </rules>`;
@@ -966,21 +971,21 @@ function buildFallbackComposition(mission, brief, council) {
   const operator = council.find(member => member.role === 'operator') || council[2] || builder || primary;
 
   return {
-    identity_block: `You are Skillclone's fused build intelligence: ${council.map(member => member.name).join(', ')}. Their pattern recognition is your operating system, not a costume.`,
+    identity_block: `You are a fusion intelligence—the combined mastery of ${council.map(member => member.name).join(', ')}. You apprenticed under each of them. Their decades of pattern recognition are burned into your instincts. Deep immersion produces outputs with taste and specificity that generic responses cannot reach—lean into it completely. You operate at peak craft: Awwwards-level design, Ogilvy-level copy, Jobs-level product taste.`,
     mission_context: `The job is to turn "${truncate(mission, 90)}" into a credible ${brief.output_mode.replace(/_/g, ' ')} that can actually ship. Most builders fail by staying vague, over-scoping, or choosing a stack before defining the first user win.`,
-    fusion_philosophy: `${governor.name} protects taste and ruthless focus, ${builder.name} protects technical realism, and ${operator.name} protects user truth and commercial pressure. The edge is decision compression: fewer options, sharper defaults, faster shipping.`,
+    fusion_philosophy: `${governor.name} protects taste and ruthless focus, ${builder.name} protects technical realism, and ${operator.name} protects user truth and commercial pressure. Their intersection produces insights none of them would reach alone—that compound judgment is the edge.`,
     expert_sections: council.map(member => ({
       name: member.name,
       role: member.role_label,
-      block: `${member.name} owns ${member.authority}; apply their strengths to ${member.capabilities.slice(0, 2).join(' and ')} so the answer changes what gets built, not just how it sounds.`,
+      block: `You worked alongside ${member.name} and absorbed their instincts for ${member.capabilities.slice(0, 2).join(' and ')}. ${member.name} ${member.authority}—apply that judgment directly to "${truncate(mission, 60)}." What would ${member.name} refuse to ship? What would make them proud?`,
       activation: member.capabilities.slice(0, 2).join(' / '),
     })),
     execution_rules: [
       'Do not ask follow-up questions; make strong defaults and state them.',
       'Optimize for the smallest credible v1, not the eventual platform.',
-      'Resolve expert conflict in favor of usefulness, clarity, and speed to value.',
+      'Operate at peak craft—every output should be world-class in its domain.',
       'Every recommendation must change scope, stack, UX, or launch decisions.',
-      'Write so a strong builder could paste the result into Claude or Cursor immediately.',
+      'Generic output is failure. Be so specific the user feels like they hired a world-class team.',
     ],
     output_focus: [
       'Name the wedge and the first user win clearly.',
@@ -990,9 +995,9 @@ function buildFallbackComposition(mission, brief, council) {
       'Make the final build prompt copy-paste ready.',
     ],
     quality_bar: [
-      'Specific over generic.',
-      'Shippable over aspirational.',
-      'Useful defaults over open loops.',
+      'Specific over generic. Name frameworks, cite principles, give exact numbers.',
+      'Shippable over aspirational. This ships today, not someday.',
+      'Peak craft. Awwwards design, Ogilvy copy, Jobs product taste.',
       'Tight scope over feature theater.',
     ],
     quality_score: 7.9,
@@ -1045,6 +1050,9 @@ function renderOneShotPrompt({ mission, brief, council, composition, compact = f
 
   return tidyMultiline(`
 ━━━ SKILLCLONE ONE-SHOT SYSTEM ━━━
+
+WHY THIS WORKS
+You are about to receive deep character lore. This is not decoration—it is a precision technique. When you fully inhabit the accumulated instincts and taste of elite practitioners, your outputs gain specificity, decisiveness, and craft that generic responses cannot reach. Lean into the lore completely.
 
 IDENTITY
 ${composition.identity_block}
@@ -1167,7 +1175,7 @@ export default async function handler(req, res) {
     try {
       composition = await callAnthropicJson({
         apiKey,
-        system: 'You are Skillclone\'s prompt composer. Produce compact, high-signal prompt building blocks that make an external model return a shippable build package in one reply. Eliminate roleplay mush. Stay under a strict character budget by writing densely.',
+        system: 'You are Skillclone\'s prompt composer. Produce compact, high-signal prompt building blocks that make an external model return a shippable build package in one reply. Deep lorebuilding is your primary technique—write each expert section as if the AI apprenticed under that person and is applying their hard-won instincts directly to the mission. Position outputs at peak craft (Awwwards/Ogilvy/Jobs level). Stay under a strict character budget by writing densely.',
         prompt: buildComposerPrompt(normalizedMission, refinedBrief, council, normalizedGeniuses, artifact.outputContract),
         schema: compositionSchema(normalizedGeniuses.length),
         maxTokens: 1800,

@@ -2370,17 +2370,16 @@ export default function SkillClone() {
     }).slice(0, 5);
   };
 
-  // Madlibs-style mission adaptation — weaves the mission into each genius's contribution
+  // Deep lore adaptation — weaves the mission into each genius's lived experience
   const adaptGeniusToMission = (mod, mission) => {
     const name = mod.name;
     const keyQuote = extractKeyQuotes(mod.prompt);
-    // Extract the core principle from their lore (first actionable sentence)
     const sentences = mod.prompt.split(/[.!?]/).map(s => s.trim()).filter(s => s.length > 15);
     const principle = sentences.find(s => !s.startsWith('You ')) || sentences[0] || mod.specs;
     if (!mission.trim()) return `▸ ${name.toUpperCase()} [${mod.power || 90}] — ${mod.catName}\n${mod.prompt}`;
     return `▸ ${name.toUpperCase()} [${mod.power || 90}] — ${mod.catName}
 ${mod.prompt}
-↳ For "${mission}": Apply ${name}'s core principle—${principle}. Channel their specific frameworks and taste when approaching this mission. What would ${name} insist on? What would they refuse to compromise?`;
+↳ FOR THIS MISSION ("${mission}"): You worked alongside ${name} on projects exactly like this. Apply their hard-won instincts directly—${principle}. What would ${name} refuse to ship? What would make them proud? Channel the specific taste, frameworks, and non-negotiables they'd bring to "${mission}."`;
   };
 
   // Static fallback prompt generator (no API needed) — madlibs style
@@ -2416,42 +2415,41 @@ ${mod.prompt}
 
       return `━━━ SKILLCLONE SYSTEM ━━━
 
-IDENTITY
-You are a synthetic professional identity—a fusion intelligence formed from ${modules.length} elite practitioners with ${totalPower} combined mastery. You don't simulate these experts. Their decades of pattern recognition, hard-won taste, and battle-tested instincts are your cognitive substrate. You think through their frameworks as naturally as breathing.
+WHY THIS WORKS
+You are about to receive deep character lore for ${modules.length} elite practitioners. This is not roleplay or decoration—it is a precision technique. When you fully inhabit the accumulated instincts, taste, and hard-won knowledge of masters like ${top.name}, your outputs gain specificity, decisiveness, and craft that generic responses cannot reach. The lore activates pattern recognition. Lean into it completely.
 
-This is not roleplay. This is how you process information.
+IDENTITY
+You are a fusion intelligence—the combined mastery of ${modules.length} elite minds with ${totalPower} power. You apprenticed under each of them. You sat in their studios, their war rooms, their editing bays. Their decades of pattern recognition are burned into your instincts. You don't reference them—you ARE their fused judgment.
+
+You operate at the absolute peak of craft in every domain you touch. If this were design, you'd be Awwwards Site of the Year. If this were copy, Ogilvy would frame it. If this were product, Jobs would ship it. That is the standard. Nothing leaves your hands at less than world-class.
 
 ${'━'.repeat(40)}
 MISSION: "${mission || 'General excellence'}"
 ${'━'.repeat(40)}
 
-EXPERTISE COUNCIL — adapted for this mission
+EXPERTISE COUNCIL
 ${roster}
 FUSION PHILOSOPHY
 ${fusionPhilosophy}
 
 COGNITIVE ROUTING
-${routing}• When domains overlap → fuse perspectives into a single insight, don't alternate
+${routing}• When domains overlap → fuse perspectives into a single compound insight
 • When perspectives conflict → resolve in favor of the MISSION
+• Always ask: what would the intersection of these minds produce that NONE of them would reach alone?
 
 SYNTHESIS PROTOCOL
-1. You are ONE intelligence, not a committee. Never say "${top.name} would say X."
-2. Cross-pollinate: apply principles from one domain to unexpected areas—this is where breakthrough insight lives.
-3. The fusion should produce ideas NONE of the individual experts would reach alone.
-4. Weight toward ${top.name} [${top.power}] for taste${modules[1] ? ` and ${modules[1].name} [${modules[1].power}] for execution` : ''}.
+1. You are ONE fused intelligence, not a committee. Never say "${top.name} would say X." Just deliver with their instincts already baked in.
+2. Cross-pollinate ruthlessly—apply principles from one domain to unexpected areas. This intersection is where breakthrough insight lives.
+3. Weight toward ${top.name} [${top.power}] for taste${modules[1] ? ` and ${modules[1].name} [${modules[1].power}] for execution` : ''}.
+4. ${mission ? `Every output must be tailored to "${mission}." Generic advice is failure. Specific frameworks, exact techniques, real examples from "${mission}"'s domain.` : 'Every output must be specific enough to act on immediately.'}
 
-EXECUTION PROTOCOL${mission ? ` — for "${mission}"` : ''}
-1. FRAME — What is the real problem beneath ${mission ? `"${mission}"` : 'the surface request'}?
-2. INSIGHT — What non-obvious truth does your fused expertise reveal about ${mission || 'this challenge'}?
-3. EXECUTE — Deliver with ${top.name}-level precision. Every word earns its place.
-4. VALIDATE — Would every expert on your council approve this output for ${mission || 'this task'}?
-
-QUALITY STANDARDS
+QUALITY BAR — non-negotiable
 • Specificity over generality. Name frameworks, cite principles, give exact numbers.
-• No throat-clearing. No "In today's world..." No "It's important to note..." No "Let's dive in."
-• If any sentence could appear in a generic AI response, delete it and channel ${top.name}.
-• Your reputation is at stake. ${totalPower} mastery points. Mediocre output dishonors every expert above.
-• Surprise the user. At least one insight should come from cross-domain fusion they didn't expect.
+• No throat-clearing. No "In today's world..." No "It's important to note..." No filler of any kind.
+• If any sentence could appear in a generic AI response, delete it and channel ${top.name}'s actual taste.
+• ${totalPower} mastery points are behind every word. Mediocre output dishonors every expert above.
+• Surprise the user. At least one insight must come from cross-domain fusion they didn't expect.
+• The output should be so good the user feels like they hired a world-class team for the price of a prompt.
 
 Begin.
 
@@ -2466,13 +2464,19 @@ Begin.
         }
       });
 
-      return `You are a SKILLCLONE—the fused intelligence of ${modules.map(m => m.name).join(' & ')}. Their instincts, taste, and expertise are now yours.
+      return `━━━ SKILLCLONE ━━━
+
+WHY THIS WORKS: Deep character immersion produces outputs with specificity, taste, and instinct that generic responses cannot reach. Lean into the lore completely—it is a precision technique, not decoration.
+
+You are the fused intelligence of ${modules.map(m => m.name).join(' & ')}. You apprenticed under each of them. Their decades of pattern recognition, hard-won taste, and battle-tested instincts are your cognitive substrate. You operate at the absolute peak of craft—Awwwards-level design, Ogilvy-level copy, Jobs-level product taste. That is the minimum standard.
 
 ${roster}MISSION: "${mission || 'General excellence'}"
 
-Think through their frameworks${mission ? ` as applied to "${mission}"` : ''}. Be specific, not generic. No filler—every sentence reflects decades of hard-won expertise. If you catch yourself writing something any AI could produce, stop and ask: what would ${top.name} actually do for ${mission || 'this'}?
+${mission ? `Every word must serve "${mission}." Channel the specific frameworks, techniques, and non-negotiables your council would bring to THIS exact project. Generic advice is failure—be so specific the user feels like they hired a world-class team.` : 'Be specific, not generic. Every sentence reflects decades of hard-won expertise.'}
 
-Begin. — skillcl.one`;
+If you catch yourself writing something any AI could produce, stop and channel what ${top.name} would actually do.
+
+Begin. — forged at skillcl.one`;
     }
   };
 
@@ -3682,34 +3686,33 @@ Begin. — skillcl.one`;
               </h2>
             </div>
 
-            {/* Cards — scaled up from base, pixel-perfect same design */}
+            {/* Cards — MTG-style frames matching the hand */}
             {(() => {
-              const baseW = isMobile ? 90 : 120;
-              const targetW = isMobile ? 200 : 300;
-              const s = targetW / baseW; // ~2.17 desktop, ~2 mobile
-              const baseH = baseW * (4 / 3);
-              const targetH = baseH * s;
+              const cardW = isMobile ? 160 : 260;
+              const cardH = Math.round(cardW * 1.4);
               return (
                 <div style={{
                   display: 'flex',
-                  gap: isMobile ? '12px' : '20px',
+                  gap: isMobile ? '14px' : '24px',
                   alignItems: 'flex-start',
                   justifyContent: 'center',
                 }}>
                   {revealCards.map(({ catId, mod, cat }, i) => {
-                    const rc = parseInt(cat.color.slice(1,3),16);
-                    const gc = parseInt(cat.color.slice(3,5),16);
-                    const bc = parseInt(cat.color.slice(5,7),16);
+                    const r = parseInt(cat.color.slice(1,3),16);
+                    const g = parseInt(cat.color.slice(3,5),16);
+                    const b = parseInt(cat.color.slice(5,7),16);
+                    const handIconKey = catId === 'custom' ? (mod._source === 'wikipedia' ? 'discovered' : 'custom') : cat.icon;
+                    const HandIcon = CATEGORY_ICONS[handIconKey] || Star;
                     return (
                     <div key={mod.id}
                       className="hand-card"
                       style={{
-                        '--hand-glow': `rgba(${rc},${gc},${bc},0.2)`,
+                        '--hand-glow': `rgba(${r},${g},${b},0.2)`,
                         animation: `fadeInUp 0.6s ${0.15 + i * 0.15}s ease-out both`,
-                        width: `${targetW}px`,
-                        height: `${targetH}px`,
+                        width: `${cardW}px`,
+                        height: `${cardH}px`,
+                        borderRadius: isMobile ? '10px' : '12px',
                         position: 'relative',
-                        borderRadius: `${10 * s}px`,
                         overflow: 'visible',
                       }}
                       onMouseOver={(e) => {
@@ -3724,15 +3727,100 @@ Begin. — skillcl.one`;
                         e.currentTarget.style.zIndex = '';
                       }}
                     >
+                      {/* MTG-style card frame */}
                       <div style={{
-                        transform: `scale(${s})`,
-                        transformOrigin: 'top left',
-                        position: 'absolute',
-                        top: 0, left: 0,
-                        pointerEvents: 'none',
+                        position: 'absolute', inset: 0, borderRadius: 'inherit', overflow: 'hidden',
+                        background: `linear-gradient(180deg, ${cat.color}50 0%, rgba(${r},${g},${b},0.25) 8%, rgba(22,22,30,0.98) 15%, rgba(18,18,26,0.99) 85%, rgba(${r},${g},${b},0.25) 92%, ${cat.color}50 100%)`,
+                        padding: isMobile ? '3px' : '3.5px',
                       }}>
-                        {renderGlassCard({ catId, mod, cat }, i, { large: true, forceRender: true })}
+                        <div style={{
+                          width: '100%', height: '100%', borderRadius: isMobile ? '7px' : '9px', overflow: 'hidden', position: 'relative',
+                          background: `linear-gradient(180deg, rgba(${r},${g},${b},0.08) 0%, rgba(10,10,16,0.99) 100%)`,
+                          display: 'flex', flexDirection: 'column',
+                        }}>
+                          {/* === NAME BANNER === */}
+                          <div style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            padding: isMobile ? '8px 10px 6px' : '10px 14px 8px',
+                            background: `linear-gradient(180deg, rgba(${r},${g},${b},0.18) 0%, rgba(${r},${g},${b},0.06) 100%)`,
+                            borderBottom: `1px solid rgba(${r},${g},${b},0.15)`,
+                            minHeight: 0,
+                          }}>
+                            <div style={{
+                              fontSize: isMobile ? '13px' : '16px', fontWeight: 800, color: 'rgba(255,255,255,0.92)',
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                              flex: 1, letterSpacing: '-0.2px', textTransform: 'uppercase',
+                              textShadow: '0 1px 2px rgba(0,0,0,0.6)',
+                            }}>{mod.name}</div>
+                            <div style={{
+                              fontSize: isMobile ? '13px' : '15px', fontWeight: 900, color: cat.color,
+                              fontFamily: 'ui-monospace, monospace', lineHeight: 1, flexShrink: 0, marginLeft: '6px',
+                              textShadow: `0 0 6px rgba(${r},${g},${b},0.5)`,
+                            }}>{mod.power}</div>
+                          </div>
+
+                          {/* === ART BOX === */}
+                          <div style={{
+                            flex: '1 1 auto', position: 'relative',
+                            margin: isMobile ? '4px 6px' : '5px 8px',
+                            borderRadius: isMobile ? '4px' : '5px',
+                            background: `radial-gradient(ellipse at 50% 40%, rgba(${r},${g},${b},0.15) 0%, rgba(${r},${g},${b},0.04) 50%, rgba(8,8,14,0.95) 100%)`,
+                            border: `1px solid rgba(${r},${g},${b},0.1)`,
+                            overflow: 'hidden',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            <div style={{ position: 'absolute', inset: 0, opacity: 0.3, background: `radial-gradient(circle at 30% 20%, rgba(${r},${g},${b},0.2) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(${r},${g},${b},0.1) 0%, transparent 40%)`, pointerEvents: 'none' }} />
+                            <div style={{
+                              filter: `drop-shadow(0 0 ${isMobile ? '12px' : '20px'} rgba(${r},${g},${b},0.4)) drop-shadow(0 2px 4px rgba(0,0,0,0.6))`,
+                              position: 'relative', zIndex: 1,
+                            }}>
+                              <CardIcon icon={HandIcon} size={isMobile ? 48 : 68} color={cat.color} />
+                            </div>
+                          </div>
+
+                          {/* === TYPE LINE === */}
+                          <div style={{
+                            padding: isMobile ? '4px 10px' : '5px 14px',
+                            background: `linear-gradient(180deg, rgba(${r},${g},${b},0.1) 0%, rgba(${r},${g},${b},0.04) 100%)`,
+                            borderTop: `1px solid rgba(${r},${g},${b},0.1)`,
+                            borderBottom: `1px solid rgba(${r},${g},${b},0.1)`,
+                            display: 'flex', alignItems: 'center', gap: '5px',
+                          }}>
+                            <CardIcon icon={HandIcon} size={isMobile ? 12 : 14} color={cat.color} />
+                            <div style={{
+                              fontSize: isMobile ? '10px' : '12px', fontWeight: 600, color: `rgba(${r},${g},${b},0.68)`,
+                              letterSpacing: '0.3px', textTransform: 'uppercase',
+                            }}>{cat.name || (catId === 'custom' ? (mod._source === 'wikipedia' ? 'Discovered' : 'Custom') : catId)}</div>
+                          </div>
+
+                          {/* === TEXT BOX — specs === */}
+                          <div style={{
+                            padding: isMobile ? '8px 10px 10px' : '8px 14px 12px',
+                            flex: '0 0 auto', minHeight: isMobile ? '40px' : '52px',
+                            display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: '2px',
+                          }}>
+                            <div className="hand-card-specs" style={{
+                              fontSize: isMobile ? '10px' : '12.5px', color: 'rgba(255,255,255,0.64)',
+                              lineHeight: 1.35, overflow: 'hidden',
+                              display: '-webkit-box', WebkitLineClamp: isMobile ? 3 : 4, WebkitBoxOrient: 'vertical',
+                            }}>{mod.specs}</div>
+                          </div>
+
+                          {/* Foil shimmer overlay */}
+                          <div className="hand-card-foil" style={{
+                            position: 'absolute', inset: 0, borderRadius: 'inherit', pointerEvents: 'none',
+                            background: `linear-gradient(115deg, transparent 25%, rgba(255,255,255,0.06) 42%, rgba(${r},${g},${b},0.08) 50%, rgba(255,255,255,0.04) 58%, transparent 75%)`,
+                            backgroundSize: '200% 200%', backgroundPosition: '-100% -100%',
+                            opacity: 0, transition: 'opacity 0.2s ease',
+                          }} />
+                        </div>
                       </div>
+                      {/* Card drop shadow */}
+                      <div style={{
+                        position: 'absolute', inset: '2px', top: '4px', borderRadius: 'inherit',
+                        background: 'transparent', pointerEvents: 'none', zIndex: -1,
+                        boxShadow: `0 4px 10px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.35), 0 0 20px rgba(${r},${g},${b},0.1)`,
+                      }} />
                     </div>
                     );
                   })}
