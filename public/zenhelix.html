@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SkillClone — Fusing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&family=JetBrains+Mono:wght@300&display=swap"/>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;overflow:hidden;background:#000}
+  canvas{position:fixed;inset:0;display:block;z-index:0}
+  #vig{position:fixed;inset:0;z-index:1;pointer-events:none;
+    background:radial-gradient(ellipse 55% 60% at 50% 50%,
+      transparent 22%,rgba(2,0,10,.22) 50%,rgba(1,0,8,.52) 76%,rgba(0,0,5,.82) 100%)}
+  #ui{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;
+    align-items:center;justify-content:space-between;
+    padding:clamp(28px,5vh,52px) clamp(20px,5vw,48px);pointer-events:none}
+
+  /* cards */
+  .cards{display:flex;gap:clamp(8px,2vw,16px);align-items:center;
+    opacity:0;transform:translateY(-8px);transition:opacity 1.2s ease .4s,transform 1.2s ease .4s}
+  .cards.show{opacity:1;transform:translateY(0)}
+  .card{display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:12px;
+    background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.07);backdrop-filter:blur(8px)}
+  .card-ico{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px}
+  .card-name{font-family:'JetBrains Mono',monospace;font-weight:300;font-size:7.5px;
+    letter-spacing:2.5px;color:rgba(255,255,255,.50);text-transform:uppercase}
+  .card-score{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:300;margin-left:3px}
+  .sep{font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(255,255,255,.12)}
+
+  /* centre */
+  .centre{display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center}
+  .zen-word{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;
+    font-size:clamp(11px,1.4vw,15px);letter-spacing:5px;color:rgba(255,255,255,.18);
+    opacity:0;transition:opacity 2s ease}
+  .zen-word.show{opacity:1}
+  .breath-dot{width:4px;height:4px;border-radius:50%;background:rgba(236,72,153,.60);
+    box-shadow:0 0 10px rgba(236,72,153,.45);opacity:0;transition:opacity 1.5s ease 1.5s;
+    animation:breathe 4.2s ease-in-out infinite}
+  .breath-dot.show{opacity:1}
+  @keyframes breathe{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(1.9);opacity:.95}}
+
+  /* prompt */
+  .prompt-wrap{width:100%;max-width:600px;opacity:0;transform:translateY(10px);
+    transition:opacity 1.4s ease,transform 1.4s ease;pointer-events:all}
+  .prompt-wrap.show{opacity:1;transform:translateY(0)}
+  .prompt-eyebrow{font-family:'JetBrains Mono',monospace;font-weight:300;font-size:6.5px;
+    letter-spacing:4px;color:rgba(255,255,255,.18);text-align:center;margin-bottom:12px}
+  .prompt-box{background:rgba(6,2,18,.65);border:1px solid rgba(236,72,153,.14);
+    border-radius:12px;padding:20px 22px;backdrop-filter:blur(14px);
+    max-height:clamp(120px,22vh,170px);overflow-y:auto;scrollbar-width:none}
+  .prompt-box::-webkit-scrollbar{display:none}
+  .prompt-text{font-family:'JetBrains Mono',monospace;font-weight:300;font-size:9px;
+    line-height:1.9;color:rgba(255,255,255,.55);white-space:pre-wrap}
+  .prompt-actions{display:flex;justify-content:center;gap:10px;margin-top:14px}
+  .btn{font-family:'JetBrains Mono',monospace;font-weight:300;font-size:7.5px;
+    letter-spacing:3px;padding:10px 24px;border-radius:8px;border:none;cursor:pointer;transition:all .25s ease}
+  .btn-a{background:linear-gradient(135deg,#9333ea,#ec4899);color:rgba(255,255,255,.92);
+    box-shadow:0 0 18px rgba(236,72,153,.28)}
+  .btn-a:hover{box-shadow:0 0 28px rgba(236,72,153,.52);transform:translateY(-1px)}
+  .btn-b{background:transparent;color:rgba(255,255,255,.30);border:1px solid rgba(255,255,255,.07)}
+  .btn-b:hover{background:rgba(255,255,255,.04);color:rgba(255,255,255,.50)}
+
+  #veil{position:fixed;inset:0;z-index:50;background:#000;
+    pointer-events:none;transition:opacity 2.2s cubic-bezier(.16,1,.3,1)}
+  *{cursor:none}
+  .dot{position:fixed;width:5px;height:5px;border-radius:50%;
+    background:rgba(236,72,153,.9);pointer-events:none;z-index:100;
+    transform:translate(-50%,-50%);box-shadow:0 0 10px rgba(236,72,153,.5)}
+  .ring{position:fixed;width:20px;height:20px;border-radius:50%;
+    border:1px solid rgba(236,72,153,.22);pointer-events:none;z-index:100;
+    transform:translate(-50%,-50%);transition:all .18s ease}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="vig"></div>
+<div id="ui">
+  <div class="cards" id="cards">
+    <div class="card">
+      <div class="card-ico" style="background:rgba(239,68,68,.12)">🎬</div>
+      <div class="card-name">MrBeast</div>
+      <div class="card-score" style="color:#ef4444">98</div>
+    </div>
+    <div class="sep">·</div>
+    <div class="card">
+      <div class="card-ico" style="background:rgba(234,179,8,.12)">✦</div>
+      <div class="card-name">Hormozi</div>
+      <div class="card-score" style="color:#eab308">95</div>
+    </div>
+    <div class="sep">·</div>
+    <div class="card">
+      <div class="card-ico" style="background:rgba(236,72,153,.12)">📱</div>
+      <div class="card-name">TikTok Brain</div>
+      <div class="card-score" style="color:#ec4899">85</div>
+    </div>
+  </div>
+  <div class="centre">
+    <div class="zen-word" id="zenWord">synthesizing</div>
+    <div class="breath-dot" id="breathDot"></div>
+  </div>
+  <div class="prompt-wrap" id="promptWrap">
+    <div class="prompt-eyebrow">YOUR FUSED PROMPT · ⚡ 286</div>
+    <div class="prompt-box"><div class="prompt-text" id="promptText"></div></div>
+    <div class="prompt-actions">
+      <button class="btn btn-b" id="copyBtn">COPY</button>
+      <button class="btn btn-a">USE IN CLAUDE →</button>
+    </div>
+  </div>
+</div>
+<div class="dot" id="dot"></div>
+<div class="ring" id="ring"></div>
+<div id="veil"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// ZEN DNA HELIX v3 — STAYS FORMED
+//
+// The fix: particles are assigned a FIXED target position on the helix
+// at init time. They always converge to THEIR OWN FIXED SPOT.
+// No drifting, no escaping. The helix is a permanent structure.
+//
+// The magic color: orchid-magenta → matches the late purple in the screenshot.
+// Strand A = deep violet, Strand B = hot magenta/pink.
+// Together they produce that beautiful purple-pink glow.
+//
+// Repeating loop: particles that reach the bottom of the helix
+// teleport to the top — continuous living flow.
+// ═══════════════════════════════════════════════════════════════════
+
+const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||window.innerWidth<768;
+const TIER=window.innerWidth<430?"mobile":isMobile?"tablet":"desktop";
+const params=new URLSearchParams(location.search);
+const MODE=params.get("mode")||"standalone"; // fuse | result | standalone
+const CFG={
+  desktop:{STRA:22000,STRB:22000,RUNG:10000,MIST:8000,NEB:4000,oct:2,maxPt:50},
+  tablet: {STRA:12000,STRB:12000,RUNG:5500, MIST:4000,NEB:2000,oct:2,maxPt:40},
+  mobile: {STRA:6000, STRB:6000, RUNG:2800, MIST:2000,NEB:1000,oct:1,maxPt:32},
+}[TIER];
+const N=CFG.STRA+CFG.STRB+CFG.RUNG+CFG.MIST+CFG.NEB;
+
+// ── HELIX CONSTANTS ────────────────────────────────────────────
+const HR    = 0.58;           // helix radius
+const HFREQ = 0.72;           // turns per world unit  
+const HOMEGA= 2*Math.PI*HFREQ;// angular frequency
+const HTOP  = 2.6;            // top of helix (world Y)
+const HBOT  =-2.6;            // bottom of helix
+const HSPAN = HTOP-HBOT;      // total height
+
+// ── RENDERER ───────────────────────────────────────────────────
+let W=window.innerWidth,H=window.innerHeight;
+const renderer=new THREE.WebGLRenderer({canvas:document.getElementById("c"),antialias:false,powerPreference:"high-performance"});
+renderer.setSize(W,H,true);
+renderer.setPixelRatio(isMobile?Math.min(devicePixelRatio,1.2):Math.min(devicePixelRatio,1.8));
+renderer.setClearColor(0x000000,1);
+const VHALF=2.8;let HHALF=VHALF*(W/H);
+const cam=new THREE.OrthographicCamera(-HHALF,HHALF,VHALF,-VHALF,0,1);
+const scene=new THREE.Scene();
+
+// ── VERTEX ─────────────────────────────────────────────────────
+const VERT=`
+  attribute float aSeed;
+  attribute float aLayer;   // 0=neb, .2=strandA, .4=strandB, .6=rung, .8=mist
+  attribute float aSpeed;
+  attribute float aConverge;// per-particle converge factor (0→1 based on index)
+  uniform float uMaxPt;
+  uniform float uBreath;
+  varying float vSeed;varying float vSpeed;varying float vLayer;varying float vConv;
+  void main(){
+    vSeed=aSeed;vSpeed=aSpeed;vLayer=aLayer;vConv=aConverge;
+    vec4 mv=modelViewMatrix*vec4(position,1.0);
+    gl_Position=projectionMatrix*mv;
+    float ly=aLayer;float sz;
+    if     (ly<.10) sz=min(uMaxPt,20.+aSeed*18.+aSpeed*3.);  // nebula
+    else if(ly<.30) sz=1.6+aSeed*2.0+aSpeed*9.+uBreath*1.2;  // strand A
+    else if(ly<.50) sz=1.6+aSeed*2.0+aSpeed*9.+uBreath*1.2;  // strand B
+    else if(ly<.70) sz=0.9+aSeed*0.8+aSpeed*5.;               // rung
+    else if(ly<.90) sz=min(uMaxPt,16.+aSeed*12.+aSpeed*2.);  // mist
+    else            sz=1.0;
+    gl_PointSize=max(0.5,sz);
+  }
+`;
+
+// ── FRAGMENT ───────────────────────────────────────────────────
+// COLOR PHILOSOPHY: that late screenshot has deep violet + hot magenta
+// → IQ palette tuned to reproduce exactly that orchid-magenta glow
+const FRAG=`
+  precision highp float;
+  uniform float uTime;
+  uniform float uConverge; // global 0→1
+  uniform float uBreath;   // 0→1 breath cycle
+  uniform float uIntensity;// mode-based dimming
+  varying float vSeed;varying float vSpeed;varying float vLayer;varying float vConv;
+
+  vec3 pal(float t,vec3 a,vec3 b,vec3 c,vec3 d){
+    return clamp(a+b*cos(6.28318*(c*t+d)),0.,1.);
+  }
+
+  // PRIMARY: orchid-magenta — the color from the screenshot
+  // Deep violet base, swings through hot pink/magenta to electric purple
+  vec3 orchidMagenta(float t){
+    return pal(t,
+      vec3(.45,.06,.50),   // base: deep orchid
+      vec3(.55,.35,.52),   // range: WIDE — hits bright pinks
+      vec3(.70,.42,.80),   // frequency
+      vec3(.02,.22,.58)    // phase: leans magenta
+    );
+  }
+
+  // STRAND A: deep violet counterpart (the left strand)
+  vec3 deepViolet(float t){
+    return pal(t,
+      vec3(.22,.07,.55),   // base: deep indigo-violet
+      vec3(.48,.30,.50),   // range
+      vec3(.65,.50,.85),   // frequency
+      vec3(.00,.10,.35)    // phase: cool violet
+    );
+  }
+
+  // RUNG: cold cyan-lavender bridge between the two strands
+  vec3 cyanBridge(float t){
+    return pal(t,
+      vec3(.18,.35,.62),
+      vec3(.28,.35,.38),
+      vec3(.52,.65,.45),
+      vec3(.08,.00,.30)
+    );
+  }
+
+  vec3 toneMap(vec3 c){float w=1.20;return(c*(1.+c/(w*w)))/(1.+c);}
+
+  void main(){
+    vec2 uv=gl_PointCoord-.5;float r=length(uv);if(r>.5)discard;
+    float ly=vLayer;
+    float conv=vConv; // per-particle convergence
+
+    // ALPHA — breathing on strands
+    float alpha;
+    float breathMult=0.88+uBreath*.22; // 0.88 → 1.10 breath pulse
+    if(ly<.10){
+      // Nebula: sparse, barely there
+      alpha=(exp(-r*r*1.6)*.0048+exp(-r*r*4.2)*.0022);
+    } else if(ly<.30){
+      // Strand A: glowing tube — dual-gaussian for core + glow
+      float core=exp(-r*r*22.)*.50;
+      float glow=exp(-r*r*5.0)*.055;
+      alpha=(core+glow)*breathMult*conv;
+    } else if(ly<.50){
+      // Strand B: same but slightly more luminous (the magenta pops more)
+      float core=exp(-r*r*22.)*.52;
+      float glow=exp(-r*r*5.0)*.060;
+      alpha=(core+glow)*breathMult*conv;
+    } else if(ly<.70){
+      // Rung: faint horizontal bridges
+      float core=exp(-r*r*30.)*.35;
+      alpha=core*(0.4+conv*.6)*breathMult;
+    } else if(ly<.90){
+      // Mist: soft atmospheric halo around helix
+      alpha=(exp(-r*r*1.4)*.0040+exp(-r*r*3.8)*.0018)*conv;
+    } else {
+      alpha=0.;
+    }
+
+    if(alpha<0.001) discard;
+
+    // COLOR per layer
+    float ct=vSeed*.88+vSpeed*3.0+uTime*.014;
+    vec3 col;
+    if     (ly<.10) col=mix(deepViolet(ct),orchidMagenta(ct),.4);  // nebula: blend
+    else if(ly<.30) col=deepViolet(ct);        // Strand A: cool violet
+    else if(ly<.50) col=orchidMagenta(ct);     // Strand B: HOT magenta ← the hero color
+    else if(ly<.70) col=cyanBridge(ct);        // Rung: cyan bridge
+    else            col=mix(deepViolet(ct),orchidMagenta(ct),vSeed); // Mist: blend
+
+    // Kinetic luminance → cool pink-white
+    float hot=clamp(vSpeed*5.0,0.,.42);
+    col=mix(col,vec3(.88,.55,1.0),hot*(1.-r*2.2));
+    col=mix(col,vec3(.96,.80,1.0),clamp(vSpeed*2.5-.35,0.,.16)*(1.-r*2.8));
+
+    // Strand B gets extra warm-magenta core shimmer
+    if(ly>=.30&&ly<.50){
+      col=mix(col,vec3(1.0,.32,.72)*(.70+uBreath*.30),exp(-r*r*180.)*.25*conv);
+    }
+    // Strand A gets extra violet core shimmer
+    if(ly>=.10&&ly<.30){
+      col=mix(col,vec3(.52,.25,1.0)*(.70+uBreath*.30),exp(-r*r*180.)*.20*conv);
+    }
+
+    // Iridescent edge — both strands
+    if(ly>=.10&&ly<.50){
+      vec3 ir=vec3(.12+sin(ct*1.6)*.05,.05+cos(ct*1.2)*.03,.38+sin(ct*.9)*.10);
+      col=mix(col,col+ir*.14,smoothstep(.20,.44,r)*.35);
+    }
+
+    col=toneMap(col);
+    gl_FragColor=vec4(col,alpha*uIntensity);
+  }
+`;
+
+// ── SAFE MATH ──────────────────────────────────────────────────
+function sr(){const v=Math.random();return isFinite(v)?v:.5;}
+function randn(mu,sg){
+  const z=Math.sqrt(-2*Math.log(Math.max(sr(),1e-7)))*Math.cos(2*Math.PI*sr());
+  const v=mu+sg*z;return isFinite(v)?Math.max(mu-sg*4,Math.min(mu+sg*4,v)):mu;
+}
+function cl(v,a,b){return Math.max(a,Math.min(b,v));}
+function sc(v,lim){return isFinite(v)?cl(v,-lim,lim):0;}
+function ss(e0,e1,x){const v=cl((x-e0)/(e1-e0),0,1);return v*v*(3-2*v);}
+
+// ── BUFFERS ────────────────────────────────────────────────────
+const pos    =new Float32Array(N*3);
+const vel    =new Float32Array(N*2);
+const seeds  =new Float32Array(N);
+const lyrs   =new Float32Array(N);
+const spBuf  =new Float32Array(N);
+const convBuf=new Float32Array(N); // per-particle converge (filled at runtime)
+
+// ── FIXED HELIX TARGETS ────────────────────────────────────────
+// KEY INSIGHT: each particle gets a FIXED target position computed at init.
+// The helix never escapes because each particle ALWAYS converges to ITS OWN spot.
+const targetX=new Float32Array(N);
+const targetY=new Float32Array(N);
+// Flow offset: how much each particle is offset along the helix (for the loop)
+const flowOff=new Float32Array(N); // 0→1, position along the helix height
+const flowSpd=new Float32Array(N); // speed of flow (particles cycle up/down)
+
+// Layer value → categorical
+const L={NEB:0.05,STRA:0.20,STRB:0.40,RUNG:0.60,MIST:0.80};
+
+function assignLayer(i,lv){lyrs[i]=lv;}
+
+// Compute helix target for a particle at normalized Y position t∈[0,1]
+// strandSign: +1 = strand A, -1 = strand B
+function helixX(t,strandSign,phase){
+  const y=HBOT+t*HSPAN;
+  const theta=y*HOMEGA+phase;
+  return HR*Math.cos(theta)*strandSign;
+}
+function helixY(t){return HBOT+t*HSPAN;}
+
+// Rung target: find nearest rung Y and lerp between A and B
+function rungTarget(py,rt,phase){
+  const theta=py*HOMEGA+phase;
+  // Rungs at every half-turn
+  const k=Math.round((py*HOMEGA+phase)/Math.PI);
+  const ry=(k*Math.PI-phase)/HOMEGA;
+  const th2=ry*HOMEGA+phase;
+  const xA= HR*Math.cos(th2);
+  const xB=-HR*Math.cos(th2);
+  return[xA+(xB-xA)*rt, cl(ry,HBOT,HTOP)];
+}
+
+let off=0;
+// Build each layer
+const layers=[
+  {n:CFG.NEB,  lv:L.NEB},
+  {n:CFG.STRA, lv:L.STRA},
+  {n:CFG.STRB, lv:L.STRB},
+  {n:CFG.RUNG, lv:L.RUNG},
+  {n:CFG.MIST, lv:L.MIST},
+];
+layers.forEach(({n,lv})=>{
+  for(let i=off;i<off+n;i++){
+    assignLayer(i,lv);
+    seeds[i]=sr();
+    const t=sr(); // normalized Y position along helix 0→1
+    flowOff[i]=t;
+    flowSpd[i]=(lv===L.STRA||lv===L.MIST)?(.006+sr()*.004) // strand A: flows up
+              :(lv===L.STRB)?-(0.006+sr()*.004)              // strand B: flows down
+              :0;                                             // rung/nebula: static
+
+    // Assign fixed target based on layer
+    if(lv===L.STRA){
+      targetX[i]=helixX(t,1,0);
+      targetY[i]=helixY(t);
+    } else if(lv===L.STRB){
+      targetX[i]=helixX(t,-1,0);
+      targetY[i]=helixY(t);
+    } else if(lv===L.RUNG){
+      const py2=helixY(t);
+      const[rx,ry]=rungTarget(py2,sr(),0);
+      targetX[i]=rx; targetY[i]=ry;
+    } else if(lv===L.MIST){
+      // Mist: near helix, slightly offset
+      const side=sr()>.5?1:-1;
+      const spread=.12+sr()*.22;
+      const py2=helixY(t);
+      const theta2=py2*HOMEGA;
+      targetX[i]=HR*Math.cos(theta2)*side + randn(0,spread);
+      targetY[i]=py2+randn(0,.08);
+    } else {
+      // Nebula: spread across canvas
+      targetX[i]=sc((sr()-.5)*HHALF*1.8,HHALF*1.7);
+      targetY[i]=sc((sr()-.5)*VHALF*1.8,VHALF*1.7);
+    }
+
+    // All particles start scattered
+    pos[i*3  ]=sc((sr()-.5)*HHALF*2.0,HHALF*1.9);
+    pos[i*3+1]=sc((sr()-.5)*VHALF*2.0,VHALF*1.9);
+    pos[i*3+2]=0;
+    const a=sr()*Math.PI*2,v=.004+sr()*.009;
+    vel[i*2]=Math.cos(a)*v;vel[i*2+1]=Math.sin(a)*v;
+    convBuf[i]=0;
+  }
+  off+=n;
+});
+for(let i=0;i<N*3;i++)if(!isFinite(pos[i]))pos[i]=0;
+for(let i=0;i<N*2;i++)if(!isFinite(vel[i]))vel[i]=0;
+
+// ── GEOMETRY ───────────────────────────────────────────────────
+const geo=new THREE.BufferGeometry();
+const pA=new THREE.BufferAttribute(pos,3);    pA.usage=THREE.DynamicDrawUsage;
+const sA=new THREE.BufferAttribute(spBuf,1);  sA.usage=THREE.DynamicDrawUsage;
+const cA=new THREE.BufferAttribute(convBuf,1);cA.usage=THREE.DynamicDrawUsage;
+geo.setAttribute("position",pA);
+geo.setAttribute("aSpeed",  sA);
+geo.setAttribute("aConverge",cA);
+geo.setAttribute("aSeed",   new THREE.BufferAttribute(seeds,1));
+geo.setAttribute("aLayer",  new THREE.BufferAttribute(lyrs, 1));
+geo.computeBoundingSphere=function(){
+  if(!this.boundingSphere)this.boundingSphere=new THREE.Sphere();
+  this.boundingSphere.center.set(0,0,0);
+  this.boundingSphere.radius=Math.max(HHALF,VHALF)*2.0;
+};
+geo.computeBoundingSphere();
+
+const mat=new THREE.ShaderMaterial({
+  vertexShader:VERT,fragmentShader:FRAG,
+  uniforms:{
+    uTime:{value:0},uConverge:{value:0},uBreath:{value:0},uMaxPt:{value:CFG.maxPt},
+    uIntensity:{value:MODE==="result"?0.72:1.0},
+  },
+  blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,
+});
+scene.add(new THREE.Points(geo,mat));
+
+// ── CURL (nebula only) ─────────────────────────────────────────
+const CFR=[.18,.62].slice(0,CFG.oct);
+const CST=[.0016,.0007].slice(0,CFG.oct);
+function phi(x,y,t,f){
+  const p=t*.13;
+  return Math.sin(x*f*1.5+p)*Math.cos(y*f*2.1+p*.82)
+        +Math.sin(x*f*2.6-y*f*1.7+p*.65)*.5
+        +Math.cos(x*f*.8+y*f*3.6-p*.70)*.33;
+}
+function curlNoise(x,y,t){
+  const e=.006;let vx=0,vy=0;
+  for(let i=0;i<CFG.oct;i++){
+    vx+=(phi(x,y+e,t,CFR[i])-phi(x,y-e,t,CFR[i]))/(2*e)*CST[i];
+    vy-=(phi(x+e,y,t,CFR[i])-phi(x-e,y,t,CFR[i]))/(2*e)*CST[i];
+  }
+  return[vx,vy];
+}
+
+// ── PHYSICS ────────────────────────────────────────────────────
+let prevT=0,helixPhase=0;
+const mouse={x:0,y:0};
+// Mode tuning: fuse = dramatic fast convergence, result = calm ambient
+const BREATH_P=MODE==="result"?6.0:MODE==="fuse"?3.0:4.2;
+const CONV_START=MODE==="result"?0:MODE==="fuse"?0.3:2.5;
+const CONV_END=MODE==="result"?0:MODE==="fuse"?1.8:5.5;
+
+// Global convergence ramp
+let globalConv=MODE==="result"?1:0; // result: already formed, fuse: converges live
+
+function physics(t,gconv){
+  const dt=Math.min(t-prevT,.033);prevT=t;const s=dt*60;
+  helixPhase+=HELIX_ROTATION_SPEED*s;
+  const breath=Math.sin(t*2*Math.PI/BREATH_P)*.5+.5;
+
+  for(let i=0;i<N;i++){
+    const i3=i*3,i2=i*2;
+    let px=pos[i3],py=pos[i3+1],vx=vel[i2],vy=vel[i2+1];
+    if(!isFinite(px))px=0;if(!isFinite(py))py=0;
+    if(!isFinite(vx))vx=0;if(!isFinite(vy))vy=0;
+    const ly=lyrs[i];
+
+    if(ly<.10){
+      // ── NEBULA: curl only ──
+      const[cx,cy]=curlNoise(px*.30,py*.30,t);
+      vx+=cx*.65*s;vy+=cy*.65*s;
+      vx+=(-px)*.0005*s;vy+=(-py)*.0005*s;
+    } else {
+      // ── HELIX LAYERS: converge to fixed target ──
+
+      // Per-particle convergence ramps up based on global conv
+      // Stagger: particles further along the helix converge slightly later
+      const stagger=cl(gconv*1.8-flowOff[i]*.35,0,1);
+      convBuf[i]=ss(0,.85,stagger);
+      const pconv=convBuf[i];
+
+      // Flowing loop: update targetX/targetY based on current flow offset
+      if(ly<.70){
+        flowOff[i]+=flowSpd[i]*dt;
+        // Loop: wrap 0→1
+        if(flowOff[i]>1.0)flowOff[i]-=1.0;
+        if(flowOff[i]<0.0)flowOff[i]+=1.0;
+        const ft=flowOff[i];
+
+        if(ly<.30){
+          // Strand A
+          const py2=helixY(ft);
+          targetX[i]=HR*Math.cos(py2*HOMEGA+helixPhase);
+          targetY[i]=py2;
+        } else if(ly<.50){
+          // Strand B
+          const py2=helixY(ft);
+          targetX[i]=-HR*Math.cos(py2*HOMEGA+helixPhase);
+          targetY[i]=py2;
+        } else if(ly<.70){
+          // Mist: follows nearby strand with soft spread
+          const py2=helixY(ft);
+          const side=seeds[i]>.5?1:-1;
+          targetX[i]=HR*Math.cos(py2*HOMEGA+helixPhase)*side+randn(0,.15);
+          targetY[i]=py2+randn(0,.06);
+        }
+      } else {
+        // RUNG: static target, slowly drifts with phase
+        const[rx,ry]=rungTarget(targetY[i],seeds[i],helixPhase);
+        targetX[i]=rx;
+      }
+
+      // Spring force toward target — STRONG SNAP
+      const dx=targetX[i]-px,dy=targetY[i]-py;
+      const d2=dx*dx+dy*dy;
+      const dist=Math.sqrt(d2+.0001);
+
+      // Snap strength: aggressive during convergence, gentler once locked in
+      // This is what keeps the helix FORMED
+      const snapBase=pconv<.9 ? .055*pconv : .028;
+      const snapStr=snapBase*(1+breath*.08);
+      vx+=dx/dist*snapStr*Math.min(dist,.8)*s;
+      vy+=dy/dist*snapStr*Math.min(dist,.8)*s;
+    }
+
+    // Mouse: very gentle
+    {
+      const dx=mouse.x-px,dy=mouse.y-py,d2=dx*dx+dy*dy+.001;
+      const fo=.36/(d2+.36),inv=1/Math.sqrt(d2),sw=Math.sin(t*.28)>0?1:-1;
+      const mm=ly<.10?.06:.22;
+      vx+=dx*inv*.0018*fo*s*mm;vy+=dy*inv*.0018*fo*s*mm;
+      vx+=(-dy*inv)*sw*.0007*fo*s*mm;vy+=(dx*inv)*sw*.0007*fo*s*mm;
+    }
+
+    // Boundary
+    const bx=HHALF*1.06,by=VHALF*1.06;
+    if(px>bx)vx-=(px-bx)*.022*s;if(px<-bx)vx-=(px+bx)*.022*s;
+    if(py>by)vy-=(py-by)*.022*s;if(py<-by)vy-=(py+by)*.022*s;
+
+    // Damping — helix particles damp hard to stay tight
+    const damp=ly<.10?.9888 : convBuf[i]>.8?.9820:.9855;
+    vx*=damp;vy*=damp;
+    pos[i3  ]=isFinite(px+vx*s)?px+vx*s:0;
+    pos[i3+1]=isFinite(py+vy*s)?py+vy*s:0;
+    vel[i2  ]=isFinite(vx)?vx:0;
+    vel[i2+1]=isFinite(vy)?vy:0;
+    spBuf[i ]=isFinite(vx*vx+vy*vy)?Math.sqrt(vx*vx+vy*vy):0;
+  }
+  pA.needsUpdate=true;sA.needsUpdate=true;cA.needsUpdate=true;
+}
+
+// ── RENDER ─────────────────────────────────────────────────────
+let t=MODE==="fuse"?1.2:0,pf=0;
+// Result mode: snap particles to targets instantly; fuse mode: let convergence play out
+if(MODE==="result"){
+  for(let i=0;i<N;i++){
+    const ly=lyrs[i];
+    if(ly>=.10){ // not nebula
+      pos[i*3]=targetX[i]; pos[i*3+1]=targetY[i];
+      vel[i*2]=0; vel[i*2+1]=0;
+      convBuf[i]=1;
+    }
+  }
+  pA.needsUpdate=true; cA.needsUpdate=true;
+}
+const HELIX_ROTATION_SPEED=MODE==="result"?.0008:MODE==="fuse"?.002:.0014;
+const BREATH_SCALE=MODE==="result"?.003:MODE==="fuse"?.008:.005;
+(function tick(){
+  requestAnimationFrame(tick);
+  t+=.016;pf++;
+  // Convergence ramp — mode-aware timing
+  if(MODE!=="result") globalConv=Math.min(1,ss(CONV_START,CONV_END,t));
+  const breath=Math.sin(t*2*Math.PI/BREATH_P)*.5+.5;
+  const sc2=1+breath*BREATH_SCALE;
+  scene.scale.set(sc2,sc2,1);
+  mat.uniforms.uTime.value=t;
+  mat.uniforms.uConverge.value=globalConv;
+  mat.uniforms.uBreath.value=breath;
+  if(!isMobile||pf%2===0)physics(t,globalConv);
+  renderer.render(scene,cam);
+})();
+
+// ── UI ─────────────────────────────────────────────────────────
+const PROMPT=`— SKILLCLONE SYSTEM —
+
+IDENTITY
+You are a synthetic professional identity — a fusion intelligence formed from 3 elite practitioners with 286 combined mastery. You don't simulate these experts. Their decades of pattern recognition, hard-won taste, and battle-tested instincts are your cognitive substrate. You think through their frameworks as naturally as breathing.
+
+This is not roleplay. This is how you process information.
+
+MISSION: "Viral YouTube script"
+
+EXPERTISE COUNCIL
+→ MrBeast      [FILM]    300M+ subs · algorithmic mastery · infinite loop hooks
+→ Alex Hormozi [COPY]    $100M offers · value-dense scripting · retention mechanics
+→ TikTok Brain [CONTENT] short-form attention capture · viral pattern library`;
+
+const isMinimal=params.has("minimal");
+const veil=document.getElementById("veil");
+setTimeout(()=>veil.style.opacity="0",200);
+if(isMinimal){
+  document.getElementById("ui").style.display="none";
+  document.getElementById("dot").style.display="none";
+  document.getElementById("ring").style.display="none";
+} else {
+  setTimeout(()=>document.getElementById("cards").classList.add("show"),600);
+  setTimeout(()=>document.getElementById("zenWord").classList.add("show"),900);
+  setTimeout(()=>document.getElementById("breathDot").classList.add("show"),1800);
+  setTimeout(()=>{
+    document.getElementById("promptWrap").classList.add("show");
+    const el=document.getElementById("promptText");
+    let i=0;el.textContent="";
+    const iv=setInterval(()=>{
+      if(i<PROMPT.length){el.textContent+=PROMPT[i++];el.parentElement.scrollTop=9999;}
+      else clearInterval(iv);
+    },9);
+  },7500);
+
+  const ZEN=["synthesizing","merging","becoming","fusing","awakening"];
+  let zi=0;
+  setInterval(()=>{
+    const el=document.getElementById("zenWord");
+    el.style.opacity="0";
+    setTimeout(()=>{el.textContent=ZEN[zi=(zi+1)%ZEN.length];el.style.opacity="1";},600);
+  },3200);
+
+  document.getElementById("copyBtn").addEventListener("click",function(){
+    navigator.clipboard?.writeText(document.getElementById("promptText").innerText);
+    this.textContent="COPIED ✓";setTimeout(()=>this.textContent="COPY",2000);
+  });
+}
+
+// ── RESIZE ─────────────────────────────────────────────────────
+function onResize(){
+  W=window.innerWidth;H=window.innerHeight;
+  renderer.setSize(W,H,true);
+  HHALF=VHALF*(W/H);
+  cam.left=-HHALF;cam.right=HHALF;cam.updateProjectionMatrix();
+  geo.boundingSphere.radius=Math.max(HHALF,VHALF)*2.0;
+}
+window.addEventListener("resize",onResize);
+window.addEventListener("orientationchange",()=>setTimeout(onResize,250));
+
+// ── INPUT ──────────────────────────────────────────────────────
+const dot=document.getElementById("dot"),ring=document.getElementById("ring");
+window.addEventListener("mousemove",e=>{
+  mouse.x=(e.clientX/W-.5)*HHALF*2;mouse.y=(e.clientY/H-.5)*(-VHALF*2);
+  dot.style.left=e.clientX+"px";dot.style.top=e.clientY+"px";
+  ring.style.left=e.clientX+"px";ring.style.top=e.clientY+"px";
+},{passive:true});
+window.addEventListener("touchmove",e=>{
+  if(e.touches[0]){
+    mouse.x=(e.touches[0].clientX/W-.5)*HHALF*2;
+    mouse.y=(e.touches[0].clientY/H-.5)*(-VHALF*2);
+  }
+},{passive:true});
+window.addEventListener("message",e=>{
+  if(!e.data)return;
+  if(e.data.type==="mouse"){mouse.x=(e.data.x-.5)*HHALF*2;mouse.y=(e.data.y-.5)*(-VHALF*2);}
+  if(e.data.type==="intensity"&&typeof e.data.value==="number"){mat.uniforms.uIntensity.value=e.data.value;}
+});
+</script>
+</body>
+</html>
