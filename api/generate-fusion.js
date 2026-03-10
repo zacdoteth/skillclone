@@ -1,5 +1,5 @@
 const MODEL = 'claude-sonnet-4-6';
-const PROMPT_CHAR_BUDGET = 3600;
+const PROMPT_CHAR_BUDGET = 4800;
 
 const ARTIFACT_PROFILES = [
   {
@@ -1107,10 +1107,20 @@ function buildFallbackComposition(mission, brief, council) {
   const artifact = ARTIFACT_PROFILES.find(p => p.outputMode === brief.output_mode) || ARTIFACT_PROFILES[1];
   const outputType = brief.output_mode.replace(/_/g, ' ');
 
-  // Build mission-specific expert sections using bridges
+  // Build mission-specific expert sections using genius hints → bridges → generic
   const expertSections = council.map(member => {
+    const geniusHint = getGeniusHint(member.name, brief.output_mode);
     const bridge = findMissionBridge({ catName: member.category || 'custom', name: member.name }, artifact);
     const caps = member.capabilities.slice(0, 2).join(' and ');
+
+    if (geniusHint) {
+      return {
+        name: member.name,
+        role: member.role_label,
+        block: `You apprenticed under ${member.name} and absorbed their instincts for ${caps}. For "${truncate(mission, 50)}": ${geniusHint}. ${member.name} ${member.authority}—channel that judgment into every decision.`,
+        activation: bridge?.angle || member.capabilities.slice(0, 2).join(' / '),
+      };
+    }
 
     if (bridge) {
       return {
@@ -1124,7 +1134,7 @@ function buildFallbackComposition(mission, brief, council) {
     return {
       name: member.name,
       role: member.role_label,
-      block: `You worked alongside ${member.name} and absorbed their instincts for ${caps}. ${member.name} ${member.authority}—apply that judgment directly to "${truncate(mission, 60)}." What would ${member.name} refuse to ship? What would make them proud?`,
+      block: `You worked alongside ${member.name} and absorbed their instincts for ${caps}. ${member.name} ${member.authority}—apply that judgment directly to "${truncate(mission, 60)}." What would ${member.name} refuse to ship?`,
       activation: member.capabilities.slice(0, 2).join(' / '),
     };
   });
@@ -1178,7 +1188,7 @@ function renderOneShotPrompt({ mission, brief, council, composition, compact = f
     .map(section => {
       const member = council.find(item => item.name === section.name);
       const power = member?.power ? ` [${member.power}]` : '';
-      const block = compact ? truncate(section.block, 118) : section.block;
+      const block = compact ? truncate(section.block, 220) : section.block;
       const activation = compact ? truncate(section.activation, 34) : section.activation;
       return `- ${section.name}${power} / ${section.role}: ${block} Activate for ${activation}.`;
     })

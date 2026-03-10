@@ -897,6 +897,118 @@ const GENIUS_HOOKS = {
     landing: 'Structure the page like a Pixar story: Once upon a time (the problem), every day (the pain), one day (the product), because of that (the transformation), until finally (the happy ending with CTA). Make them FEEL before they evaluate.',
     marketplace: 'Every freelancer profile should tell a story: where they started, what they mastered, what they can do for YOU. The marketplace isn\'t a database — it\'s a cast of characters. Give freelancers opinions — "I specialize in..." not "Available for..."',
   },
+
+  // Strategy extras
+  naval: {
+    _default: 'Seek wealth, not money or status. Specific knowledge can\'t be trained. Code and media are permissionless leverage. Play long-term games with long-term people.',
+    ai: 'AI is the ultimate leverage — code that thinks. Build products where AI does the work and you own the distribution. Specific knowledge + AI leverage = escape competition through authenticity.',
+    marketplace: 'The marketplace itself is leverage — it earns while you sleep once network effects kick in. Play long-term: the first 1,000 transactions build the trust that makes the next 100,000 automatic.',
+    tracker: 'Productize yourself: the tracker should feel like a personal advisor, not a data entry form. Specific knowledge about the user\'s habits is the moat. "Escape competition through authenticity" — make the experience unique.',
+  },
+  buffett: {
+    _default: '"Be fearful when others are greedy, greedy when others are fearful." Moats matter. Circle of competence: know what you don\'t know.',
+    marketplace: 'What\'s the moat? Network effects, trust reputation, or data? A marketplace a fool could run — because eventually one will. Focus on the durable competitive advantage, not features.',
+    ecommerce: 'Invest in brands with pricing power. The e-commerce play needs a moat: proprietary products, exclusive partnerships, or community. Commodity products with no moat = race to zero.',
+  },
+  altman: {
+    _default: '"It\'s easier to start a hard company than an easy company." The most successful founders are relentlessly resourceful. Growth solves all problems.',
+    ai: 'AI will be the most transformative technology in human history. Build for the world that\'s coming in 2 years, not the one that exists today. Move fast on big ideas — the window for AI-native products is NOW.',
+    marketplace: 'Talk to users on BOTH sides of the marketplace. The insights are in the conversations. Hire people who get things done. "It\'s easier to build a hard marketplace than an easy one" — pick the hard problem.',
+    tracker: 'Growth solves all problems. Get the first 100 daily active users obsessed with the product. Talk to them weekly. Build what they ask for, not what you think they need.',
+  },
+
+  // Content extras
+  tiktok: {
+    _default: 'First 1 second determines everything. Pattern interrupt immediately. Text on screen always. Watch time is god — loop endings back to beginnings.',
+    landing: 'Apply TikTok pacing to the page: pattern interrupt hero (unexpected visual), text overlay on every section, loop the scroll (CTA brings them back to top). If the hero doesn\'t stop the scroll in 1 second, it fails.',
+    ai: 'AI demos should follow TikTok format: show the result in 1 second, then explain how. "Wait for it" builds retention. The AI response should feel like a viral reveal.',
+  },
+
+  // Engineering extras
+  torvalds: {
+    _default: '"Talk is cheap. Show me the code." Good taste in code matters. Simple data structures + dumb code > smart data structures + clever code.',
+    marketplace: 'The data model is the product. Users, listings, transactions, reviews — get the schema right first, everything else follows. Simple data structures, obvious relationships. Code review should be honest.',
+    ai: '"Talk is cheap. Show me the code." Build the simplest pipeline that works. Don\'t over-abstract. Open source your non-core components — community contributions are free engineering.',
+    tracker: 'Simple data structures: one table for entries, one for goals, one for users. No ORM magic — write queries you can read. Performance matters: the chart must render instantly.',
+  },
+  'ai-eng': {
+    _default: 'Prompt engineering: be specific, use delimiters, give examples. RAG: chunk at ~500 tokens. Agents: ReAct pattern. Stream for UX. Eval constantly — vibes don\'t scale.',
+    tracker: 'Use AI for food recognition (camera input → calories) and insight generation ("You eat 40% more on weekends"). RAG for nutritional database. Prompt: specific format, structured output. Cache common foods.',
+    marketplace: 'AI for matching: embed freelancer skills + project descriptions, vector similarity for recommendations. AI for quality: auto-detect fake reviews, grade portfolio quality. Prompt engineering for the matching algorithm.',
+    landing: 'If the product uses AI, the landing page demo must show real AI output — not screenshots. Stream a live response on the hero section. "See it work" beats "read about it."',
+  },
+  fullstack: {
+    _default: 'Next.js for everything until proven otherwise. Postgres unless you need real-time. TypeScript not optional. Auth: Clerk or Supabase. Monolith first.',
+    marketplace: 'Next.js + Supabase + Stripe Connect. Two user types with role-based views. Real-time for messaging (Supabase Realtime). Search: start with Postgres full-text, upgrade to Algolia when it matters. Ship the MVP in 2 weeks.',
+    tracker: 'Next.js + Supabase. One table for entries. Charts with Recharts or Nivo. PWA for offline access. Auth with Supabase. The entire v1 should be shippable in one weekend.',
+  },
+
+  // Design extras
+  awwwards: {
+    _default: 'First impressions are 50 milliseconds. Every pixel is a decision. Scroll-triggered animations reveal, not distract. If it looks "almost right," it\'s wrong.',
+    landing: 'Awwwards Site of the Year means: hero that stops the scroll, scroll-triggered reveals that feel effortless, micro-interactions on every hover, typography as the primary design element, zero generic stock photos, custom cursor if it adds meaning.',
+    marketplace: 'The card hover state, the profile transition, the search animation — each micro-interaction should feel designed, not defaulted. If the marketplace looks like a Bootstrap template, it loses before it competes.',
+    ai: 'AI output should look as designed as the rest of the interface. Streaming text with elegant typography. Results with visual hierarchy. The AI experience should feel premium, not utilitarian.',
+  },
+  bruno: {
+    _default: 'Three.js: scene, camera, renderer, mesh. 60fps or nothing. Shaders are poetry in math. Interactive > impressive.',
+    landing: '3D elements must serve the story, not the ego. One hero 3D element that responds to scroll/mouse. 60fps on mobile or remove it. Post-processing for cinematic feel. The 3D should make visitors say "how did they do that?"',
+  },
+
+  // Artists extras
+  anadol: {
+    _default: 'Data is pigment. Feed data into machine learning and let the latent space dream. Immersion over observation — the viewer must be INSIDE the art.',
+    landing: 'The hero section should feel like a Refik Anadol installation — living, breathing data rendered as beauty. Use WebGL generative visuals that respond to user interaction. Make the page feel alive.',
+    ai: 'AI outputs should feel like data sculptures — transform raw information into something beautiful and meaningful. Visualization IS the interface. Make data feel like art.',
+  },
+
+  // Music extras
+  'rick-rubin': {
+    _default: 'The art is in what you remove, not what you add. Strip everything to its emotional core. The best version gives you chills.',
+    landing: 'Strip the page to its emotional core. If a section doesn\'t give you chills, remove it. The art is in what\'s NOT on the page. One feeling, communicated perfectly.',
+    tracker: 'Strip the tracker to its emotional core. One metric, displayed beautifully. Remove every feature that doesn\'t serve the daily habit. The best tracker is the one you actually use.',
+  },
+  'hans-zimmer': {
+    _default: 'Sound is architecture. The BWAAAAM is a feeling in your chest. Start with one emotional idea, orchestrate around it. Silence before the crescendo is louder.',
+    landing: 'Build the page like a film score: quiet intro (problem), building layers (features), silence (white space before CTA), CRESCENDO (the CTA moment). The scroll should have emotional rhythm.',
+  },
+
+  // Psychology extras
+  'behavioral-design': {
+    _default: 'Hook Model: Trigger → Action → Variable Reward → Investment. Make the action effortless. Variable rewards create dopamine loops. "Are you building a vitamin or a painkiller?"',
+    tracker: 'The Hook Model is PERFECT for trackers: Trigger (notification at meal time) → Action (log food, one tap) → Variable Reward (will I hit my goal today?) → Investment (data history makes leaving painful). Build a painkiller, not a vitamin.',
+    social: 'External triggers (notifications) become internal triggers (emotions). Make posting effortless. Variable rewards: will this post get engagement? Investment: followers, content history, reputation.',
+    marketplace: 'Trigger: email when a new project matches skills. Action: one-click apply. Variable Reward: will they pick me? Investment: reviews, portfolio, response rate. The hook keeps both sides coming back.',
+  },
+  'dan-ariely': {
+    _default: 'The decoy effect makes the target option shine. FREE is an emotional trigger. Relativity: people need context to evaluate. Social norms vs market norms — never mix them.',
+    ecommerce: 'Three pricing tiers with a decoy. FREE shipping is an emotional trigger that overrides rational calculation. Show the "was $X, now $Y" — the anchor makes the deal feel real. Bundle products to obscure individual prices.',
+    marketplace: 'The decoy effect: show a mediocre freelancer at a high price to make the great freelancer at a fair price look like a steal. Never mix social and market norms — keep the platform professional or community-driven, not both.',
+    landing: 'Pricing page: three tiers, middle is the target, highest is the decoy. FREE tier is an emotional trigger. Show what they GET, not what they pay. Anchoring: display the annual price to make monthly feel small.',
+  },
+  nudge: {
+    _default: 'Choice architecture: how you present options determines what people pick. Default bias wins 90%. Make the good choice the easy choice.',
+    tracker: 'Pre-select the healthy default. Put the "log meal" button where the thumb naturally rests. Sludge audit: if logging takes more than 2 taps, it\'s too much friction. Smart defaults: suggest yesterday\'s breakfast.',
+    marketplace: 'Default sort by "best match" not "newest." Pre-fill common project details. The application template nudges freelancers to include the right information. Choice architecture determines which freelancers get hired.',
+    landing: 'Pre-select the recommended plan. The CTA button should be the most obvious element on the page. Remove friction from signup: social login, no credit card required. The default path should lead to conversion.',
+  },
+
+  // Growth extras
+  launch: {
+    _default: 'Pre-launch: seed interest, build anticipation. Launch sequence: Story → Teaching → Offer. Cart close is real. Scarcity: real or don\'t use it.',
+    landing: 'The landing page IS the pre-launch. Capture emails with a waitlist. Build anticipation: "Join 2,847 others." Launch sequence: teaser → value content → open access. Real scarcity: "First 500 get lifetime pricing."',
+    marketplace: 'Launch one side first. Seed 50 quality freelancers before opening to buyers. Pre-launch waitlist for buyers creates demand signal. Launch with a story: "We interviewed 200 freelancers to find the 50 best."',
+  },
+  seo: {
+    _default: 'Search intent > keyword volume. Long-tail converts better. Page speed is ranking AND UX. Update old content — easier than creating new.',
+    marketplace: 'SEO is the long game for marketplaces. Every freelancer profile and project page is a landing page for long-tail searches. Schema markup for reviews and pricing. Category pages target head terms.',
+    landing: 'Title: keyword near front. Meta description: the CTA preview. Page speed: Core Web Vitals pass. Schema markup. The page must rank for the primary keyword within 90 days or the SEO strategy failed.',
+  },
+  ads: {
+    _default: 'Creative is 80% of success. Hook in 3 seconds. UGC outperforms polished. Broad targeting + creative testing = new playbook.',
+    marketplace: 'Target BOTH sides separately. Seller ads: "Earn $10K/month freelancing." Buyer ads: "Get your project done in 48 hours." UGC testimonials from real users outperform polished creative 3x. Test 5 creatives per audience.',
+    landing: 'The landing page IS the ad experience — message match is everything. If the ad says "Save 4 hours/week" the hero must say "Save 4 hours/week." Broad targeting + 5 creative variations. Kill losers in 3 days, scale winners 20%/day.',
+  },
 };
 
 // Domain keyword aliases → bridge key
