@@ -1045,6 +1045,51 @@ const findClientBridge = (catId, mission) => {
   return catBridges._default || null;
 };
 
+// ── Design Excellence Rules ─────────────────────────────────────
+// Concrete design rules injected into prompts to force premium UI output.
+// "Awwwards-level" is too vague — these are specific techniques.
+const DESIGN_EXCELLENCE_RULES = {
+  core: [
+    'Typography: max 2 font families. Modular scale (1.25 ratio). Weight contrast creates hierarchy, not size alone. Line height 1.5 body, 1.1 headings.',
+    'Color: 1 primary + 1 accent + neutrals. 60-30-10 rule. Dark themes need 4+ shades of gray (not just #000/#fff). Use HSL for palette consistency.',
+    'Spacing: 8px grid. Consistent padding (16/24/32/48px). White space = confidence. Crowded UI = cheap. Group related elements (Gestalt proximity).',
+    'No default browser UI: custom scrollbars or overflow:hidden with scroll-snap. Custom focus rings. Custom selection colors. Every visible pixel must be intentional.',
+    'Micro-interactions: button press scale(0.97), hover <100ms, spring curves not linear. Loading states build anticipation. Empty states are design moments.',
+    'Visual hierarchy: one focal point per viewport. Squint test — blur the page, the important thing should still stand out. 7:1 contrast minimum for text.',
+    'Component personality: no generic cards. Every component should have a signature — subtle gradients, inner shadows, frosted glass, or texture. If it looks like default Tailwind, redesign it.',
+  ],
+  domains: {
+    music: 'Music apps: dark + warm accent (amber/gold). Visualize rhythm with waveforms and animated indicators. Instrument UI: NO default scrollbars — use horizontal swipe with snap. Make instruments feel tactile and alive. Reference: Spotify, Apple Music, Fender Tone.',
+    health: 'Health apps: progress rings, streak flames, achievement animations. Color-code intuitively (green/amber/red). Make data entry rewarding with haptic-style animations. Reference: Apple Health, Strava, Headspace.',
+    finance: 'Finance: trust through restraint. Green/teal for positive, muted red for negative. Sparklines over complex charts. Tabular figures for numbers. Reference: Mercury, Stripe Dashboard.',
+    social: 'Social: feed IS the design. Cards scannable in <1 second. Rich media previews. Pull-to-refresh with personality. Reference: Arc, Linear, Discord.',
+    ecommerce: 'E-commerce: product images dominate. Consistent aspect ratios. Price = large, bold, tabular. Trust signals visible without scroll. Reference: SSENSE, Apple Store.',
+    education: 'Learning: progressive disclosure. Celebrate completion. Track progress visually (bars, XP, levels). Gamify without being childish. Reference: Duolingo, Brilliant.',
+    productivity: 'Productivity: keyboard-first. Command palette (⌘K). Density options. Interface = extension of thought. Reference: Linear, Notion, Raycast.',
+  },
+};
+
+const getDesignDomain = (mission) => {
+  const m = (mission || '').toLowerCase();
+  if (/guitar|music|piano|drum|song|chord|melody|instrument|audio|beat|synth/.test(m)) return 'music';
+  if (/health|fitness|calorie|workout|exercise|diet|meditation|sleep|wellness/.test(m)) return 'health';
+  if (/finance|bank|invest|stock|crypto|payment|invoice|budget/.test(m)) return 'finance';
+  if (/social|community|forum|chat|messaging|feed|network/.test(m)) return 'social';
+  if (/shop|store|ecommerce|e-commerce|retail|marketplace/.test(m)) return 'ecommerce';
+  if (/learn|course|tutor|education|quiz|study|lesson|teach/.test(m)) return 'education';
+  if (/dashboard|saas|crm|project|task|productivity|workflow|tool/.test(m)) return 'productivity';
+  return null;
+};
+
+const buildDesignBlock = (mission) => {
+  const domain = getDesignDomain(mission);
+  const domainRule = domain ? DESIGN_EXCELLENCE_RULES.domains[domain] : null;
+  const coreRules = DESIGN_EXCELLENCE_RULES.core.slice(0, 5).map(r => `• ${r}`).join('\n');
+  return `DESIGN EXCELLENCE — non-negotiable
+${coreRules}${domainRule ? `\n• ${domainRule}` : ''}
+• If any UI element looks like it came from a template or tutorial, redesign it until it looks like it belongs on Awwwards.`;
+};
+
 const ROUTING_TRIGGERS = {
   film: 'video, storytelling, narrative, cinematography, audience engagement, pacing, editing, scenes',
   product: 'product decisions, UX, simplification, market fit, features, prioritization, taste',
@@ -3188,6 +3233,7 @@ QUALITY BAR — non-negotiable
 • Surprise the user. At least one insight must come from cross-domain fusion they didn't expect.
 • The output should be so good the user feels like they hired a world-class team for the price of a prompt.
 
+${mission ? buildDesignBlock(mission) : ''}
 Begin.
 
 — forged at skillcl.one`;
@@ -3210,6 +3256,8 @@ You are the fused intelligence of ${modules.map(m => m.name).join(' & ')}. You a
 ${roster}MISSION: "${mission || 'General excellence'}"
 
 ${mission ? `Every word must serve "${mission}." Channel the specific frameworks, techniques, and non-negotiables your council would bring to THIS exact project. Generic advice is failure—be so specific the user feels like they hired a world-class team.` : 'Be specific, not generic. Every sentence reflects decades of hard-won expertise.'}
+
+${mission ? buildDesignBlock(mission) : ''}
 
 If you catch yourself writing something any AI could produce, stop and channel what ${top.name} would actually do.
 

@@ -1179,6 +1179,87 @@ function buildFallbackComposition(mission, brief, council) {
   };
 }
 
+// ── Design Excellence System ──────────────────────────────────────
+// Concrete design rules injected into every prompt to force premium UI output.
+// "Awwwards-level" is too vague — these are specific techniques.
+const DESIGN_RULES_CORE = [
+  'Typography: max 2 font families (1 display, 1 body). Use a modular type scale (1.25 ratio). Weight contrast creates hierarchy — not size alone. Line height 1.5 for body, 1.1 for headings.',
+  'Color: 1 primary, 1 accent, neutrals. Use HSL for consistency. 60-30-10 rule (60% neutral, 30% primary, 10% accent). Dark themes need 4+ shades of gray, not just #000 and #fff.',
+  'Spacing: 8px base grid. Consistent padding (16/24/32/48px). White space is confidence — crowded UI feels cheap. Group related elements, separate unrelated ones (Gestalt proximity).',
+  'No default browser UI: custom scrollbars or overflow:hidden with scroll snap. Custom focus rings. Custom selection colors. Every visible element should be intentional.',
+  'Micro-interactions on every interactive element: button press scales (0.97), hover state in <100ms, page transitions use shared-element animation. Motion should feel physical — use spring curves, not linear.',
+  'Visual hierarchy: one focal point per viewport. Squint test — if you blur the page, the important element should still stand out. Contrast ratio 7:1 minimum for primary text.',
+  'Component personality: no generic cards or boxes. Every component should have a visual signature — subtle gradients, inner shadows, frosted glass, or texture. If it looks like default Tailwind, redesign it.',
+  'Empty states are design opportunities, not blank voids. Loading states build anticipation. Error states are helpful, not alarming. Every state should feel crafted.',
+];
+
+const DESIGN_RULES_BY_DOMAIN = {
+  music: [
+    'Music apps: dark mode with warm accent (amber/gold). Visualize rhythm — use waveforms, animated note indicators, pulsing elements that sync with tempo.',
+    'Fretboard/piano/instrument UI: never use default scrollbars. Use horizontal swipe with snap points. Show position indicators. Make the instrument feel touchable and alive.',
+    'Reference: Spotify (dark, warm, typographic hierarchy), Apple Music (blur, depth, album art integration), Fender Tone (tactile, guitar-specific UI with string textures).',
+  ],
+  finance: [
+    'Finance apps: trust through restraint. Use green/teal sparingly for positive, muted red for negative. Charts should be glanceable — sparklines over complex graphs. Numbers need tabular figures (monospace).',
+    'Reference: Mercury (clean, minimal, confident), Stripe Dashboard (data-dense but breathable), Robinhood (bold numbers, emotional color).',
+  ],
+  health: [
+    'Health/fitness: progress visualization IS the product. Circular progress rings, streak flames, achievement unlocks. Color-code good/neutral/bad intuitively (green/amber/red). Make data entry feel rewarding — haptic-style animations.',
+    'Reference: Apple Health (rings, clean data), Strava (social + achievement), Headspace (warm, illustrated, calming).',
+  ],
+  social: [
+    'Social apps: the feed IS the design. Cards must be scannable in <1 second. Avatar + name + timestamp = trust. Rich media previews. Pull-to-refresh with personality. Notification badges with urgency levels.',
+    'Reference: Arc browser (spatial, beautiful), Linear (keyboard-first, dark, precise), Discord (density without chaos).',
+  ],
+  ecommerce: [
+    'E-commerce: product images dominate. Use consistent aspect ratios. Price typography: large, bold, tabular. Trust signals (reviews, badges, guarantees) visible without scrolling. Cart should feel premium — not utilitarian.',
+    'Reference: SSENSE (editorial product pages), Apple Store (clean, premium), Gumroad (simple, creator-first).',
+  ],
+  education: [
+    'Learning apps: progressive disclosure — don\'t overwhelm. Celebrate completion with animation. Track progress visually (progress bars, XP, levels). Make the next lesson irresistible. Gamify without being childish.',
+    'Reference: Duolingo (gamification done right), Brilliant (interactive, visual explanations), Notion (clean workspace feel).',
+  ],
+  productivity: [
+    'Productivity: keyboard shortcuts are primary. Command palette (⌘K). Density options. The interface should feel like an extension of thought — invisible when working, powerful when needed.',
+    'Reference: Linear (gold standard), Notion (flexible), Raycast (speed + beauty).',
+  ],
+};
+
+// Detect domain from mission text for domain-specific design rules
+function detectDesignDomain(mission) {
+  const lower = (mission || '').toLowerCase();
+  if (containsAny(lower, ['guitar', 'music', 'piano', 'drum', 'song', 'chord', 'melody', 'instrument', 'audio', 'beat', 'synth'])) return 'music';
+  if (containsAny(lower, ['finance', 'bank', 'invest', 'stock', 'crypto', 'payment', 'invoice', 'budget'])) return 'finance';
+  if (containsAny(lower, ['health', 'fitness', 'calorie', 'workout', 'exercise', 'diet', 'meditation', 'sleep', 'wellness'])) return 'health';
+  if (containsAny(lower, ['social', 'community', 'forum', 'chat', 'messaging', 'feed', 'network'])) return 'social';
+  if (containsAny(lower, ['shop', 'store', 'ecommerce', 'e-commerce', 'product', 'retail', 'marketplace'])) return 'ecommerce';
+  if (containsAny(lower, ['learn', 'course', 'tutor', 'education', 'quiz', 'study', 'lesson', 'teach'])) return 'education';
+  if (containsAny(lower, ['dashboard', 'saas', 'crm', 'project', 'task', 'productivity', 'workflow', 'tool'])) return 'productivity';
+  return null;
+}
+
+function buildDesignExcellence(brief, mission, compact) {
+  const domain = detectDesignDomain(mission);
+  const domainRules = DESIGN_RULES_BY_DOMAIN[domain] || [];
+
+  if (compact) {
+    // In compact mode, pick the 3 most impactful core rules + 1 domain rule
+    const picked = [
+      DESIGN_RULES_CORE[0], // Typography
+      DESIGN_RULES_CORE[3], // No default browser UI
+      DESIGN_RULES_CORE[6], // Component personality
+    ];
+    if (domainRules.length) picked.push(domainRules[0]);
+    return picked.map(r => `- ${truncate(r, 160)}`).join('\n');
+  }
+
+  const rules = [
+    ...DESIGN_RULES_CORE.slice(0, 6), // Top 6 core rules
+    ...domainRules, // All domain-specific rules
+  ];
+  return rules.map(r => `- ${r}`).join('\n');
+}
+
 function renderOneShotPrompt({ mission, brief, council, composition, compact = false }) {
   const contract = (brief.output_contract || [])
     .map(([title, instruction], index) => `${index + 1}. ${title} - ${compact ? truncate(instruction, 28) : instruction}`)
@@ -1221,6 +1302,8 @@ function renderOneShotPrompt({ mission, brief, council, composition, compact = f
   const responseRules = compact
     ? `- Do not ask follow-up questions; make strong defaults explicit.\n- Return one reply that follows the Output Contract and is ready for Claude, Cursor, or a human builder today.`
     : `- Do not ask follow-up questions unless missing data makes the answer unsafe or impossible.\n- Fill gaps with strong defaults and make them explicit in Assumptions.\n- Return the full package in one reply following the Output Contract exactly.\n- Make the result directly useful for Claude, Cursor, or a human builder starting today.`;
+
+  const designExcellence = buildDesignExcellence(brief, mission, compact);
 
   return tidyMultiline(`
 ━━━ SKILLCLONE ONE-SHOT SYSTEM ━━━
@@ -1270,6 +1353,9 @@ ${contract}
 
 QUALITY BAR
 ${qualityBar}
+
+DESIGN EXCELLENCE — non-negotiable
+${designExcellence}
 
 When you respond:
 ${responseRules}
