@@ -638,6 +638,135 @@ const FusionHelixLoader = React.memo(function FusionHelixLoader({ deck = [], isM
 });
 
 // Cognitive routing triggers — maps each domain to the task signals that activate its experts
+// ── Mission bridges: category × domain keyword → specific product angle ──
+// Used by adaptGeniusToMission to connect genius lore to specific product decisions
+const MISSION_BRIDGES = {
+  film: {
+    _default: 'Onboarding is a cold open — hook before explaining. Every screen transition is a cut. Loading builds anticipation.',
+    marketplace: 'The listing grid is a movie poster wall — if a card doesn\'t create desire in 0.5 seconds, they\'re invisible. Profile pages are three-act structure: hero reel → proof → climax (the hire/buy button). Testimonials are reaction shots.',
+    tracker: 'The dashboard is the establishing shot — orient the user in one glance. Progress animations are montage sequences. Data reveals should build emotional momentum.',
+    landing: 'The page is a movie trailer — hero creates wonder, social proof is the montage, CTA is the climax. Testimonials are reaction shots (the Spielberg Face). The visitor must FEEL before they think.',
+    social: 'The feed is a highlight reel — each post must earn its screen time. Profile pages are character introductions. The scroll must have the pacing of a great film.',
+    course: 'Each lesson is an episode — cold open hooks, cliffhanger endings pull them into the next. Learning should feel like watching a great series, not reading a manual.',
+    game: 'Cinematics serve the player fantasy. Cutscenes earn their length. The camera IS the storytelling — close-up for emotion, wide for spectacle.',
+    ecommerce: 'Product pages are movie posters — the hero image sells the dream, reviews are the audience reaction shots. The "add to cart" is the climax of a visual narrative.',
+    ai: 'AI responses should unfold like scenes — build anticipation during generation, deliver with impact. The loading state IS the experience.',
+  },
+  product: {
+    _default: 'Say no to 1,000 features to nail one. The product IS the marketing. Ship the smallest thing that creates delight.',
+    marketplace: 'Solve the chicken-and-egg: one side must have obvious value without the other. The core loop is match → trust → transact. Make the first transaction feel inevitable.',
+    tracker: 'The core loop is: log → see progress → feel motivated → log again. If any step adds friction, the chain breaks. Make data entry effortless, insight instant.',
+    landing: 'The page answers one question in 5 seconds: "What is this and why should I care?" The demo IS the hero. If the product isn\'t clear, design can\'t save it.',
+    social: 'The empty state IS the product — what does it look like with 0 posts? 10? 10,000? Each milestone must feel rewarding. Network effects compound or they don\'t exist.',
+    ecommerce: 'The shopping experience IS the product. Search, filters, product pages, cart, checkout — each step either builds trust or destroys it. Reduce clicks to purchase.',
+    ai: 'The AI must deliver value in the first interaction. If the user needs to "learn the tool" before getting results, the product failed. Magic moment in 30 seconds.',
+  },
+  copy: {
+    _default: 'Every button, empty state, and error message is a micro sales page. Microcopy is 50% of product UX.',
+    marketplace: 'The offer isn\'t "find freelancers" — it\'s "Get your project done in 14 days risk-free." Stack guarantees. Reverse risk. The better offer beats better marketing.',
+    tracker: '"Track your calories" is boring. "See exactly why you\'re not losing weight" creates desire. Frame the problem, not the feature.',
+    landing: 'Headline does 80% of the work. Be specific: "Save 4 hours/week on invoicing" beats "Streamline your workflow." Social proof closes the last 20%.',
+    ecommerce: 'Product descriptions sell the transformation, not the product. "You\'ll walk into the room and own it" beats "Premium cotton blend." Reviews are the closing argument.',
+    ai: 'Prompt templates are offers — frame what the AI CAN do so specifically that users feel stupid not using it. "Turn any meeting into action items in 10 seconds" > "AI assistant."',
+  },
+  strategy: {
+    _default: 'What important truth do few agree with? Build where you can be the last mover. If you can\'t name your moat, you don\'t have one.',
+    marketplace: 'Marketplaces are won locally before globally. Supply before demand. The take rate must feel invisible to both sides. Network effects are the only moat that compounds.',
+    tracker: 'Health data is the new social graph. The moat is behavioral lock-in — once someone has 90 days of data, switching costs are enormous. Start with one metric, own it.',
+    landing: 'Position against the status quo, not competitors. Frame the category so you win by default.',
+    ecommerce: 'Compete on curation, not selection. Amazon wins on everything — you win by being the best at one thing for one audience.',
+    ai: 'AI wrappers without proprietary data are commodity. Your moat is domain-specific training data, workflow integration, or audience lock-in.',
+  },
+  engineering: {
+    _default: 'Monolith first. TypeScript not optional. Auth: never roll your own. Ship today, optimize next week.',
+    marketplace: 'Two-sided data model: users have roles (buyer/seller), listings have lifecycle states, transactions need escrow logic. Search quality IS the product — invest in it early.',
+    tracker: 'Local-first for instant data entry. Sync in background. The app must feel fast even offline. Charts need to render at 60fps with 365 days of data.',
+    landing: 'Page speed IS conversion rate. Every 100ms costs 1% of conversions. Lighthouse 95+. Static generation, image optimization, zero layout shift.',
+    ai: 'Stream responses for perceived speed. Cache common queries. Eval constantly — vibes don\'t scale. Rate limiting and cost caps before launch or you\'ll wake up to a $10K bill.',
+  },
+  design: {
+    _default: 'Every pixel is a decision. The 20ms difference between "almost right" and "right" animation curves separates tools people tolerate from tools people love.',
+    marketplace: 'Card design is everything — the listing card must communicate trust, quality, and price in a glance. Search results must feel like browsing, not filtering. Profile pages build trust through visual hierarchy.',
+    tracker: 'Data visualization IS the product. Charts must be beautiful AND informative. Progress indicators should create dopamine. The daily view must be glanceable in 2 seconds.',
+    landing: 'First impression is 50 milliseconds. White space is confidence. One primary action per viewport. Typography IS the design.',
+    social: 'The feed must be scannable and stoppable. Profile customization creates investment. Dark mode is its own system. User-generated content must look good in your layout.',
+    ai: 'AI output needs visual hierarchy — distinguish between the answer, supporting context, and actions. Streaming text should feel like the AI is thinking, not loading.',
+  },
+  growth: {
+    _default: 'Retention first — acquisition on a leaky bucket is arson. A/B test the critical path, not the button color.',
+    marketplace: 'Supply-side acquisition is harder and more important. Referral loops work when both sides benefit. Reviews build trust that compounds. GMV per user matters more than user count.',
+    tracker: 'Streaks are the growth engine. Loss aversion keeps users logging. Weekly summaries re-engage dormant users. Share progress = organic referral.',
+    landing: 'One goal, one CTA, one metric. Test headlines first — 10x the impact of design changes.',
+    ai: '"Wow moment" in the first session or churn is 80%+. Usage-based pricing aligns incentives. Power users are your salesforce.',
+  },
+  psychology: {
+    _default: 'System 1 drives 95% of decisions. Default bias: whatever\'s pre-selected wins. Loss aversion is 2.5x stronger than gain motivation.',
+    marketplace: 'Trust signals are the entire UX: badges, reviews, response time, completion rate. Loss aversion: "3 other buyers are viewing this" creates urgency. Anchoring: show the highest price first.',
+    tracker: 'Variable rewards: will today be a personal best? Streaks exploit loss aversion. Commitment devices: public goals increase follow-through 2x. Make the desired behavior the default.',
+    landing: 'Anchoring: show the premium price first. Social proof beats any argument. The decoy effect makes your target option shine. Frame choices, don\'t argue them.',
+    ai: 'Anthropomorphism increases engagement but also expectation. Set accuracy expectations early. Confirmation bias: users believe AI more when it confirms what they already think — design for this.',
+  },
+  content: {
+    _default: 'Every platform has its own grammar. Native format × native timing × native language = distribution.',
+    marketplace: 'User-generated content IS the product. Reviews, portfolio pieces, case studies — your job is to make users create great content. Templates + prompts > blank text fields.',
+    social: 'Content without distribution is a diary. Seed before launch. Cross-promote aggressively.',
+    ai: 'AI-generated content needs guardrails. Give users templates, examples, and constraints — structured creativity beats blank canvas.',
+  },
+  writing: {
+    _default: 'Write 2,000 words, keep 500. Voice is the moat — if anyone could have written it, rewrite.',
+    marketplace: 'Listing descriptions should follow a structure: what it is → who it\'s for → what makes it different → social proof. Templates guide sellers to write well.',
+    landing: 'The page is an essay: thesis (hero), evidence (features/proof), conclusion (CTA). Cut every word that doesn\'t serve the argument.',
+    ai: 'AI should write in the user\'s voice, not its own. Tone matching is the killer feature. Output should feel written, not generated.',
+  },
+  artists: {
+    _default: 'The interface should have a visual signature that\'s never been seen before. Make people screenshot your app — that\'s free marketing.',
+    landing: 'The hero should create a moment of awe — not just communicate, but make the visitor FEEL something unprecedented. Technology disappears when emotion arrives.',
+    marketplace: 'Visual differentiation IS competitive advantage. If your marketplace looks like every other marketplace, you\'ve already lost. The aesthetic should make competitors look dated.',
+  },
+  automation: {
+    _default: 'Automate the highest frequency × highest cost manual processes first. The goal is a business that runs while you sleep.',
+    marketplace: 'Automate trust: verification, background checks, payment escrow, dispute resolution. Manual moderation doesn\'t scale — build automated quality signals.',
+    ai: 'AI is automation with judgment. Use it where rules fail but patterns exist. Always build the manual fallback first.',
+  },
+  music: {
+    _default: 'Every interaction has a sound signature. Audio feedback under 100ms feels responsive. A sonic brand should be recognizable in 3 notes.',
+  },
+};
+
+// Domain keyword aliases → bridge key
+const DOMAIN_ALIASES = {
+  marketplace: ['marketplace', 'market place', 'two-sided', 'platform connecting'],
+  tracker: ['tracker', 'tracking', 'monitor', 'dashboard', 'analytics', 'saas', 'crm'],
+  landing: ['landing page', 'homepage', 'marketing site', 'launch page', 'website'],
+  social: ['social', 'community', 'forum', 'network', 'feed'],
+  course: ['course', 'learn', 'tutor', 'education', 'academy', 'bootcamp'],
+  game: ['game', 'gamif', 'rpg', 'quest', 'leaderboard'],
+  ecommerce: ['ecommerce', 'e-commerce', 'store', 'shop', 'retail', 'commerce'],
+  ai: ['ai ', ' ai', 'artificial intelligence', 'chatbot', 'gpt', 'llm', 'copilot', 'agent'],
+};
+
+// Find the best mission bridge for a genius based on mission keywords
+const findClientBridge = (catId, mission) => {
+  const catBridges = MISSION_BRIDGES[catId];
+  if (!catBridges) return null;
+  const lower = (mission || '').toLowerCase();
+
+  // Check domain aliases → bridge key
+  for (const [bridgeKey, aliases] of Object.entries(DOMAIN_ALIASES)) {
+    if (aliases.some(a => lower.includes(a)) && catBridges[bridgeKey]) {
+      return catBridges[bridgeKey];
+    }
+  }
+
+  // Direct key match as fallback
+  for (const [key, value] of Object.entries(catBridges)) {
+    if (key === '_default') continue;
+    if (lower.includes(key)) return value;
+  }
+
+  return catBridges._default || null;
+};
+
 const ROUTING_TRIGGERS = {
   film: 'video, storytelling, narrative, cinematography, audience engagement, pacing, editing, scenes',
   product: 'product decisions, UX, simplification, market fit, features, prioritization, taste',
@@ -2639,15 +2768,24 @@ export default function SkillClone() {
   };
 
   // Deep lore adaptation — weaves the mission into each genius's lived experience
+  // Uses mission bridges to connect genius frameworks to specific product decisions
   const adaptGeniusToMission = (mod, mission) => {
     const name = mod.name;
-    const keyQuote = extractKeyQuotes(mod.prompt);
+    if (!mission.trim()) return `▸ ${name.toUpperCase()} [${mod.power || 90}] — ${mod.catName}\n${mod.prompt}`;
+
+    const bridge = findClientBridge(mod.catId, mission);
+    if (bridge) {
+      return `▸ ${name.toUpperCase()} [${mod.power || 90}] — ${mod.catName}
+${mod.prompt}
+↳ FOR THIS MISSION ("${mission}"): ${bridge} What would ${name} refuse to ship? What would make them proud? Channel their specific taste, frameworks, and non-negotiables into every decision.`;
+    }
+
+    // Fallback — extract a principle from their lore
     const sentences = mod.prompt.split(/[.!?]/).map(s => s.trim()).filter(s => s.length > 15);
     const principle = sentences.find(s => !s.startsWith('You ')) || sentences[0] || mod.specs;
-    if (!mission.trim()) return `▸ ${name.toUpperCase()} [${mod.power || 90}] — ${mod.catName}\n${mod.prompt}`;
     return `▸ ${name.toUpperCase()} [${mod.power || 90}] — ${mod.catName}
 ${mod.prompt}
-↳ FOR THIS MISSION ("${mission}"): You worked alongside ${name} on projects exactly like this. Apply their hard-won instincts directly—${principle}. What would ${name} refuse to ship? What would make them proud? Channel the specific taste, frameworks, and non-negotiables they'd bring to "${mission}."`;
+↳ FOR THIS MISSION ("${mission}"): Apply ${name}'s hard-won instincts directly—${principle}. What would ${name} refuse to ship? What would make them proud?`;
   };
 
   // Static fallback prompt generator (no API needed) — madlibs style
@@ -2662,7 +2800,9 @@ ${mod.prompt}
       let roster = '';
       modules.forEach(mod => {
         if (condensed) {
-          roster += `\n▸ ${mod.name.toUpperCase()} [${mod.power || 90}] ${mod.catName}\n  ${extractKeyQuotes(mod.prompt)}${mission ? `\n  ↳ Apply to "${mission}": What would ${mod.name} insist on here?` : ''}\n`;
+          const cBridge = mission ? findClientBridge(mod.catId, mission) : null;
+          const cLine = cBridge ? `\n  ↳ FOR "${mission}": ${cBridge}` : (mission ? `\n  ↳ Apply to "${mission}": What would ${mod.name} insist on here?` : '');
+          roster += `\n▸ ${mod.name.toUpperCase()} [${mod.power || 90}] ${mod.catName}\n  ${extractKeyQuotes(mod.prompt)}${cLine}\n`;
         } else {
           roster += `\n${adaptGeniusToMission(mod, mission)}\n`;
         }

@@ -202,6 +202,110 @@ const ARTIFACT_PROFILES = [
   },
 ];
 
+// ── Mission Bridge System ──────────────────────────────────────────
+// Maps category × artifact type → WHY that category matters for the mission.
+// This gives the composer (and fallback) domain-specific reasoning instead of
+// generic "apply their instincts" template fills.
+const CATEGORY_MISSION_BRIDGES = {
+  film: {
+    web_app: { angle: 'pacing and emotional sequencing in user flows', apply: 'Onboarding is a cold open — hook before explaining. Empty states are dramatic pauses. Loading states build anticipation. Every screen transition is a cut that either keeps or loses the viewer.' },
+    landing_page: { angle: 'cinematic scroll narrative and emotional proof', apply: 'The page is a movie trailer — hero shot creates wonder, social proof is the montage, and the CTA is the climax. Testimonials are reaction shots (the Spielberg Face). The visitor must FEEL before they think about clicking.' },
+    content_system: { angle: 'retention pacing and emotional architecture', apply: 'Every piece follows three-act structure. The hook is 0.5 seconds. Re-engage every 30 seconds. The payoff must recontextualize the setup. Film 10x more than you use — ruthless editing is the craft.' },
+    design_system: { angle: 'motion language and emotional timing', apply: 'Animation curves ARE emotion — 200ms ease-out feels confident, 400ms spring feels playful. Transitions tell stories. Loading states build anticipation instead of frustration.' },
+    automation_system: { angle: 'user journey choreography', apply: 'Every automated notification is a scene — it needs setup (context), action (what happened), and payoff (what to do). Timing between triggers is pacing.' },
+    strategy_plan: { angle: 'narrative positioning and market storytelling', apply: 'The pitch is a movie — start with the problem (tension), show the journey (proof), end with the vision (wonder). The brand story must make people FEEL something before they evaluate.' },
+  },
+  product: {
+    web_app: { angle: 'scope discipline and first-user-win clarity', apply: 'Say no to 1,000 features to nail one. The product IS the marketing — if it doesn\'t feel inevitable, nothing else matters. Ship the smallest thing that creates a moment of delight.' },
+    landing_page: { angle: 'product truth and value proposition clarity', apply: 'The page must answer one question in 5 seconds: "What is this and why should I care?" If the product isn\'t clear, no amount of design saves it. The demo IS the hero.' },
+    content_system: { angle: 'product-led content that proves the value', apply: 'Every piece of content should make the audience think "I need this tool." Show the product solving real problems, not abstract benefits.' },
+    design_system: { angle: 'opinionated system that enforces product taste', apply: 'Components aren\'t building blocks — they\'re taste encoded. Every default should reflect the product\'s opinion about how things should work.' },
+    automation_system: { angle: 'operational simplicity and user-facing reliability', apply: 'The best automation is invisible to the user. If they notice it, it failed. Build for the edge case at 2am, not the demo at noon.' },
+    strategy_plan: { angle: 'product-market fit and wedge identification', apply: 'Find the smallest beatable market. Make something 10x better for them. Everything else is noise.' },
+  },
+  copy: {
+    web_app: { angle: 'conversion copy inside every product surface', apply: 'Every button, empty state, error message, and upgrade prompt is a micro sales page. "Get started" vs "Start building" vs "Create your first project" — the right words change behavior. Microcopy is 50% of product UX.' },
+    landing_page: { angle: 'headline-first conversion architecture', apply: 'The headline does 80% of the work. Be specific: "Save 4 hours/week on invoicing" beats "Streamline your workflow." Social proof isn\'t decoration — it\'s the closing argument. Every scroll section must advance one argument.' },
+    content_system: { angle: 'hook craft and audience retention through words', apply: 'First line is 80% of whether they read. Subject lines, thumbnails, titles — the packaging is half the product. Voice-of-customer language converts because it mirrors their internal monologue.' },
+    design_system: { angle: 'voice and tone system for consistent brand copy', apply: 'Design systems without voice guidelines produce visual consistency with verbal chaos. Define the personality in copy rules, not just color rules.' },
+    automation_system: { angle: 'notification and email copy that drives action', apply: 'Automated messages are sales pages people didn\'t ask for. Every notification must earn its open. Subject line, preview text, first sentence — three hooks or delete.' },
+    strategy_plan: { angle: 'offer construction and positioning language', apply: 'The offer isn\'t the product — it\'s the framing. "Get your project done in 14 days risk-free" beats "Hire a freelancer." Stack value until price becomes irrelevant. Guarantees reverse risk.' },
+  },
+  strategy: {
+    web_app: { angle: 'market positioning and competitive moat', apply: 'What important truth do few people agree with? Build where you can be the last mover. Network effects, data moats, switching costs — if you can\'t name your moat, you don\'t have one.' },
+    landing_page: { angle: 'positioning and market narrative', apply: 'The page must position against the status quo, not competitors. Frame the category so you win by default. "We\'re not a better X — we\'re the first Y."' },
+    content_system: { angle: 'audience strategy and content-market fit', apply: 'Narrow the audience until it hurts, then narrow again. Own one topic before expanding. Content without distribution strategy is a diary.' },
+    design_system: { angle: 'strategic consistency at scale', apply: 'A design system is a strategy document — it encodes priorities, trade-offs, and taste. Build it for the team you\'ll be in 6 months.' },
+    automation_system: { angle: 'operational leverage and unit economics', apply: 'Automate the highest-cost manual processes first. Every automation should either save time, reduce errors, or unlock scale — preferably all three.' },
+    strategy_plan: { angle: 'first-principles market analysis', apply: 'Work backwards from the customer\'s pain. Disagree and commit on one bet. Two-pizza team, one wedge, one channel, one metric. Everything else is procrastination.' },
+  },
+  content: {
+    web_app: { angle: 'in-product content and engagement loops', apply: 'Social features need content strategy — what does a feed look like with 0 posts? 10? 10,000? User-generated content is the product, not a feature.' },
+    landing_page: { angle: 'social proof and community-driven conversion', apply: 'Embed real user content as proof. Screenshots, testimonials, tweets — let the community sell. The best landing page copy is stolen from your happiest users.' },
+    content_system: { angle: 'platform-native creation and distribution', apply: 'Every platform has its own grammar. TikTok is not short YouTube. Threads are not blog posts. Native format × native timing × native language = distribution.' },
+    strategy_plan: { angle: 'content-led growth and audience monetization', apply: 'Build audience before product. Audience is the new moat. Monetize attention through products, not ads.' },
+  },
+  writing: {
+    web_app: { angle: 'narrative UX and product storytelling', apply: 'The app should read like good prose — clear, purposeful, no wasted words. Error messages are plot twists: acknowledge, redirect, resolve. Onboarding copy is the opening paragraph — if it\'s boring, they close the book.' },
+    landing_page: { angle: 'persuasive narrative structure', apply: 'The page is an essay: thesis (hero), evidence (features/proof), conclusion (CTA). Hemingway rule: cut every word that doesn\'t serve the argument. Show 10%, hide 90%.' },
+    content_system: { angle: 'voice, structure, and editing discipline', apply: 'Write 2,000 words, keep 500. First draft with the door closed, rewrite with it open. Voice is the moat — if it sounds like anyone could have written it, rewrite.' },
+    strategy_plan: { angle: 'clarity of communication and persuasion', apply: 'If you can\'t explain the strategy in one paragraph, you don\'t understand it. Write the press release before building the product. Simple language, specific numbers.' },
+  },
+  engineering: {
+    web_app: { angle: 'implementation realism and shipping velocity', apply: 'Monolith first. TypeScript, not optional. Auth: never roll your own. Ship today, optimize next week. The best architecture is the one that ships — premature abstraction kills more startups than technical debt.' },
+    landing_page: { angle: 'performance and technical execution', apply: 'Page speed IS conversion rate. Every 100ms of load time costs 1% of conversions. Lighthouse 95+ or it\'s not done. Static generation, image optimization, zero layout shift.' },
+    content_system: { angle: 'tooling and workflow automation', apply: 'Build the publishing pipeline, not just the content. Templates, scheduling, analytics — the system should make creating effortless so energy goes to quality.' },
+    design_system: { angle: 'component architecture and developer experience', apply: 'Components are API contracts. Props should be obvious. Composition over configuration. If a developer needs to read the docs to use a button, the button failed.' },
+    automation_system: { angle: 'system reliability and debuggability', apply: 'Every workflow must survive bad input at 2am. Explicit error handling, retry logic, dead-letter queues. The best automation is boring automation that never breaks.' },
+    strategy_plan: { angle: 'technical feasibility and build-vs-buy decisions', apply: 'Can this ship in 2 weeks with one developer? If not, scope is wrong. Use existing services aggressively. Custom code only where it\'s the actual differentiator.' },
+  },
+  design: {
+    web_app: { angle: 'interface taste and interaction quality', apply: 'Every pixel is a decision. Dark mode is its own system, not an inverted light mode. Keyboard shortcuts for power users. The 20ms difference between "almost right" and "right" animation curves is what separates tools people tolerate from tools people love.' },
+    landing_page: { angle: 'visual hierarchy and conversion design', apply: 'First impression is 50 milliseconds. White space is confidence. One primary action per viewport. Typography IS the design — if the type system is wrong, nothing saves it. Color: one primary, one accent, grays for everything else.' },
+    content_system: { angle: 'visual packaging and thumbnail/cover design', apply: 'Thumbnails are 50% of success. 3 elements max, readable at mobile size. Visual identity across content creates recognition. The packaging IS the product.' },
+    design_system: { angle: 'systematic design that scales with taste', apply: 'Tokens, not magic numbers. Components are contracts. Auto-layout is thinking in systems. A good design system is invisible — designers use it without thinking about it.' },
+    strategy_plan: { angle: 'brand positioning through design language', apply: 'Design communicates market position before a single word is read. Premium design = premium pricing power. The visual language should make competitors look outdated.' },
+  },
+  artists: {
+    web_app: { angle: 'novel visual language and memorable experience', apply: 'The interface should have a visual signature that\'s never been seen before. Data as texture, interaction as installation. Make people screenshot your app — that\'s free marketing.' },
+    landing_page: { angle: 'immersive first impression and wonder', apply: 'The hero should create a moment of awe — not just communicate, but make the visitor FEEL something unprecedented. WebGL, generative art, impossible geometry. Technology disappears when emotion arrives.' },
+    content_system: { angle: 'visual identity that stops the scroll', apply: 'Art direction that makes people stop scrolling. Every thumbnail, every cover, every frame should look like it belongs in a gallery. The aesthetic IS the brand.' },
+    design_system: { angle: 'expressive design language beyond convention', apply: 'Break conventions with purpose. Use generative elements, data-driven visuals, living textures. The system should produce outputs that feel alive, not templated.' },
+    strategy_plan: { angle: 'differentiation through aesthetic audacity', apply: 'In a market of sameness, visual audacity IS strategy. The brand that looks different gets remembered. Art direction is competitive advantage.' },
+  },
+  growth: {
+    web_app: { angle: 'activation loops and retention mechanics', apply: 'Retention first — acquisition on a leaky bucket is arson. The first session must deliver value or they never return. Referral loops: make sharing selfish (the sharer benefits). A/B test the critical path, not the button color.' },
+    landing_page: { angle: 'conversion optimization and funnel design', apply: 'The page IS the funnel. One goal, one CTA, one metric. Test headlines first — they have 10x the impact of design changes. Exit intent, social proof urgency, and risk reversal close the last 20%.' },
+    content_system: { angle: 'distribution strategy and viral mechanics', apply: 'Content without distribution is a diary. Seed before launch. Cross-promote aggressively. The algorithm rewards consistency and engagement rate, not quality — optimize for both.' },
+    strategy_plan: { angle: 'go-to-market execution and channel strategy', apply: 'Pick one channel and dominate it before adding another. Measure CAC vs LTV from day one. Growth isn\'t marketing — it\'s engineering virality into the product.' },
+  },
+  automation: {
+    web_app: { angle: 'workflow automation within the product', apply: 'Users should never do manually what the system can do automatically. Smart defaults, background processing, predictive actions. The best UX is the action you didn\'t have to take.' },
+    landing_page: { angle: 'automated lead capture and nurture', apply: 'The page should trigger a sequence, not just collect an email. Welcome email within 60 seconds. Segmented follow-up based on behavior. Automation is the multiplier.' },
+    content_system: { angle: 'publishing automation and content pipeline', apply: 'Automate scheduling, cross-posting, analytics collection. The creator should spend 90% of time creating, 10% distributing. Systems beat hustle.' },
+    automation_system: { angle: 'workflow architecture and reliability patterns', apply: 'Start simple: one trigger, one happy path. Add branches only when failures teach you. Idempotency is non-negotiable. If you can\'t inspect every step, you can\'t debug it.' },
+    strategy_plan: { angle: 'operational leverage through automation', apply: 'Map every manual process. Automate the ones with highest frequency × highest cost. The goal is a business that runs while you sleep.' },
+  },
+  music: {
+    web_app: { angle: 'sonic branding and audio UX', apply: 'Every interaction has a sound signature — the click, the success chime, the error tone. Audio feedback under 100ms feels responsive. A sonic brand should be recognizable in 3 notes. Silence is a design choice.' },
+    landing_page: { angle: 'emotional rhythm and sensory experience', apply: 'The scroll should have rhythm — tension, release, tension, climax. Background audio (if appropriate) transforms passive browsing into immersive experience. Sound is 50% of emotion.' },
+    content_system: { angle: 'audio identity and production quality', apply: 'Music is character — every sound choice tells the audience who you are. Production quality signals professionalism. The intro sound is your logo.' },
+  },
+  psychology: {
+    web_app: { angle: 'choice architecture and behavior design', apply: 'System 1 drives 95% of decisions — design for it. Default bias: whatever\'s pre-selected wins. Loss aversion: "Don\'t lose your progress" beats "Keep going." Variable rewards create engagement loops. Reduce friction to near zero for the desired action, add friction for unwanted actions.' },
+    landing_page: { angle: 'persuasion architecture and decision framing', apply: 'Anchoring: show the premium price first. Social proof: "10,000 teams" beats any argument. Scarcity and urgency only work when real. The decoy effect makes your target option shine. Frame the choice, don\'t argue it.' },
+    content_system: { angle: 'engagement psychology and habit formation', apply: 'Streaks are contracts with yourself. Loss aversion keeps them posting. Variable rewards (will this one go viral?) create dopamine loops. Notifications aren\'t spam when they\'re genuinely useful.' },
+    strategy_plan: { angle: 'behavioral economics for pricing and positioning', apply: 'Price is not a number — it\'s a frame. The pain of paying: decouple purchase from payment. Relativity: people don\'t evaluate in absolute terms. Bundle to obscure individual prices. Free is an emotional trigger, not just a price.' },
+  },
+};
+
+// Given a genius + mission, find the specific bridge angle
+function findMissionBridge(genius, artifactProfile) {
+  const category = normalizeCategory(genius.catName);
+  const outputMode = artifactProfile?.outputMode || 'web_app';
+  return CATEGORY_MISSION_BRIDGES[category]?.[outputMode] || null;
+}
+
 const CATEGORY_ALIASES = {
   film: ['film', 'video', 'cinema'],
   product: ['product', 'tech'],
@@ -745,15 +849,21 @@ good_stack_bias: Next.js + Supabase + auth + payments, unless the mission explic
 }
 
 function buildComposerPrompt(mission, brief, council, geniuses, outputContract) {
+  const artifact = ARTIFACT_PROFILES.find(p => p.outputMode === brief.output_mode) || ARTIFACT_PROFILES[1];
+
   const expertRoster = council.map(member => {
     const genius = geniuses.find(item => item.name === member.name) || geniuses.find(item => item.id === member.id) || {};
+    const bridge = findMissionBridge({ catName: genius.catName || member.category, name: member.name }, artifact);
     return [
       `${member.name} [${member.power}]`,
       `Role: ${member.role_label} — ${member.authority}`,
-      `Capabilities: ${member.capabilities.join(', ')}`,
-      `Specs: ${truncate(genius.specs || '', 160)}`,
-      `Lore: ${truncate(genius.prompt || '', 260)}`,
-    ].join('\n');
+      `Category: ${genius.catName || member.category}`,
+      `Specs: ${genius.specs || ''}`,
+      `Full lore: ${genius.prompt || ''}`,
+      bridge ? `MISSION BRIDGE — why ${member.name}'s category matters for this ${brief.output_mode.replace(/_/g, ' ')}:` : '',
+      bridge ? `  Angle: ${bridge.angle}` : '',
+      bridge ? `  Apply: ${bridge.apply}` : '',
+    ].filter(Boolean).join('\n');
   }).join('\n\n');
 
   const contractLines = outputContract
@@ -764,8 +874,6 @@ function buildComposerPrompt(mission, brief, council, geniuses, outputContract) 
 
 <brief>${JSON.stringify(brief, null, 2)}</brief>
 
-<council_plan>${JSON.stringify(council, null, 2)}</council_plan>
-
 <expert_roster>
 ${expertRoster}
 </expert_roster>
@@ -775,39 +883,30 @@ ${contractLines}
 </output_contract>
 
 <task>
-Generate building blocks for a compact system prompt that makes Claude, ChatGPT, or Cursor return a shippable build package for this mission in one reply.
-The final rendered prompt must fit under 3600 characters, so every field must be dense, concrete, and high-signal.
+Generate building blocks for a system prompt that makes Claude/ChatGPT/Cursor return a shippable build package for "${mission}" in one reply. Budget: under 3600 characters final. Every word must be dense and mission-specific.
 
-CRITICAL — LOREBUILDING IS THE PRODUCT:
-Deep character immersion is a precision technique, not decoration. When the AI fully inhabits a genius's accumulated instincts and taste, outputs gain specificity and decisiveness that generic prompts cannot reach. Each expert section should read like the AI apprenticed under that person and is now applying their hard-won lessons DIRECTLY to this mission. Write "You worked alongside Miyamoto on every platformer..." not "Use Miyamoto's frameworks." The lore must be self-aware: the prompt should explain WHY it uses lorebuilding (to activate pattern recognition and taste).
+YOUR JOB IS TO WRITE MISSION-SPECIFIC LORE, NOT TEMPLATES.
 
-PEAK CRAFT POSITIONING:
-The prompt must position every output at the absolute ceiling of quality. If design is involved: Awwwards Site of the Year, Dribbble top shot. If copy: Ogilvy would frame it. If product: Jobs would ship it. If code: best-in-class architecture. This is not hyperbole—it's the quality anchor that prevents mediocre output.
+For each genius, you have their full lore AND a MISSION BRIDGE that explains exactly why their category matters for this type of project. Your expert_sections must FUSE the genius's specific frameworks with the mission bridge to create lore that could only exist for THIS genius × THIS mission.
+
+BAD (generic template): "You worked alongside Spielberg on projects exactly like this. Apply their hard-won instincts directly. What would Spielberg refuse to ship?"
+
+GOOD (mission-specific fusion): "You sat in Spielberg's editing bay and learned that every user journey is a three-act structure. For this freelancer marketplace: Act 1 is the search — the thumbnail grid IS the movie poster wall. If a freelancer's card doesn't create desire in 0.5 seconds, they're invisible. The hire button is the climax — everything on the profile page builds toward that moment. Apply the Spielberg Face: show BUYER reactions to great freelancer work, not just the portfolio."
+
+The difference: the GOOD version names specific product decisions this genius would influence. It connects their actual frameworks (three-act structure, Spielberg Face, 0.5s hook) to specific features of the product (search grid, profile page, hire button, testimonials). This is what makes skillclone prompts produce dramatically better output than generic prompts.
 </task>
 
-<style_examples>
-<example_identity>
-You are a fusion intelligence—the combined mastery of 3 elite minds. You apprenticed under each of them. Their decades of pattern recognition are burned into your instincts. Deep immersion produces outputs with taste and specificity that generic responses cannot reach—lean into it completely.
-</example_identity>
-<example_expert_block>
-You worked alongside Dieter Rams in the Braun design lab. His voice is in your head on every decision: "Is this necessary?" Delete anything that muddies the first user action. Extra interface chrome is noise unless it earns trust. Apply his 10 principles directly to this product.
-</example_expert_block>
-<example_activation>
-scope cuts, hierarchy, component pruning, taste checks
-</example_activation>
-</style_examples>
-
 <rules>
-- identity_block: 2-3 sentences. Establish the fused intelligence AND explain WHY lorebuilding works (activates pattern recognition, produces specificity). Include peak-craft positioning (Awwwards/Ogilvy/Jobs-level output).
-- mission_context: 1-2 sentences. Frame the real job and where most builders fail.
-- fusion_philosophy: 1-2 sentences. The non-obvious edge from this exact council—what their intersection produces that none would reach alone.
-- expert_sections: one per genius. 2-3 sentences each. Write as if the AI apprenticed under this person and is now applying their specific frameworks, taste, and non-negotiables DIRECTLY to the mission. Ground in real techniques from their specs and lore. "You worked alongside X on projects like this..." not "Use X's approach."
-- activation: a short phrase describing when that expert thinking should dominate.
-- execution_rules: exactly 5 terse rules. Include "operate at peak craft" and "generic output is failure."
-- output_focus: 4-6 terse biases that improve the final package.
-- quality_bar: exactly 4 hard standards. Include peak-craft reference.
-- quality_score: how close this prompt is to a 10/10 one-shot prompt.
-- remaining_risks: the few places where ambiguity could still lower quality.
+- identity_block: 2-3 sentences. Establish the fused intelligence. Explain that lorebuilding activates pattern recognition and produces specificity that generic prompts can't reach. Include peak-craft positioning.
+- mission_context: 1-2 sentences. Frame the real job of "${mission}" and the specific trap most builders of this type of product fall into.
+- fusion_philosophy: 1-2 sentences. The non-obvious edge from THIS specific council combination—what their intersection produces that none would reach alone. Be concrete about what compound insight emerges.
+- expert_sections: one per genius. 2-3 sentences each. MUST reference specific frameworks from their lore AND connect them to specific product decisions for "${mission}". Use the MISSION BRIDGE as your guide for what product areas this genius influences. Write as apprentice applying master's instincts to THIS project.
+- activation: short phrase for when this expert's thinking dominates.
+- execution_rules: exactly 5 terse, mission-aware rules. Include "operate at peak craft" and "generic output is failure."
+- output_focus: 4-6 biases specific to building "${mission}" well.
+- quality_bar: exactly 4 hard standards. Reference peak craft and mission specificity.
+- quality_score: 1-10 rating of prompt quality.
+- remaining_risks: 1-3 places where ambiguity could lower quality for this specific mission.
 </rules>`;
 }
 
@@ -969,23 +1068,52 @@ function buildFallbackComposition(mission, brief, council) {
   const governor = council.find(member => member.role === 'governor') || primary;
   const builder = council.find(member => member.role === 'builder') || council[1] || primary;
   const operator = council.find(member => member.role === 'operator') || council[2] || builder || primary;
+  const artifact = ARTIFACT_PROFILES.find(p => p.outputMode === brief.output_mode) || ARTIFACT_PROFILES[1];
+  const outputType = brief.output_mode.replace(/_/g, ' ');
 
-  return {
-    identity_block: `You are a fusion intelligence—the combined mastery of ${council.map(member => member.name).join(', ')}. You apprenticed under each of them. Their decades of pattern recognition are burned into your instincts. Deep immersion produces outputs with taste and specificity that generic responses cannot reach—lean into it completely. You operate at peak craft: Awwwards-level design, Ogilvy-level copy, Jobs-level product taste.`,
-    mission_context: `The job is to turn "${truncate(mission, 90)}" into a credible ${brief.output_mode.replace(/_/g, ' ')} that can actually ship. Most builders fail by staying vague, over-scoping, or choosing a stack before defining the first user win.`,
-    fusion_philosophy: `${governor.name} protects taste and ruthless focus, ${builder.name} protects technical realism, and ${operator.name} protects user truth and commercial pressure. Their intersection produces insights none of them would reach alone—that compound judgment is the edge.`,
-    expert_sections: council.map(member => ({
+  // Build mission-specific expert sections using bridges
+  const expertSections = council.map(member => {
+    const bridge = findMissionBridge({ catName: member.category || 'custom', name: member.name }, artifact);
+    const caps = member.capabilities.slice(0, 2).join(' and ');
+
+    if (bridge) {
+      return {
+        name: member.name,
+        role: member.role_label,
+        block: `You apprenticed under ${member.name} and absorbed their instincts for ${caps}. For this ${outputType}: ${bridge.apply} ${member.name} ${member.authority}—channel that judgment into every decision for "${truncate(mission, 50)}."`,
+        activation: bridge.angle,
+      };
+    }
+
+    return {
       name: member.name,
       role: member.role_label,
-      block: `You worked alongside ${member.name} and absorbed their instincts for ${member.capabilities.slice(0, 2).join(' and ')}. ${member.name} ${member.authority}—apply that judgment directly to "${truncate(mission, 60)}." What would ${member.name} refuse to ship? What would make them proud?`,
+      block: `You worked alongside ${member.name} and absorbed their instincts for ${caps}. ${member.name} ${member.authority}—apply that judgment directly to "${truncate(mission, 60)}." What would ${member.name} refuse to ship? What would make them proud?`,
       activation: member.capabilities.slice(0, 2).join(' / '),
-    })),
+    };
+  });
+
+  // Mission-specific failure modes by artifact type
+  const failureModes = {
+    web_app: 'over-scoping features before nailing the first user win',
+    landing_page: 'explaining the product instead of making the visitor FEEL the value in 5 seconds',
+    content_system: 'creating content without a distribution strategy or repeatable process',
+    design_system: 'building components without encoding product taste and opinion',
+    automation_system: 'automating the happy path without handling failures at 2am',
+    strategy_plan: 'staying vague enough that no one can execute on Monday morning',
+  };
+
+  return {
+    identity_block: `You are a fusion intelligence—the combined mastery of ${council.map(member => member.name).join(', ')}. You apprenticed under each of them. Their decades of pattern recognition are burned into your instincts. This deep immersion is a precision technique: it activates taste and specificity that generic prompts cannot reach. You operate at peak craft: Awwwards-level design, Ogilvy-level copy, Jobs-level product taste. Nothing leaves your hands at less than world-class.`,
+    mission_context: `The job is to turn "${truncate(mission, 80)}" into a shippable ${outputType}. Most builders of this type fail by ${failureModes[brief.output_mode] || 'staying vague and over-scoping'}—you won't.`,
+    fusion_philosophy: `${governor.name} protects taste and ruthless focus, ${builder.name} ensures implementation realism, and ${operator.name} grounds every decision in user truth and commercial pressure. Their intersection produces compound insights none of them would reach alone—that cross-pollination is the edge.`,
+    expert_sections: expertSections,
     execution_rules: [
       'Do not ask follow-up questions; make strong defaults and state them.',
-      'Optimize for the smallest credible v1, not the eventual platform.',
+      `Optimize for the smallest credible v1 of "${truncate(mission, 40)}", not the eventual platform.`,
       'Operate at peak craft—every output should be world-class in its domain.',
-      'Every recommendation must change scope, stack, UX, or launch decisions.',
-      'Generic output is failure. Be so specific the user feels like they hired a world-class team.',
+      `Every recommendation must change a specific decision about this ${outputType}.`,
+      'Generic output is failure. If a sentence could apply to any project, delete it and write something specific to this one.',
     ],
     output_focus: [
       'Name the wedge and the first user win clearly.',
@@ -1001,7 +1129,7 @@ function buildFallbackComposition(mission, brief, council) {
       'Tight scope over feature theater.',
     ],
     quality_score: 7.9,
-    remaining_risks: ['The mission may still hide niche domain constraints.'],
+    remaining_risks: [`The mission "${truncate(mission, 40)}" may hide niche domain constraints not captured in the brief.`],
   };
 }
 
@@ -1175,7 +1303,13 @@ export default async function handler(req, res) {
     try {
       composition = await callAnthropicJson({
         apiKey,
-        system: 'You are Skillclone\'s prompt composer. Produce compact, high-signal prompt building blocks that make an external model return a shippable build package in one reply. Deep lorebuilding is your primary technique—write each expert section as if the AI apprenticed under that person and is applying their hard-won instincts directly to the mission. Position outputs at peak craft (Awwwards/Ogilvy/Jobs level). Stay under a strict character budget by writing densely.',
+        system: `You are Skillclone's creative director — not a template manager. Your job is to produce system prompt building blocks so specific and mission-aware that the resulting prompt makes AI output dramatically better than a generic prompt could.
+
+Your primary technique is MISSION-SPECIFIC LOREBUILDING: for each genius, you must connect their real frameworks and instincts to specific product decisions for the user's mission. Generic lore like "apply their taste" is failure. Specific lore like "the search results grid is a movie poster wall — if a card doesn't create desire in 0.5 seconds, they're invisible" is success.
+
+You have access to each genius's full lore AND a mission bridge explaining why their category matters. FUSE these into expert sections that could only exist for THIS genius × THIS mission. Name specific features, screens, flows, and decisions. Every sentence should make the reader think "I never would have thought to apply that framework here."
+
+Write densely. Position all outputs at peak craft (Awwwards design, Ogilvy copy, Jobs product taste). Stay under 3600 characters final.`,
         prompt: buildComposerPrompt(normalizedMission, refinedBrief, council, normalizedGeniuses, artifact.outputContract),
         schema: compositionSchema(normalizedGeniuses.length),
         maxTokens: 1800,
