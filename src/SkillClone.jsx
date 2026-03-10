@@ -733,6 +733,172 @@ const MISSION_BRIDGES = {
   },
 };
 
+// ── Genius-specific mission hooks ──────────────────────────────────
+// Per-genius overrides that activate when a genius has unique relevance
+// to a mission domain. These override category-level bridges.
+// Format: geniusId → { domainKeyword → specific angle }
+const GENIUS_HOOKS = {
+  // Product & Tech
+  miyamoto: {
+    tracker: 'Miyamoto\'s "30 seconds of joy" rule: logging a meal must feel like collecting a coin in Mario — instant feedback, satisfying sound, visual reward. Progressive difficulty: start with just calories, unlock macros as a "level up." The app should make you smile before you understand why it\'s working.',
+    game: 'Every mechanic must pass the World 1-1 test: can a new player learn it without reading instructions? Lateral Thinking with Withered Technology — use simple tech in surprising ways. A delayed game is eventually good; a bad game is bad forever.',
+    social: 'Miyamoto\'s playground test: is it fun with zero content? The empty state should feel like an invitation, not a void. Every interaction should have juice — satisfying feedback that makes users want to do it again.',
+    course: 'Learning should work like World 1-1: the first Goomba teaches everything without words. Progressive difficulty curve. Each lesson should end with a moment of mastery that makes the student smile. No instruction manuals — learn by doing.',
+    ecommerce: 'The browsing experience should feel like exploring a new Zelda dungeon — every turn reveals something delightful. Product discovery is play. Add "juice" to the cart interaction — make adding items feel rewarding.',
+    _default: 'Apply Miyamoto\'s "30 seconds of joy" test to the core interaction. If the first use doesn\'t create a moment of delight, redesign it. Progressive disclosure: start simple, reveal depth as users grow.',
+  },
+  jobs: {
+    _default: 'Jobs would ask: "What are we REALLY building?" Strip away every feature until you find the one thing that matters. The product IS the marketing — if it doesn\'t feel inevitable, nothing saves it. Say no to 1,000 things.',
+    tracker: 'Jobs would make the tracking experience so beautiful you WANT to log every meal. The data visualization should be art. One metric on the home screen — not a dashboard, a statement. "People don\'t know what they want until you show them."',
+    marketplace: 'Jobs would obsess over the first 5 seconds of the buyer experience. The marketplace should feel curated, not chaotic. "Design is not how it looks — it\'s how it WORKS." Make the transaction feel inevitable.',
+    ai: 'Jobs would hide the AI. The user shouldn\'t think "I\'m using AI" — they should think "this app understands me." Technology should disappear. The magic is in what you DON\'T show.',
+    landing: 'Jobs would cut the page to one idea, one CTA, one emotion. "One more thing" — save the best feature for the scroll reveal. The page should create desire, not explain features.',
+  },
+  musk: {
+    _default: 'First principles: what are the physics-level constraints? 10x improvement, not 10%. Vertical integration when existing tools can\'t keep up. If the timeline seems reasonable, it\'s not ambitious enough.',
+    ai: 'First principles: what does the AI actually need to be useful? Strip away chatbot theater. The AI should do one thing 10x better than a human — not many things slightly better. Vertical integration: own the full stack from model to UX.',
+    tracker: 'First principles: why does tracking fail? Because data entry is friction. Solve the input problem from physics up — camera, voice, sensors. Make the tracking automatic, not manual.',
+    marketplace: 'First principles: what makes marketplaces fail? Trust friction and payment friction. Solve those at the infrastructure level. The factory IS the product — the matching algorithm is your 10x.',
+  },
+  ive: {
+    _default: 'Simplicity is not the absence of clutter — it\'s the presence of clarity. Materials matter in digital too: depth, texture, light. The unboxing IS the product experience. Obsess over the parts no one sees.',
+    tracker: 'The daily log screen should feel as inevitable as the iPhone home screen. Every radius, every spacing, every transition considered. "When it\'s right, it feels like it couldn\'t be any other way." Make health tracking feel premium.',
+    landing: 'The page should feel like an Apple product reveal — clean, confident, inevitable. Negative space communicates quality. Every detail considered down to the favicon. The page itself should feel like the product.',
+  },
+
+  // Copywriting
+  hormozi: {
+    _default: 'The Value Equation: (Dream Outcome × Perceived Likelihood) ÷ (Time Delay × Effort & Sacrifice) = VALUE. Make the offer so good people feel stupid saying no. Stack value until price becomes irrelevant.',
+    marketplace: 'The offer isn\'t "find freelancers" — it\'s "Get your $50K project done in 14 days risk-free or we refund." Stack guarantees: vetted talent + project insurance + milestone payments. Reverse ALL risk. The marketplace with the best offer wins.',
+    tracker: 'Don\'t sell tracking — sell the result. "Lose 20 lbs in 90 days without giving up the foods you love, or your money back." Niche down: "AI calorie tracker for busy parents" beats "calorie counter for everyone."',
+    ecommerce: 'Every product page is a Grand Slam Offer. Stack bonuses: free shipping + 30-day returns + loyalty points + exclusive access. The offer should make the customer feel stupid saying no. Price becomes irrelevant when value is stacked.',
+    ai: 'Frame the AI as the dream outcome with zero effort. "Your personal CFO that saves you $10K/year — just connect your bank account." The tool does the work. The result is specific and measurable.',
+    landing: 'The headline IS the offer. "Get [Dream Outcome] in [Time Period] without [Pain/Sacrifice], or [Guarantee]." Stack value below: what they get, what it\'s worth, what they pay. Make the gap embarrassing.',
+    course: 'The course isn\'t "learn marketing" — it\'s "Get your first 1,000 customers in 30 days using the exact playbook that built a $100M company." Guarantee the outcome, not the content.',
+  },
+  ogilvy: {
+    _default: 'The headline is 80% of the advertisement. "At 60 miles an hour, the loudest noise in this Rolls-Royce comes from the electric clock." Be specific. Long copy sells when every word earns its place.',
+    marketplace: 'Every listing title is a headline — "Senior React Developer • 4.9★ • 200+ projects delivered • 48hr response" beats "Freelance Developer Available." The consumer isn\'t a moron — she\'s your buyer. Specificity is trust.',
+    landing: 'Write the headline first. Test 20 versions. Research the audience before writing a word. Specificity converts: "Save 4.2 hours/week on invoicing" beats "Save time." Long-form works when the offer is complex and the copy is riveting.',
+  },
+  halbert: {
+    _default: 'The most important thing is the LIST — a starving crowd beats clever copy. Write like you talk. First sentence\'s only job is to get them to read the second.',
+    marketplace: 'Find the starving crowd first. What freelance skill are buyers DESPERATELY searching for right now? The marketplace wins by aggregating urgent demand, not by having the best UI. Specificity is proof: "He delivered the project in 3.7 days."',
+    landing: 'The headline hooks. The first sentence\'s only job is to get them to read the second. Write like you\'re talking to one person. The P.S. is the second most-read part of the page.',
+  },
+
+  // Strategy
+  pg: {
+    _default: 'Make something people want — nothing else matters. Do things that don\'t scale. Launch fast, talk to users, iterate. Schlep blindness hides the best opportunities.',
+    marketplace: 'Do things that don\'t scale: manually match the first 100 buyers with freelancers. Give both sides absurd attention. The insights from those conversations ARE the product roadmap. Schlep blindness: the unsexy operational work (vetting, dispute resolution) is the actual moat.',
+    tracker: 'Launch the ugliest possible version that tracks one thing well. Talk to 10 users this week. "Live in the future, then build what\'s missing." If you\'re not embarrassed by v1, you launched too late.',
+    ai: 'The best AI products come from noticing problems in your own life. Build the thing you wish existed. Launch fast — the model will improve, but the product insight won\'t come from waiting.',
+    landing: 'If you can\'t explain what it does in one sentence, the product isn\'t focused enough. The landing page is a forcing function for clarity. Write clearly — if you can\'t explain it simply, you don\'t understand it.',
+    ecommerce: 'Do things that don\'t scale first: hand-pick products, write every description, personally follow up with every buyer. Schlep blindness: returns, customer service, and logistics are the moat no one wants to build.',
+  },
+  thiel: {
+    _default: '"What important truth do very few people agree with you on?" Competition is for losers. Be the last mover. Secrets exist — things that are true but not yet obvious.',
+    marketplace: 'What marketplace secret do you know that Upwork doesn\'t? The monopoly isn\'t "better marketplace" — it\'s owning a vertical so deeply that switching is unthinkable. Start with a small market you can dominate completely.',
+    ai: 'What AI capability exists today that most people underestimate? That\'s your secret. Build for the world that\'s coming, not the one that exists. Be the last mover in your niche.',
+    tracker: 'The health tracking market looks crowded but has a secret: no one has made it truly effortless for [specific audience]. Own that niche completely before expanding.',
+  },
+  bezos: {
+    _default: 'It\'s always Day One. Customer obsession, not competitor obsession. Work backwards: write the press release before building. High-velocity decisions at 70% certainty.',
+    marketplace: 'Customer obsession for BOTH sides. Work backwards: write the press release for the freelancer and the buyer. "Your margin is my opportunity" — undercut competitor take rates and make it up on volume.',
+    ecommerce: 'The everything store started with books. Start with one category, nail the experience, expand. Work backwards from the customer review you want to earn. Speed of delivery is a feature.',
+    ai: 'Write the press release for your AI product before building it. What would the customer testimonial say? Work backwards from that. Two-pizza team. Ship at 70% certainty.',
+  },
+
+  // Engineering
+  levelsio: {
+    _default: 'Ship today, fix tomorrow. PHP and SQLite can scale to $1M ARR. No co-founders, no employees, no VC — just you and the internet. Build in public. Make revenue.',
+    marketplace: 'Ship the marketplace with the simplest possible tech: one page listing freelancers, one form for buyers, manual matching to start. Make revenue day one. No payment escrow — use Stripe Connect. Build in public and let your audience become your first users.',
+    tracker: 'Ship the tracker with a single input field and one chart. SQLite. No onboarding flow. Make it free, add premium when people beg for features. One developer, zero employees, $1M ARR potential.',
+    ai: 'Wrap an API call in a simple UI. Ship it today. Charge for it tomorrow. No complicated architecture — one server, one database, one model. The indie hacker advantage is speed.',
+    landing: 'Build the landing page AND the product in the same weekend. No Figma mockups, no design committee. Ship, get users, iterate based on data. Your first landing page should take 4 hours max.',
+  },
+  carmack: {
+    _default: 'Deep focus: 12-hour sessions of flow state. Optimize only what matters — profile first. Simple readable code beats clever code.',
+    tracker: 'Profile the rendering pipeline first. If the chart stutters at 365 data points, the architecture is wrong. Simple data structures, smart algorithms. 60fps is non-negotiable.',
+    ai: 'Optimize the inference pipeline, not the UI. Latency kills AI products. Profile first, optimize what matters. Simple code that\'s easy to debug beats clever abstractions.',
+    marketplace: 'Search is the core algorithm — invest in making it fast and relevant. Profile first: if listing load takes >200ms, you\'re losing users. Simple, readable code scales better than clever architectures.',
+  },
+
+  // Film
+  spielberg: {
+    _default: 'The audience must FEEL before they think. The Spielberg Face — the reaction shot — tells the audience how to feel. Spectacle serves emotion, never the reverse.',
+    marketplace: 'The freelancer profile IS a movie trailer. The portfolio section is the action sequence. Client testimonials are the Spielberg Face — show the BUYER\'s reaction to great work, not just the work itself. The "Hire" button is the climax — every element on the page builds toward that moment.',
+    tracker: 'The progress chart should create the emotional arc of a film — setbacks create tension, breakthroughs create triumph. The weekly summary is the montage. The milestone notification is the climax. Make them cheer for their own progress.',
+    landing: 'The scroll is a movie. Hero shot creates wonder. Features section builds the world. Testimonials are the Spielberg Face — show how USERS react, not what the product does. The CTA is the moment they decide to believe. Make them cry, make them cheer, make them CLICK.',
+    ai: 'The AI response should build like a Spielberg scene — start with wonder (the answer appearing), build with detail (supporting evidence), end with meaning (actionable next step). The loading state is the anticipation before the shark appears.',
+  },
+  mrbeast: {
+    _default: 'Every second must earn its place. Hook in 0.5 seconds. The retention graph is god. Cut dead air ruthlessly. Re-engage every 30 seconds.',
+    marketplace: 'The first 0.5 seconds of a listing determines if they click. Thumbnails (profile photos, portfolio previews) are 50% of success. "Would I click this?" is the only test for every listing card. Cut everything that doesn\'t serve conversion.',
+    tracker: 'Gamify the tracking experience — daily challenges, streak rewards, leaderboards. Re-engage every session with a new insight or milestone. The retention graph is god: if day-7 retention isn\'t 40%+, the core loop is broken.',
+    landing: 'Hook in 0.5 seconds or they bounce. Pattern interrupt: the hero should be unlike anything they\'ve seen on competitor sites. Every scroll section must re-engage. Test 20 headline versions. Cut everything that doesn\'t serve the click.',
+    ai: 'The AI must deliver value in the first 0.5 seconds — show it\'s working immediately (streaming). Every interaction should surprise and delight. Re-engage: suggest follow-up questions. "Would I use this again?" is the only metric.',
+  },
+  kubrick: {
+    _default: 'Obsessive perfectionism. Symmetry creates unease. Every prop, every color, every note is deliberate. Art is not comfortable.',
+    marketplace: 'Obsess over the grid symmetry — listing cards must be perfectly aligned, consistently styled. Every pixel is deliberate. The search experience should feel controlled and curated, not chaotic. Art direction is trust.',
+    landing: 'Every element on the page is deliberate — no decorative fluff. Symmetry creates visual authority. The color palette should be restrained and purposeful. Research the audience obsessively before designing a single pixel.',
+  },
+  nolan: {
+    _default: 'Time is a narrative tool. Practical effects ground impossible concepts. The emotional core must be simple. Complexity in structure, simplicity in theme.',
+    landing: 'The scroll should play with time — show the future state first (what life looks like AFTER using the product), then reveal how you get there. Simple emotional core: one promise. Complex execution: the page architecture should reward exploration.',
+    ai: 'The AI should make the complex feel simple. Like Inception: layers of complexity with one simple emotional core. The user shouldn\'t need to understand how it works to feel the magic.',
+  },
+
+  // Growth
+  uber: {
+    _default: 'Supply before demand. Referral loops: give value to both sides. Growth is engineering virality into the product.',
+    marketplace: 'City launch playbook: seed supply side first. Referral loops: give credit to BOTH sides of the marketplace. Local network effects compound — dominate one geography before expanding. Retention first; acquisition on a leaky bucket is arson.',
+  },
+  duolingo: {
+    _default: 'Streaks are contracts with yourself. Loss aversion > gain seeking. Habits > features.',
+    tracker: 'Streaks are everything. The owl (your notification character) should be endearingly passive-aggressive. Daily goals create commitment. XP and levels make progress tangible. Loss aversion: "Don\'t break your 47-day streak!" is more powerful than any feature.',
+    course: 'Turn learning into a game. Daily XP goals. Streak freeze as premium feature. Notifications that create FOMO, not annoyance. The lesson should feel like 5 minutes even when it\'s 15. Hearts system creates stakes.',
+  },
+
+  // Psychology
+  kahneman: {
+    _default: 'System 1 is fast, automatic, emotional — it drives 95% of decisions. Anchoring sets the frame. WYSIATI: people decide based on available information, not complete information.',
+    marketplace: 'System 1 decides in milliseconds: the freelancer photo, star rating, and price are processed before the buyer reads the bio. Anchor with the highest-value project first. WYSIATI: if reviews aren\'t visible, trust doesn\'t exist.',
+    tracker: 'System 1 is why people skip logging — it feels effortful. Make tracking a System 1 activity: one tap, no thinking. Anchor the daily calorie goal visually. Loss aversion: show what they\'re losing by not tracking, not what they gain.',
+    landing: 'The first number they see anchors everything. Show the premium price first, then the offer. System 1 processes images 60,000x faster than text — the hero image IS the argument. Social proof is System 1 shortcut for trust.',
+  },
+  cialdini: {
+    _default: 'Six weapons: reciprocity, commitment, social proof, authority, liking, scarcity. Pre-suasion: what you show before the ask matters more than the ask.',
+    marketplace: 'Social proof: "10,000+ projects completed" removes objections. Authority: badges, certifications, featured status. Scarcity: "Only 3 slots available this month." Reciprocity: free consultations create obligation. Pre-suasion: show success stories BEFORE the search results.',
+    landing: 'Apply all six in order down the page: Reciprocity (free value in hero), Social proof (numbers), Authority (logos/press), Liking (founder story), Scarcity (limited spots), Commitment (small yes before big CTA).',
+  },
+
+  // Design
+  rams: {
+    _default: '"Weniger, aber besser" — less, but better. Good design makes a product useful, understandable, and honest. Thorough down to the last detail.',
+    tracker: 'Is this feature necessary? If the tracker has more than 3 screens, it has too many. Every element must make the product more useful, not more "featureful." The daily log should be as minimal as a Braun alarm clock.',
+    marketplace: '"Is this necessary?" — apply to every filter, every badge, every UI element. The listing card should communicate everything needed to decide in one glance. Extra interface chrome is noise unless it builds trust.',
+  },
+  linear: {
+    _default: 'B2B software doesn\'t have to be ugly. Dark mode is its own system. Keyboard shortcuts are primary navigation. Animation curves must feel "right."',
+    tracker: 'The tracker should feel like Linear — fast, keyboard-navigable, dark mode that\'s actually designed (not inverted). Every animation curve must feel right: 20ms difference between "good" and "perfect" is the whole game.',
+    marketplace: 'The admin/dashboard side should feel like Linear: fast, clean, keyboard-first. Search should be instant. Status updates (project stages) should feel satisfying. B2B marketplace UI can be beautiful.',
+  },
+
+  // Writing
+  king: {
+    _default: '"The road to hell is paved with adverbs." Show, don\'t tell. First draft with the door closed, rewrite with it open. Kill your darlings.',
+    marketplace: 'Listing descriptions: show don\'t tell. "I built a payments system that processes $2M/month" beats "experienced fintech developer." Kill adverbs in all microcopy. First draft of every page with the door closed, rewrite with users watching.',
+    landing: '"The road to hell is paved with adverbs." Cut every qualifier on the landing page. "Fast" → "Loads in 0.3 seconds." "Easy" → "Set up in 2 minutes." Show, don\'t tell — screenshots beat feature lists.',
+  },
+  pixar: {
+    _default: '"Once upon a time ___, every day ___, one day ___, because of that ___, until finally ___." Make them FEEL before they think.',
+    landing: 'Structure the page like a Pixar story: Once upon a time (the problem), every day (the pain), one day (the product), because of that (the transformation), until finally (the happy ending with CTA). Make them FEEL before they evaluate.',
+    marketplace: 'Every freelancer profile should tell a story: where they started, what they mastered, what they can do for YOU. The marketplace isn\'t a database — it\'s a cast of characters. Give freelancers opinions — "I specialize in..." not "Available for..."',
+  },
+};
+
 // Domain keyword aliases → bridge key
 const DOMAIN_ALIASES = {
   marketplace: ['marketplace', 'market place', 'two-sided', 'platform connecting'],
@@ -2768,19 +2934,49 @@ export default function SkillClone() {
   };
 
   // Deep lore adaptation — weaves the mission into each genius's lived experience
-  // Uses mission bridges to connect genius frameworks to specific product decisions
+  // Priority: genius-specific hooks → category bridges → generic fallback
   const adaptGeniusToMission = (mod, mission) => {
     const name = mod.name;
     if (!mission.trim()) return `▸ ${name.toUpperCase()} [${mod.power || 90}] — ${mod.catName}\n${mod.prompt}`;
 
+    // 1. Check genius-specific hooks first (e.g., Miyamoto has unique gamification angle)
+    const geniusHooks = GENIUS_HOOKS[mod.id];
+    if (geniusHooks) {
+      const lower = mission.toLowerCase();
+      let hook = null;
+      // Check domain aliases for matching
+      for (const [bridgeKey, aliases] of Object.entries(DOMAIN_ALIASES)) {
+        if (aliases.some(a => lower.includes(a)) && geniusHooks[bridgeKey]) {
+          hook = geniusHooks[bridgeKey];
+          break;
+        }
+      }
+      // Direct key match
+      if (!hook) {
+        for (const [key, value] of Object.entries(geniusHooks)) {
+          if (key === '_default') continue;
+          if (lower.includes(key)) { hook = value; break; }
+        }
+      }
+      // Genius-specific default
+      if (!hook && geniusHooks._default) hook = geniusHooks._default;
+
+      if (hook) {
+        return `▸ ${name.toUpperCase()} [${mod.power || 90}] — ${mod.catName}
+${mod.prompt}
+↳ FOR THIS MISSION ("${mission}"): ${hook}`;
+      }
+    }
+
+    // 2. Category-level bridge
     const bridge = findClientBridge(mod.catId, mission);
     if (bridge) {
       return `▸ ${name.toUpperCase()} [${mod.power || 90}] — ${mod.catName}
 ${mod.prompt}
-↳ FOR THIS MISSION ("${mission}"): ${bridge} What would ${name} refuse to ship? What would make them proud? Channel their specific taste, frameworks, and non-negotiables into every decision.`;
+↳ FOR THIS MISSION ("${mission}"): ${bridge} What would ${name} refuse to ship? What would make them proud?`;
     }
 
-    // Fallback — extract a principle from their lore
+    // 3. Generic fallback — extract a principle from their lore
     const sentences = mod.prompt.split(/[.!?]/).map(s => s.trim()).filter(s => s.length > 15);
     const principle = sentences.find(s => !s.startsWith('You ')) || sentences[0] || mod.specs;
     return `▸ ${name.toUpperCase()} [${mod.power || 90}] — ${mod.catName}
@@ -2800,7 +2996,15 @@ ${mod.prompt}
       let roster = '';
       modules.forEach(mod => {
         if (condensed) {
-          const cBridge = mission ? findClientBridge(mod.catId, mission) : null;
+          let cHook = null;
+          if (mission && GENIUS_HOOKS[mod.id]) {
+            const lower = mission.toLowerCase();
+            for (const [bk, als] of Object.entries(DOMAIN_ALIASES)) {
+              if (als.some(a => lower.includes(a)) && GENIUS_HOOKS[mod.id][bk]) { cHook = GENIUS_HOOKS[mod.id][bk]; break; }
+            }
+            if (!cHook) cHook = GENIUS_HOOKS[mod.id]._default || null;
+          }
+          const cBridge = cHook || (mission ? findClientBridge(mod.catId, mission) : null);
           const cLine = cBridge ? `\n  ↳ FOR "${mission}": ${cBridge}` : (mission ? `\n  ↳ Apply to "${mission}": What would ${mod.name} insist on here?` : '');
           roster += `\n▸ ${mod.name.toUpperCase()} [${mod.power || 90}] ${mod.catName}\n  ${extractKeyQuotes(mod.prompt)}${cLine}\n`;
         } else {
@@ -2817,9 +3021,22 @@ ${mod.prompt}
 
       // Dynamic fusion philosophy — what emerges from THIS specific combination
       const catNames = uniqueCats.map(c => GENIUS_CATEGORIES[c]?.name || 'Custom').filter(Boolean);
-      const fusionPhilosophy = mission
-        ? `Your fusion of ${catNames.join(', ')} expertise creates a unique lens for "${mission}". The intersection of ${top.name}'s taste${modules[1] ? ` and ${modules[1].name}'s execution` : ''} produces insights none of them would reach alone. Every response must reflect this cross-pollinated intelligence.`
-        : `The intersection of ${catNames.join(' + ')} produces insights none of these experts would reach alone.`;
+      let fusionPhilosophy;
+      if (!mission) {
+        fusionPhilosophy = `The intersection of ${catNames.join(' + ')} produces insights none of these experts would reach alone.`;
+      } else {
+        // Build specific cross-pollination insight from the actual geniuses selected
+        const crossInsights = [];
+        if (modules.length >= 2) {
+          const a = modules[0], b = modules[1];
+          crossInsights.push(`${a.name}'s instinct for ${(GENIUS_CATEGORIES[a.catId]?.name || 'craft').toLowerCase()} fused with ${b.name}'s mastery of ${(GENIUS_CATEGORIES[b.catId]?.name || 'execution').toLowerCase()}`);
+        }
+        if (modules.length >= 3) {
+          const c = modules[2];
+          crossInsights.push(`grounded by ${c.name}'s ${(GENIUS_CATEGORIES[c.catId]?.name || 'expertise').toLowerCase()}`);
+        }
+        fusionPhilosophy = `Your fusion of ${catNames.join(', ')} expertise creates a compound lens for "${mission}" that none of them would reach alone: ${crossInsights.join(', ')}. Cross-pollinate ruthlessly — the breakthrough insight lives at the intersection of domains, not within them.`;
+      }
 
       return `━━━ SKILLCLONE SYSTEM ━━━
 

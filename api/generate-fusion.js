@@ -299,11 +299,45 @@ const CATEGORY_MISSION_BRIDGES = {
   },
 };
 
+// ── Genius-specific mission hints (API-side, compact) ──
+// These provide the composer with per-genius angles for common mission domains.
+// The composer uses these to write mission-specific lore that couldn't exist for any other genius.
+const GENIUS_MISSION_HINTS = {
+  'Spielberg': { web_app: 'user journey as three-act structure, "Spielberg Face" (show user reactions), spectacle serves emotion', landing_page: 'scroll as movie, hero = wonder, testimonials = reaction shots, CTA = climax' },
+  'MrBeast': { web_app: 'hook in 0.5 seconds, retention graph is god, re-engage every session, thumbnail test for every card', landing_page: 'hook in 0.5s, pattern interrupt hero, test 20 headlines, cut everything that doesn\'t serve the click' },
+  'Kubrick': { web_app: 'obsessive perfectionism, symmetry = trust, every pixel deliberate, research before building', landing_page: 'restraint, deliberate color, symmetry, no decorative fluff' },
+  'Nolan': { web_app: 'time as narrative tool, simple emotional core with complex structure, practical over theatrical', landing_page: 'show the future state first then reveal the path, simple promise with layered execution' },
+  'Steve Jobs': { web_app: 'say no to 1000 things, product IS marketing, simplicity is ultimate sophistication', landing_page: 'one idea one CTA one emotion, save the best for the scroll reveal' },
+  'Miyamoto': { web_app: '30 seconds of joy test, World 1-1 teaches without words, lateral thinking with withered technology, gamification', landing_page: 'delight before explanation, progressive disclosure, make it feel like play' },
+  'Jony Ive': { web_app: 'simplicity = presence of clarity, inevitable design, obsess over unseen parts', landing_page: 'inevitability, negative space, every radius considered' },
+  'Elon Musk': { web_app: 'first principles reasoning, 10x not 10%, vertical integration', landing_page: 'ambitious scope, physics-level constraints, factory IS the product' },
+  'Alex Hormozi': { web_app: 'Value Equation, Grand Slam Offers, stack value until price is irrelevant, guarantee reverses risk', landing_page: 'headline IS the offer, Dream Outcome ÷ Effort = Value, make the gap embarrassing' },
+  'David Ogilvy': { web_app: 'headline is 80%, specificity converts, research first, long copy when earned', landing_page: 'headline is 80% of the ad, "At 60 mph..." specificity, consumer is not a moron' },
+  'Gary Halbert': { web_app: 'starving crowd beats clever copy, write like you talk, specificity is proof', landing_page: 'the LIST matters most, first sentence gets them to read the second, P.S. is second most-read' },
+  'Paul Graham': { web_app: 'make something people want, do things that don\'t scale, schlep blindness, launch fast talk to users', landing_page: 'if you can\'t explain it in one sentence the product isn\'t focused enough' },
+  'Peter Thiel': { web_app: 'contrarian AND right, competition is for losers, monopoly in small market, secrets', landing_page: 'what truth do few agree with, last mover advantage, frame the secret' },
+  'Jeff Bezos': { web_app: 'Day One always, customer obsession, work backwards from press release, 70% decisions', landing_page: 'work backwards from the customer testimonial, your margin is my opportunity' },
+  'Pieter Levels': { web_app: 'ship today fix tomorrow, PHP+SQLite to $1M, no cofounders no VC, build in public', landing_page: 'build page AND product same weekend, 4 hours max, ship then iterate' },
+  'John Carmack': { web_app: 'deep focus, profile before optimizing, simple readable code, 60fps non-negotiable', landing_page: 'performance first, profile what matters, simple > clever' },
+  'Dieter Rams': { web_app: '"Is this necessary?", less but better, thorough to last detail, 10 principles', landing_page: 'every element earns its place, honest design, unobtrusive' },
+  'Kahneman': { web_app: 'System 1 drives 95%, anchoring sets frame, loss aversion 2.5x, WYSIATI', landing_page: 'first number anchors everything, images process 60000x faster, social proof is System 1 shortcut' },
+  'Cialdini': { web_app: 'reciprocity commitment social-proof authority liking scarcity, pre-suasion', landing_page: 'apply all six principles in scroll order down the page' },
+  'Nir Eyal': { web_app: 'Hook model: trigger→action→variable reward→investment, internal triggers, reduce friction to zero', landing_page: 'trigger the first hook on the page, variable reward in the demo, investment = signup' },
+  'Rick Rubin': { web_app: 'art is in what you remove, strip to emotional core, trust the instinct then push past it', landing_page: 'remove everything until only emotion remains' },
+  'Hans Zimmer': { web_app: 'sound as architecture, silence before crescendo, blend electronic + organic', landing_page: 'emotional rhythm in scroll pacing, build to crescendo at CTA' },
+};
+
 // Given a genius + mission, find the specific bridge angle
 function findMissionBridge(genius, artifactProfile) {
   const category = normalizeCategory(genius.catName);
   const outputMode = artifactProfile?.outputMode || 'web_app';
   return CATEGORY_MISSION_BRIDGES[category]?.[outputMode] || null;
+}
+
+// Get genius-specific hint for the composer
+function getGeniusHint(geniusName, outputMode) {
+  const hints = GENIUS_MISSION_HINTS[geniusName];
+  return hints?.[outputMode] || hints?.web_app || null;
 }
 
 const CATEGORY_ALIASES = {
@@ -854,6 +888,7 @@ function buildComposerPrompt(mission, brief, council, geniuses, outputContract) 
   const expertRoster = council.map(member => {
     const genius = geniuses.find(item => item.name === member.name) || geniuses.find(item => item.id === member.id) || {};
     const bridge = findMissionBridge({ catName: genius.catName || member.category, name: member.name }, artifact);
+    const geniusHint = getGeniusHint(member.name, brief.output_mode);
     return [
       `${member.name} [${member.power}]`,
       `Role: ${member.role_label} — ${member.authority}`,
@@ -863,6 +898,7 @@ function buildComposerPrompt(mission, brief, council, geniuses, outputContract) 
       bridge ? `MISSION BRIDGE — why ${member.name}'s category matters for this ${brief.output_mode.replace(/_/g, ' ')}:` : '',
       bridge ? `  Angle: ${bridge.angle}` : '',
       bridge ? `  Apply: ${bridge.apply}` : '',
+      geniusHint ? `GENIUS-SPECIFIC HOOKS for ${member.name}: ${geniusHint}` : '',
     ].filter(Boolean).join('\n');
   }).join('\n\n');
 
