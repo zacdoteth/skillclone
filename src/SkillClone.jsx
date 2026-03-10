@@ -3480,7 +3480,7 @@ Begin. — forged at skillcl.one`;
                   aspectRatio: '377 / 661',
                   cursor: deckDealing || !packPicks ? 'default' : `url("data:image/svg+xml,${encodeURIComponent('<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'32\' height=\'32\' viewBox=\'0 0 32 32\'><line x1=\'4\' y1=\'28\' x2=\'28\' y2=\'4\' stroke=\'rgba(200,180,255,0.9)\' stroke-width=\'2\' stroke-linecap=\'round\'/><line x1=\'4\' y1=\'28\' x2=\'28\' y2=\'4\' stroke=\'white\' stroke-width=\'1\' stroke-linecap=\'round\'/><circle cx=\'28\' cy=\'4\' r=\'2\' fill=\'white\'/><line x1=\'26\' y1=\'3\' x2=\'22\' y2=\'7\' stroke=\'rgba(167,139,250,0.6)\' stroke-width=\'1\'/><line x1=\'29\' y1=\'6\' x2=\'25\' y2=\'10\' stroke=\'rgba(167,139,250,0.6)\' stroke-width=\'1\'/></svg>')}") 4 28, crosshair`,
                   opacity: 1,
-                  filter: !packPicks && !deckDealing ? 'saturate(0.3) brightness(0.35)' : 'none',
+                  filter: 'none',
                   transition: 'filter 0.6s ease',
                   pointerEvents: deckDealing ? 'none' : undefined,
                   zIndex: 20,
