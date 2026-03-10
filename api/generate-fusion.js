@@ -1179,85 +1179,162 @@ function buildFallbackComposition(mission, brief, council) {
   };
 }
 
-// ── Design Excellence System ──────────────────────────────────────
-// Concrete design rules injected into every prompt to force premium UI output.
-// "Awwwards-level" is too vague — these are specific techniques.
-const DESIGN_RULES_CORE = [
-  'Typography: max 2 font families (1 display, 1 body). Use a modular type scale (1.25 ratio). Weight contrast creates hierarchy — not size alone. Line height 1.5 for body, 1.1 for headings.',
-  'Color: 1 primary, 1 accent, neutrals. Use HSL for consistency. 60-30-10 rule (60% neutral, 30% primary, 10% accent). Dark themes need 4+ shades of gray, not just #000 and #fff.',
-  'Spacing: 8px base grid. Consistent padding (16/24/32/48px). White space is confidence — crowded UI feels cheap. Group related elements, separate unrelated ones (Gestalt proximity).',
-  'No default browser UI: custom scrollbars or overflow:hidden with scroll snap. Custom focus rings. Custom selection colors. Every visible element should be intentional.',
-  'Micro-interactions on every interactive element: button press scales (0.97), hover state in <100ms, page transitions use shared-element animation. Motion should feel physical — use spring curves, not linear.',
-  'Visual hierarchy: one focal point per viewport. Squint test — if you blur the page, the important element should still stand out. Contrast ratio 7:1 minimum for primary text.',
-  'Component personality: no generic cards or boxes. Every component should have a visual signature — subtle gradients, inner shadows, frosted glass, or texture. If it looks like default Tailwind, redesign it.',
-  'Empty states are design opportunities, not blank voids. Loading states build anticipation. Error states are helpful, not alarming. Every state should feel crafted.',
-];
+// ── Dynamic Craft Standard System ─────────────────────────────────
+// Instead of dumping 20 rules, dynamically pick the 5-7 MOST relevant
+// quality anchors for THIS specific mission + genius combination.
+// Each anchor names the gold standard and gives 1-2 concrete techniques.
 
-const DESIGN_RULES_BY_DOMAIN = {
-  music: [
-    'Music apps: dark mode with warm accent (amber/gold). Visualize rhythm — use waveforms, animated note indicators, pulsing elements that sync with tempo.',
-    'Fretboard/piano/instrument UI: never use default scrollbars. Use horizontal swipe with snap points. Show position indicators. Make the instrument feel touchable and alive.',
-    'Reference: Spotify (dark, warm, typographic hierarchy), Apple Music (blur, depth, album art integration), Fender Tone (tactile, guitar-specific UI with string textures).',
-  ],
-  finance: [
-    'Finance apps: trust through restraint. Use green/teal sparingly for positive, muted red for negative. Charts should be glanceable — sparklines over complex graphs. Numbers need tabular figures (monospace).',
-    'Reference: Mercury (clean, minimal, confident), Stripe Dashboard (data-dense but breathable), Robinhood (bold numbers, emotional color).',
-  ],
-  health: [
-    'Health/fitness: progress visualization IS the product. Circular progress rings, streak flames, achievement unlocks. Color-code good/neutral/bad intuitively (green/amber/red). Make data entry feel rewarding — haptic-style animations.',
-    'Reference: Apple Health (rings, clean data), Strava (social + achievement), Headspace (warm, illustrated, calming).',
-  ],
-  social: [
-    'Social apps: the feed IS the design. Cards must be scannable in <1 second. Avatar + name + timestamp = trust. Rich media previews. Pull-to-refresh with personality. Notification badges with urgency levels.',
-    'Reference: Arc browser (spatial, beautiful), Linear (keyboard-first, dark, precise), Discord (density without chaos).',
-  ],
-  ecommerce: [
-    'E-commerce: product images dominate. Use consistent aspect ratios. Price typography: large, bold, tabular. Trust signals (reviews, badges, guarantees) visible without scrolling. Cart should feel premium — not utilitarian.',
-    'Reference: SSENSE (editorial product pages), Apple Store (clean, premium), Gumroad (simple, creator-first).',
-  ],
-  education: [
-    'Learning apps: progressive disclosure — don\'t overwhelm. Celebrate completion with animation. Track progress visually (progress bars, XP, levels). Make the next lesson irresistible. Gamify without being childish.',
-    'Reference: Duolingo (gamification done right), Brilliant (interactive, visual explanations), Notion (clean workspace feel).',
-  ],
-  productivity: [
-    'Productivity: keyboard shortcuts are primary. Command palette (⌘K). Density options. The interface should feel like an extension of thought — invisible when working, powerful when needed.',
-    'Reference: Linear (gold standard), Notion (flexible), Raycast (speed + beauty).',
-  ],
+// Quality dimensions — what "world-class" looks like in each domain
+const CRAFT_DIMENSIONS = {
+  // UI/UX quality
+  design: {
+    standard: 'Awwwards Site of the Year / Dribbble #1',
+    anchors: [
+      'Max 2 font families, modular type scale (1.25), weight contrast for hierarchy. 8px spacing grid. 60-30-10 color rule.',
+      'No default browser UI anywhere — custom scrollbars (or overflow:hidden + scroll-snap), custom focus rings, custom selection. Every pixel intentional.',
+      'Micro-interactions on every interactive element: press scale(0.97), hover <100ms, spring curves. Motion must feel physical.',
+      'One focal point per viewport. Squint test: blur the page, the CTA should still pop. White space = confidence.',
+    ],
+  },
+  // Code/engineering quality
+  engineering: {
+    standard: 'Stripe / Linear / Vercel engineering bar',
+    anchors: [
+      'TypeScript strict mode. No any. Zod for runtime validation at boundaries. Error handling is architecture, not afterthought.',
+      'Performance budget: <3s TTI, <100ms interaction response, 60fps animations. Profile before optimizing. Lighthouse 95+.',
+      'Data model is the product — get the schema right first. Migrations, not patches. Idempotent operations.',
+      'Ship the monolith. Extract services only when you have evidence. Premature abstraction kills more startups than tech debt.',
+    ],
+  },
+  // Copywriting/content quality
+  copy: {
+    standard: 'Ogilvy / Halbert / Bernbach — the greatest ads ever written',
+    anchors: [
+      'Headline does 80% of the work. Be specific: numbers, outcomes, timeframes. "Save 4.2 hours/week" beats "save time."',
+      'First sentence\'s only job: get them to read the second. Every word must earn its place.',
+      'Voice-of-customer language converts because it mirrors internal monologue. Steal their exact words from reviews.',
+      'The offer isn\'t the product — it\'s the framing. Stack value until price becomes irrelevant.',
+    ],
+  },
+  // Strategy/business quality
+  strategy: {
+    standard: 'McKinsey rigor with YC speed — Peter Thiel + Paul Graham',
+    anchors: [
+      'First principles: what are the physics-level constraints? Name the contrarian truth. If the strategy sounds reasonable, it\'s not ambitious enough.',
+      'One wedge, one audience, one channel, one metric. Everything else is procrastination disguised as strategy.',
+      'Work backwards: write the press release before building. What would the customer testimonial say?',
+      'Moat or die. Network effects, proprietary data, switching costs, or brand. If you can\'t name it, you don\'t have one.',
+    ],
+  },
+  // Growth/marketing quality
+  growth: {
+    standard: 'Uber / Duolingo / Superhuman growth playbook',
+    anchors: [
+      'Retention first. Acquisition on a leaky bucket is arson. Day-1, day-7, day-30 retention curves before anything else.',
+      'One activation metric that predicts retention. Find it, then engineer every onboarding step toward it.',
+      'Viral coefficient >1 or paid CAC < 1/3 LTV. No growth strategy survives without one of these.',
+      'A/B test the critical path, not button colors. Headlines have 10x the impact of design changes.',
+    ],
+  },
+  // Quantitative/algorithmic quality
+  quant: {
+    standard: 'Jane Street / Jump Trading / Renaissance Technologies',
+    anchors: [
+      'Latency is alpha. Nanoseconds matter. Profile the hot path. Zero allocation in the critical loop.',
+      'Backtest with walk-forward analysis, not in-sample fitting. Out-of-sample Sharpe >1.5 or it doesn\'t ship.',
+      'Risk management IS the strategy. Position sizing via Kelly criterion. Max drawdown constraints are non-negotiable.',
+      'Data pipeline reliability: exactly-once processing, deterministic replay, microsecond timestamps. If you can\'t reproduce a result, it\'s not a result.',
+    ],
+  },
+  // AI/ML quality
+  ai: {
+    standard: 'OpenAI / Anthropic / DeepMind engineering rigor',
+    anchors: [
+      'Eval first. If you can\'t measure it, you can\'t improve it. Build the eval suite before the feature.',
+      'Prompt engineering: be specific, use delimiters, give examples, specify format. Structured output > free text.',
+      'Latency budget: stream for perceived speed. Cache deterministic queries. Rate limit before launch or wake up to a $10K bill.',
+      'Graceful degradation: what happens when the model returns garbage? Every AI call needs a fallback path.',
+    ],
+  },
+  // Content/media quality
+  content: {
+    standard: 'MrBeast production / Spotify editorial / NYT interactive',
+    anchors: [
+      'Hook in 0.5 seconds. If the first frame/headline/sentence doesn\'t stop the scroll, nothing else matters.',
+      'Retention graph is god. Re-engage every 30 seconds. Cut dead air ruthlessly.',
+      'Packaging is 50% of success: thumbnails, titles, cover art. Test 20 versions.',
+      'Distribution > creation. Content without a channel strategy is a diary.',
+    ],
+  },
+  // Audio/music quality
+  audio: {
+    standard: 'Rick Rubin production / Hans Zimmer scoring / Spotify UX',
+    anchors: [
+      'Dark + warm accent (amber/gold). Visualize sound with waveforms, animated indicators, pulsing elements.',
+      'Instrument/audio UI: horizontal swipe with snap, no scrollbars. Make it feel tactile and alive.',
+      'Every interaction has a sound signature. Audio feedback <100ms feels responsive. Silence is a design choice.',
+      'Reference apps: Spotify, Apple Music, Ableton, Fender Tone — study their specific UI patterns.',
+    ],
+  },
+  // Health/wellness quality
+  wellness: {
+    standard: 'Apple Health rings / Strava social / Headspace calm',
+    anchors: [
+      'Progress visualization IS the product: rings, streaks, flames. Color-code intuitively (green/amber/red).',
+      'Data entry must feel rewarding — animation on log, sound on completion, streak on consistency.',
+      'Variable rewards: "will today be a personal best?" Loss aversion: "don\'t break your 47-day streak!"',
+      'Gamify the health loop without being childish. Progressive difficulty. Unlock features as habits form.',
+    ],
+  },
 };
 
-// Detect domain from mission text for domain-specific design rules
-function detectDesignDomain(mission) {
+// Detect which quality dimensions matter most for this mission
+function detectCraftDimensions(mission, council) {
   const lower = (mission || '').toLowerCase();
-  if (containsAny(lower, ['guitar', 'music', 'piano', 'drum', 'song', 'chord', 'melody', 'instrument', 'audio', 'beat', 'synth'])) return 'music';
-  if (containsAny(lower, ['finance', 'bank', 'invest', 'stock', 'crypto', 'payment', 'invoice', 'budget'])) return 'finance';
-  if (containsAny(lower, ['health', 'fitness', 'calorie', 'workout', 'exercise', 'diet', 'meditation', 'sleep', 'wellness'])) return 'health';
-  if (containsAny(lower, ['social', 'community', 'forum', 'chat', 'messaging', 'feed', 'network'])) return 'social';
-  if (containsAny(lower, ['shop', 'store', 'ecommerce', 'e-commerce', 'product', 'retail', 'marketplace'])) return 'ecommerce';
-  if (containsAny(lower, ['learn', 'course', 'tutor', 'education', 'quiz', 'study', 'lesson', 'teach'])) return 'education';
-  if (containsAny(lower, ['dashboard', 'saas', 'crm', 'project', 'task', 'productivity', 'workflow', 'tool'])) return 'productivity';
-  return null;
-}
+  const dims = [];
 
-function buildDesignExcellence(brief, mission, compact) {
-  const domain = detectDesignDomain(mission);
-  const domainRules = DESIGN_RULES_BY_DOMAIN[domain] || [];
+  // Mission-keyword detection (primary)
+  if (containsAny(lower, ['trading', 'quant', 'hedge fund', 'algo', 'arbitrage', 'hft', 'backtest'])) dims.push('quant');
+  if (containsAny(lower, ['guitar', 'music', 'piano', 'drum', 'song', 'chord', 'audio', 'beat', 'synth', 'instrument'])) dims.push('audio');
+  if (containsAny(lower, ['health', 'fitness', 'calorie', 'workout', 'diet', 'meditation', 'sleep', 'wellness', 'tracker'])) dims.push('wellness');
+  if (containsAny(lower, ['ai ', ' ai', 'llm', 'gpt', 'chatbot', 'agent', 'ml ', 'model'])) dims.push('ai');
+  if (containsAny(lower, ['youtube', 'tiktok', 'video', 'podcast', 'newsletter', 'content'])) dims.push('content');
 
-  if (compact) {
-    // In compact mode, pick the 3 most impactful core rules + 1 domain rule
-    const picked = [
-      DESIGN_RULES_CORE[0], // Typography
-      DESIGN_RULES_CORE[3], // No default browser UI
-      DESIGN_RULES_CORE[6], // Component personality
-    ];
-    if (domainRules.length) picked.push(domainRules[0]);
-    return picked.map(r => `- ${truncate(r, 160)}`).join('\n');
+  // Genius-category detection (secondary — what the selected geniuses emphasize)
+  const categories = (council || []).map(m => m.category || '');
+  if (categories.includes('design') || categories.includes('artists')) dims.push('design');
+  if (categories.includes('engineering') || categories.includes('automation')) dims.push('engineering');
+  if (categories.includes('copy')) dims.push('copy');
+  if (categories.includes('strategy')) dims.push('strategy');
+  if (categories.includes('growth')) dims.push('growth');
+  if (categories.includes('film') || categories.includes('content')) dims.push('content');
+  if (categories.includes('music')) dims.push('audio');
+  if (categories.includes('psychology')) dims.push('growth'); // psychology serves growth/conversion
+
+  // Always include design for visual products
+  if (containsAny(lower, ['app', 'site', 'page', 'dashboard', 'platform', 'ui', 'ux', 'design'])) {
+    if (!dims.includes('design')) dims.push('design');
   }
 
-  const rules = [
-    ...DESIGN_RULES_CORE.slice(0, 6), // Top 6 core rules
-    ...domainRules, // All domain-specific rules
-  ];
-  return rules.map(r => `- ${r}`).join('\n');
+  // Deduplicate, limit to top 3
+  return [...new Set(dims)].slice(0, 3);
+}
+
+// Build the dynamic craft standard block
+function buildCraftStandard(mission, council, compact) {
+  const dims = detectCraftDimensions(mission, council);
+
+  // If no specific dimensions detected, default to design + engineering
+  if (dims.length === 0) dims.push('design', 'engineering');
+
+  const blocks = dims.map(dim => {
+    const d = CRAFT_DIMENSIONS[dim];
+    if (!d) return null;
+    const anchors = compact ? d.anchors.slice(0, 2) : d.anchors.slice(0, 3);
+    return `${d.standard}:\n${anchors.map(a => `  - ${compact ? truncate(a, 120) : a}`).join('\n')}`;
+  }).filter(Boolean);
+
+  return blocks.join('\n');
 }
 
 function renderOneShotPrompt({ mission, brief, council, composition, compact = false }) {
@@ -1275,20 +1352,6 @@ function renderOneShotPrompt({ mission, brief, council, composition, compact = f
     })
     .join('\n');
 
-  const executionRules = composition.execution_rules
-    .slice(0, compact ? 3 : 5)
-    .map(rule => `- ${compact ? truncate(rule, 90) : rule}`)
-    .join('\n');
-
-  const outputFocus = composition.output_focus
-    .slice(0, compact ? 3 : 5)
-    .map(rule => `- ${compact ? truncate(rule, 90) : rule}`)
-    .join('\n');
-
-  const qualityBar = composition.quality_bar
-    .slice(0, compact ? 2 : 4)
-    .map(rule => `- ${compact ? truncate(rule, 78) : rule}`)
-    .join('\n');
 
   const assumptionsLine = brief.assumptions.slice(0, compact ? 1 : 3).join(' | ');
   const constraintsLine = brief.constraints.slice(0, compact ? 1 : 3).join(' | ');
@@ -1299,11 +1362,7 @@ function renderOneShotPrompt({ mission, brief, council, composition, compact = f
   const stackLine = compact
     ? `Stack: ${brief.stack.frontend}; ${brief.stack.data}; ${brief.stack.auth}; ${brief.stack.ai}; ${brief.stack.payments}; ${brief.stack.deployment}`
     : `Stack: FE ${brief.stack.frontend}; BE ${brief.stack.backend}; Data ${brief.stack.data}; Auth ${brief.stack.auth}; AI ${brief.stack.ai}; Pay ${brief.stack.payments}; Deploy ${brief.stack.deployment}`;
-  const responseRules = compact
-    ? `- Do not ask follow-up questions; make strong defaults explicit.\n- Return one reply that follows the Output Contract and is ready for Claude, Cursor, or a human builder today.`
-    : `- Do not ask follow-up questions unless missing data makes the answer unsafe or impossible.\n- Fill gaps with strong defaults and make them explicit in Assumptions.\n- Return the full package in one reply following the Output Contract exactly.\n- Make the result directly useful for Claude, Cursor, or a human builder starting today.`;
-
-  const designExcellence = buildDesignExcellence(brief, mission, compact);
+  const craftStandard = buildCraftStandard(mission, council, compact);
 
   return tidyMultiline(`
 ━━━ SKILLCLONE ONE-SHOT SYSTEM ━━━
@@ -1342,23 +1401,19 @@ ${expertSections}
 FUSION PHILOSOPHY
 ${fusionPhilosophy}
 
-EXECUTION RULES
-${executionRules}
-
-OUTPUT FOCUS
-${outputFocus}
-
 OUTPUT CONTRACT
 ${contract}
 
-QUALITY BAR
-${qualityBar}
-
-DESIGN EXCELLENCE — non-negotiable
-${designExcellence}
+CRAFT STANDARD — this is the quality floor, not the ceiling
+Every output must hit the top 0.1% of its domain. Specific standards for this mission:
+${craftStandard}
+- Generic output is failure. If any element could appear in a tutorial or template, redo it.
+- Do not ask follow-up questions. Make strong defaults and state them.
+${compact ? '' : `- Ship the smallest credible v1, not the eventual platform.\n- Make the build prompt copy-paste ready for Claude, Cursor, or a human builder.`}
 
 When you respond:
-${responseRules}
+- Return the full package in one reply following the Output Contract exactly.
+- Make it directly useful for starting today.
 
 Begin.
 

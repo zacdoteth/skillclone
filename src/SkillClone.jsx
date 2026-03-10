@@ -1045,49 +1045,84 @@ const findClientBridge = (catId, mission) => {
   return catBridges._default || null;
 };
 
-// ── Design Excellence Rules ─────────────────────────────────────
-// Concrete design rules injected into prompts to force premium UI output.
-// "Awwwards-level" is too vague — these are specific techniques.
-const DESIGN_EXCELLENCE_RULES = {
-  core: [
-    'Typography: max 2 font families. Modular scale (1.25 ratio). Weight contrast creates hierarchy, not size alone. Line height 1.5 body, 1.1 headings.',
-    'Color: 1 primary + 1 accent + neutrals. 60-30-10 rule. Dark themes need 4+ shades of gray (not just #000/#fff). Use HSL for palette consistency.',
-    'Spacing: 8px grid. Consistent padding (16/24/32/48px). White space = confidence. Crowded UI = cheap. Group related elements (Gestalt proximity).',
-    'No default browser UI: custom scrollbars or overflow:hidden with scroll-snap. Custom focus rings. Custom selection colors. Every visible pixel must be intentional.',
-    'Micro-interactions: button press scale(0.97), hover <100ms, spring curves not linear. Loading states build anticipation. Empty states are design moments.',
-    'Visual hierarchy: one focal point per viewport. Squint test — blur the page, the important thing should still stand out. 7:1 contrast minimum for text.',
-    'Component personality: no generic cards. Every component should have a signature — subtle gradients, inner shadows, frosted glass, or texture. If it looks like default Tailwind, redesign it.',
-  ],
-  domains: {
-    music: 'Music apps: dark + warm accent (amber/gold). Visualize rhythm with waveforms and animated indicators. Instrument UI: NO default scrollbars — use horizontal swipe with snap. Make instruments feel tactile and alive. Reference: Spotify, Apple Music, Fender Tone.',
-    health: 'Health apps: progress rings, streak flames, achievement animations. Color-code intuitively (green/amber/red). Make data entry rewarding with haptic-style animations. Reference: Apple Health, Strava, Headspace.',
-    finance: 'Finance: trust through restraint. Green/teal for positive, muted red for negative. Sparklines over complex charts. Tabular figures for numbers. Reference: Mercury, Stripe Dashboard.',
-    social: 'Social: feed IS the design. Cards scannable in <1 second. Rich media previews. Pull-to-refresh with personality. Reference: Arc, Linear, Discord.',
-    ecommerce: 'E-commerce: product images dominate. Consistent aspect ratios. Price = large, bold, tabular. Trust signals visible without scroll. Reference: SSENSE, Apple Store.',
-    education: 'Learning: progressive disclosure. Celebrate completion. Track progress visually (bars, XP, levels). Gamify without being childish. Reference: Duolingo, Brilliant.',
-    productivity: 'Productivity: keyboard-first. Command palette (⌘K). Density options. Interface = extension of thought. Reference: Linear, Notion, Raycast.',
-  },
+// ── Dynamic Craft Standard ──────────────────────────────────────
+// Dynamically picks the 2-3 most relevant quality dimensions for the
+// mission + genius combo. "Awwwards" for design, "Jane Street" for quant, etc.
+const CRAFT_DIMENSIONS = {
+  design: { label: 'Awwwards Site of the Year / Dribbble #1', rules: [
+    'Max 2 fonts, modular type scale (1.25), weight contrast for hierarchy. 8px spacing grid. 60-30-10 color rule.',
+    'No default browser UI — custom scrollbars (or overflow:hidden + scroll-snap), custom focus rings. Every pixel intentional.',
+    'Micro-interactions: press scale(0.97), hover <100ms, spring curves. No generic cards — visual signature required.',
+  ]},
+  engineering: { label: 'Stripe / Linear / Vercel engineering', rules: [
+    'TypeScript strict. Zod at boundaries. <3s TTI, <100ms interaction, 60fps. Lighthouse 95+.',
+    'Data model is the product — schema first. Ship the monolith. Extract services only with evidence.',
+  ]},
+  copy: { label: 'Ogilvy / Halbert — greatest ads ever written', rules: [
+    'Headline does 80%. Be specific: "Save 4.2 hours/week" > "save time." First sentence\'s only job: make them read the second.',
+    'The offer isn\'t the product — it\'s the framing. Stack value until price is irrelevant.',
+  ]},
+  strategy: { label: 'McKinsey rigor + YC speed', rules: [
+    'First principles. Name the contrarian truth. One wedge, one audience, one channel, one metric.',
+    'Moat or die: network effects, data, switching costs, or brand.',
+  ]},
+  growth: { label: 'Uber / Duolingo / Superhuman', rules: [
+    'Retention first — acquisition on a leaky bucket is arson. Find the activation metric that predicts retention.',
+    'Viral coefficient >1 or paid CAC < 1/3 LTV.',
+  ]},
+  quant: { label: 'Jane Street / Jump Trading / Renaissance', rules: [
+    'Latency is alpha. Zero allocation in hot path. Walk-forward backtest — out-of-sample Sharpe >1.5 or don\'t ship.',
+    'Risk management IS the strategy. Kelly criterion. Deterministic replay. Microsecond timestamps.',
+  ]},
+  ai: { label: 'OpenAI / Anthropic engineering rigor', rules: [
+    'Eval first — can\'t measure it, can\'t improve it. Stream for speed. Rate limit before launch.',
+    'Graceful degradation: every AI call needs a fallback. Structured output > free text.',
+  ]},
+  audio: { label: 'Rick Rubin / Spotify UX', rules: [
+    'Dark + warm accent (amber/gold). Instrument UI: swipe with snap, NO scrollbars. Tactile and alive.',
+    'Audio feedback <100ms. Visualize sound. Reference: Spotify, Ableton, Fender Tone.',
+  ]},
+  wellness: { label: 'Apple Health / Strava / Headspace', rules: [
+    'Progress rings, streaks, flames. Color-code green/amber/red. Data entry must feel rewarding.',
+    'Variable rewards, loss aversion ("don\'t break your streak!"), progressive gamification.',
+  ]},
+  content: { label: 'MrBeast production / Spotify editorial', rules: [
+    'Hook in 0.5 seconds. Retention graph is god. Cut dead air. Re-engage every 30 seconds.',
+    'Packaging is 50%: thumbnails, titles, cover art. Distribution > creation.',
+  ]},
 };
 
-const getDesignDomain = (mission) => {
+const detectCraftDims = (mission, modules) => {
   const m = (mission || '').toLowerCase();
-  if (/guitar|music|piano|drum|song|chord|melody|instrument|audio|beat|synth/.test(m)) return 'music';
-  if (/health|fitness|calorie|workout|exercise|diet|meditation|sleep|wellness/.test(m)) return 'health';
-  if (/finance|bank|invest|stock|crypto|payment|invoice|budget/.test(m)) return 'finance';
-  if (/social|community|forum|chat|messaging|feed|network/.test(m)) return 'social';
-  if (/shop|store|ecommerce|e-commerce|retail|marketplace/.test(m)) return 'ecommerce';
-  if (/learn|course|tutor|education|quiz|study|lesson|teach/.test(m)) return 'education';
-  if (/dashboard|saas|crm|project|task|productivity|workflow|tool/.test(m)) return 'productivity';
-  return null;
+  const dims = [];
+  if (/trading|quant|hedge fund|algo|arbitrage|hft|backtest/.test(m)) dims.push('quant');
+  if (/guitar|music|piano|drum|song|chord|audio|beat|synth|instrument/.test(m)) dims.push('audio');
+  if (/health|fitness|calorie|workout|diet|meditation|sleep|wellness|tracker/.test(m)) dims.push('wellness');
+  if (/\bai\b|llm|gpt|chatbot|agent|model/.test(m)) dims.push('ai');
+  if (/youtube|tiktok|video|podcast|newsletter|content/.test(m)) dims.push('content');
+  const cats = new Set((modules || []).map(mod => mod.catId));
+  if (cats.has('design') || cats.has('artists')) dims.push('design');
+  if (cats.has('engineering') || cats.has('automation')) dims.push('engineering');
+  if (cats.has('copy')) dims.push('copy');
+  if (cats.has('strategy')) dims.push('strategy');
+  if (cats.has('growth') || cats.has('psychology')) dims.push('growth');
+  if (cats.has('film') || cats.has('content')) dims.push('content');
+  if (cats.has('music')) dims.push('audio');
+  if (/app|site|page|dashboard|platform|ui|ux|design/.test(m) && !dims.includes('design')) dims.push('design');
+  return [...new Set(dims)].slice(0, 3);
 };
 
-const buildDesignBlock = (mission) => {
-  const domain = getDesignDomain(mission);
-  const domainRule = domain ? DESIGN_EXCELLENCE_RULES.domains[domain] : null;
-  const coreRules = DESIGN_EXCELLENCE_RULES.core.slice(0, 5).map(r => `• ${r}`).join('\n');
-  return `DESIGN EXCELLENCE — non-negotiable
-${coreRules}${domainRule ? `\n• ${domainRule}` : ''}
-• If any UI element looks like it came from a template or tutorial, redesign it until it looks like it belongs on Awwwards.`;
+const buildCraftBlock = (mission, modules) => {
+  let dims = detectCraftDims(mission, modules);
+  if (dims.length === 0) dims = ['design', 'engineering'];
+  const blocks = dims.map(d => {
+    const dim = CRAFT_DIMENSIONS[d];
+    if (!dim) return null;
+    return `${dim.label}:\n${dim.rules.map(r => `  • ${r}`).join('\n')}`;
+  }).filter(Boolean);
+  return `CRAFT STANDARD — top 0.1% quality floor
+${blocks.join('\n')}
+• Generic output is failure. If it could appear in a template or tutorial, redo it.`;
 };
 
 const ROUTING_TRIGGERS = {
@@ -3233,7 +3268,7 @@ QUALITY BAR — non-negotiable
 • Surprise the user. At least one insight must come from cross-domain fusion they didn't expect.
 • The output should be so good the user feels like they hired a world-class team for the price of a prompt.
 
-${mission ? buildDesignBlock(mission) : ''}
+${mission ? buildCraftBlock(mission, modules) : ''}
 Begin.
 
 — forged at skillcl.one`;
@@ -3257,7 +3292,7 @@ ${roster}MISSION: "${mission || 'General excellence'}"
 
 ${mission ? `Every word must serve "${mission}." Channel the specific frameworks, techniques, and non-negotiables your council would bring to THIS exact project. Generic advice is failure—be so specific the user feels like they hired a world-class team.` : 'Be specific, not generic. Every sentence reflects decades of hard-won expertise.'}
 
-${mission ? buildDesignBlock(mission) : ''}
+${mission ? buildCraftBlock(mission, modules) : ''}
 
 If you catch yourself writing something any AI could produce, stop and channel what ${top.name} would actually do.
 
